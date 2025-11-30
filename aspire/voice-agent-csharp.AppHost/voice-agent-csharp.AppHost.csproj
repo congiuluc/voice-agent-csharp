@@ -1,0 +1,17 @@
+<Project Sdk="Aspire.AppHost.Sdk/13.0.1">
+
+  <ItemGroup>
+    <!-- AppHost sits under the 'aspire' folder; reference the sibling 'src' and 'mcp' projects correctly -->
+    <ProjectReference Include="..\..\src\VoiceAgentCSharp.csproj" />
+    <ProjectReference Include="..\..\mcp\mcp-server.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <UserSecretsId>199ab386-84dc-4ee5-9af5-37424905680b</UserSecretsId>
+  </PropertyGroup>
+
+</Project>

@@ -1,0 +1,2641 @@
+/**
+ * Voice Live Agent - Enhanced UI Styles
+ * 
+ * This stylesheet provides a modern, glassmorphic design for the voice agent interface.
+ * Organized into logical sections for maintainability.
+ */
+
+/* ========================================
+   CSS Custom Properties (CSS Variables)
+   Define reusable values for theming
+   ======================================== */
+:root {
+  /* Color palette - Dark purple gradient theme */
+  --color-bg-start: #2d1b69;
+  --color-bg-end: #1a0b3d;
+  --color-primary: #9b7fd9;
+  --color-primary-light: #d89bd9;
+  --color-secondary: #6f89c6;
+  --color-secondary-light: #89a7d9;
+  --color-accent-purple: rgba(139, 92, 246, 0.3);
+  --color-accent-purple-hover: rgba(139, 92, 246, 0.45);
+  --color-accent-red: rgba(239, 68, 68, 0.25);
+  --color-accent-red-hover: rgba(239, 68, 68, 0.35);
+  
+  /* Glass morphism effects */
+  --glass-bg: rgba(255, 255, 255, 0.1);
+  --glass-bg-hover: rgba(255, 255, 255, 0.2);
+  --glass-border: rgba(255, 255, 255, 0.2);
+  --glass-blur: blur(20px);
+  
+  /* Spacing and sizing */
+  --spacing-xs: 8px;
+  --spacing-sm: 12px;
+  --spacing-md: 16px;
+  --spacing-lg: 20px;
+  --spacing-xl: 30px;
+  
+  /* Animation durations */
+  --transition-fast: 0.2s;
+  --transition-normal: 0.3s;
+  --transition-slow: 0.5s;
+}
+
+/* ========================================
+   Base Styles & Reset
+   ======================================== */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  /* Radial gradient background for depth effect */
+  background: radial-gradient(ellipse at center, var(--color-bg-start) 0%, var(--color-bg-end) 70%);
+  min-height: 100vh;
+  overflow: hidden;
+  position: relative;
+  color: white;
+}
+
+/* ========================================
+   Main Container Layout
+   ======================================== */
+.main-container {
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    text-align: center;
+  /* Smooth transition for theme background/color changes */
+  transition: background-color var(--transition-normal) ease, color var(--transition-normal) ease;
+}
+
+/* ========================================
+   Branded Heading with Gradient
+   ======================================== */
+h1 {
+  color: #ffffff;
+  /* Place the main title at the top center of the viewport */
+  position: fixed;
+  top: var(--spacing-xl);
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 5em;
+  font-weight: bold;
+  margin: 0;
+  z-index: 500; /* above small UI elements but below modals/toasts */
+  text-align: center;
+  pointer-events: none; /* make it non-interactive so it won't block clicks */
+}
+
+/* Gradient for "IA" letters */
+.brand-ia {
+  background: linear-gradient(90deg, var(--color-secondary) 0%, var(--color-secondary-light) 55%, var(--color-secondary) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  color: #7492cb; /* Fallback */
+}
+
+/* ========================================
+   Voice Visualizer Canvas
+   ======================================== */
+#voiceCanvas {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 900px;
+  height: 560px;
+  max-width: 90vw;
+  max-height: 50vh;
+  /* Enhanced glow effect around canvas */
+  filter: drop-shadow(0 0 40px rgba(139, 92, 246, 0.3));
+  opacity: 0;
+  transition: all var(--transition-slow) ease;
+  pointer-events: none; /* Don't intercept mouse events */
+}
+
+/* Active state - fade in canvas when visualizer is active */
+#voiceCanvas.active {
+  opacity: 1;
+  filter: drop-shadow(0 0 60px rgba(139, 92, 246, 0.5));
+}
+
+/* ========================================
+   Microphone message bubble (appears under mic button)
+   ======================================== */
+.mic-message-container {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 20px; /* below the mic button which is at bottom:90px */
+  z-index: 200; /* above most UI but below modals */
+  pointer-events: none; /* non-interactive by default */
+}
+
+.mic-message {
+  pointer-events: auto;
+  display: inline-block;
+  min-width: 220px;
+  max-width: 80vw;
+  padding: 10px 14px;
+  border-radius: 12px;
+  text-align: center;
+  font-size: 0.95rem;
+  color: #fff;
+  background: rgba(0,0,0,0.7);
+  border: 1px solid rgba(255,255,255,0.08);
+  box-shadow: 0 6px 18px rgba(0,0,0,0.5);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  transition: transform 0.18s ease, opacity 0.18s ease;
+  opacity: 0;
+  transform: translateY(8px) scale(0.98);
+}
+
+.mic-message.show {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+.mic-message.info {
+  background: linear-gradient(180deg, rgba(59,130,246,0.15), rgba(59,130,246,0.08));
+  border-color: rgba(59,130,246,0.25);
+  color: #e6f0ff;
+}
+
+.mic-message.error {
+  background: linear-gradient(180deg, rgba(239,68,68,0.15), rgba(239,68,68,0.08));
+  border-color: rgba(239,68,68,0.25);
+  color: #fff1f0;
+}
+
+@media (max-width: 480px) {
+  .mic-message {
+    min-width: 160px;
+    font-size: 0.9rem;
+    padding: 8px 10px;
+  }
+}
+
+/* Speaking state - more intense glow when user or assistant is speaking */
+#voiceCanvas.speaking {
+  filter: drop-shadow(0 0 80px rgba(59, 130, 246, 0.7)) drop-shadow(0 0 120px rgba(96, 165, 250, 0.4));
+  animation: pulse-canvas 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse-canvas {
+  0%, 100% {
+    filter: drop-shadow(0 0 80px rgba(59, 130, 246, 0.7)) drop-shadow(0 0 120px rgba(96, 165, 250, 0.4));
+  }
+  50% {
+    filter: drop-shadow(0 0 100px rgba(59, 130, 246, 0.9)) drop-shadow(0 0 160px rgba(96, 165, 250, 0.6));
+  }
+}
+
+/* ========================================
+   Glassmorphic Button Base Styles
+   ======================================== */
+button {
+  background: var(--glass-bg);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  border-radius: 50%; /* Circular buttons */
+  width: 60px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  cursor: pointer;
+  transition: all var(--transition-normal) ease;
+  padding: 0;
+  font-weight: 300;
+  position: relative;
+}
+
+button:hover:not(:disabled) {
+  background: var(--glass-bg-hover);
+  transform: scale(1.1);
+}
+
+button:active:not(:disabled) {
+  transform: scale(1);
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* SVG icons inside buttons */
+button svg {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+/* ========================================
+   Mute Button
+   ======================================== */
+#muteButton {
+  position: fixed;
+  bottom: 90px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 70px;
+  height: 70px;
+  background: var(--color-accent-purple);
+  border-color: rgba(139, 92, 246, 0.5);
+  color: #a78bfa;
+  z-index: 100;
+}
+
+#muteButton:hover {
+  transform: translateX(-50%) scale(1.1);
+  background: var(--color-accent-purple-hover);
+  border-color: rgba(139, 92, 246, 0.7);
+  box-shadow: 0 0 30px rgba(139, 92, 246, 0.5);
+}
+
+/* Muted state - red color scheme */
+#muteButton.muted {
+  background: var(--color-accent-red);
+  border-color: rgba(239, 68, 68, 0.5);
+  color: #f87171;
+}
+
+#muteButton.muted:hover {
+  background: var(--color-accent-red-hover);
+  border-color: rgba(239, 68, 68, 0.7);
+  box-shadow: 0 0 30px rgba(239, 68, 68, 0.5);
+}
+
+/* Hide mute line when not muted */
+/* Mic icon visibility control (use specific icons) */
+#muteButton #micIcon {
+  display: block;
+  transition: transform var(--transition-fast) ease, opacity var(--transition-fast) ease;
+}
+
+#muteButton #micOffIcon {
+  display: none;
+  transition: transform var(--transition-fast) ease, opacity var(--transition-fast) ease;
+}
+
+/* Show muted icon when muted */
+#muteButton.muted #micIcon {
+  display: none;
+}
+
+#muteButton.muted #micOffIcon {
+  display: block;
+}
+
+/* Mic hover/active animations
+   Keep the SVG centered via translate(-50%,-50%) so hover transforms don't remove centering. */
+#muteButton svg {
+  transition: transform var(--transition-fast) ease, opacity var(--transition-fast) ease, stroke var(--transition-fast) ease, fill var(--transition-fast) ease;
+  stroke: currentColor;
+  /* Ensure the icon remains perfectly centered inside the circular button */
+  transform: translate(-50%, -50%);
+}
+
+/* On hover/active include the centering translate before scaling/translation so
+   the original centering is preserved (CSS transform overrides don't compose). */
+#muteButton svg {
+  transform-origin: center center;
+}
+
+#muteButton:hover svg {
+  /* Keep centered and scale slightly without shifting */
+  transform: translate(-50%, -50%) scale(1.08);
+}
+
+#muteButton:active svg {
+  transform: translate(-50%, -50%) scale(0.98);
+}
+
+/* Muted icon emphasis - make the slash red for clarity */
+#muteButton #micOffIcon {
+  color: #f87171; /* tint the muted icon */
+}
+
+#muteButton.muted #micOffIcon {
+  display: block;
+  opacity: 1;
+}
+
+/* ========================================
+   Chat Toggle Button
+   ======================================== */
+.chat-toggle {
+  position: fixed;
+  top: calc(var(--spacing-xl) + 70px);
+  right: var(--spacing-xl);
+  z-index: 1700; /* Ensure chat toggle sits above transcript when visible */
+}
+
+/* ========================================
+  Start Button icon visibility
+  (play/pause/stop icons inside #startButton)
+======================================== */
+
+#startButton #pauseIcon,
+#startButton #stopIcon {
+  display: none !important;
+}
+
+#startButton.active #playIcon {
+  display: none !important;
+}
+
+#startButton.active #stopIcon {
+  display: block !important;
+}
+
+/* ========================================
+   Settings Button
+   ======================================== */
+#settingsButton {
+  position: fixed;
+  top: calc(var(--spacing-xl) + 210px);
+  right: var(--spacing-xl);
+  z-index: 1700;
+}
+
+/* ========================================
+   Start Button Positioning
+   Place start/stop control below the settings button (top-right column)
+   ======================================== */
+#startButton {
+  position: fixed;
+  /* Placed below settings which is at +210px; add spacing to avoid overlap (button height ~60px + 10px gap) */
+  top: calc(var(--spacing-xl) + 280px);
+  right: var(--spacing-xl);
+  z-index: 1700;
+}
+
+/* ========================================
+   Status Monitor
+   ======================================== */
+.status-monitor {
+  position: fixed;
+  bottom: var(--spacing-xl);
+  right: var(--spacing-xl);
+  background: rgba(0, 0, 0, 0.3);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 15px;
+  padding: 12px 16px;
+  color: white;
+  font-size: 0.9em;
+  min-width: 280px;
+  z-index: 1500;
+  transition: all var(--transition-normal) ease;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.status-monitor:hover {
+  background: rgba(0, 0, 0, 0.4);
+}
+
+.status-info {
+  display: flex;
+  align-items: center;
+  flex: 1;
+}
+
+.status-action-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  color: white;
+  cursor: pointer;
+  transition: all var(--transition-fast) ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.status-action-btn:hover {
+  background: var(--glass-bg-hover);
+  transform: scale(1.05);
+}
+
+.status-action-btn.active {
+  background: var(--color-accent-red);
+  border-color: rgba(239, 68, 68, 0.5);
+}
+
+.status-action-btn.active:hover {
+  background: var(--color-accent-red-hover);
+}
+
+#playIcon {
+  display: block;
+}
+
+#stopIcon {
+  display: none;
+}
+
+.status-action-btn.active #playIcon {
+  display: none;
+}
+
+.status-action-btn.active #stopIcon {
+  display: block;
+}
+
+/* Status indicator dot with animation */
+.status-indicator {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: var(--spacing-xs);
+  animation: pulse 2s infinite;
+}
+
+/* Different colors for connection states */
+.status-indicator.connected {
+  background: #4CAF50;
+  box-shadow: 0 0 10px #4CAF50;
+}
+
+.status-indicator.disconnected {
+  background: #f44336;
+  box-shadow: 0 0 10px #f44336;
+}
+
+.status-indicator.speaking {
+  background: #2196F3;
+  box-shadow: 0 0 10px #2196F3;
+}
+
+/* Pulse animation for status indicator */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(1.2);
+  }
+}
+
+/* ========================================
+   Transcript Panel (Sliding from right)
+   ======================================== */
+.transcript-box {
+  position: fixed;
+  top: 20px;
+  right: 100px;
+  width: 420px;
+  height: 85vh;
+  max-height: 800px;
+  background: rgba(20, 10, 40, 0.85);
+  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 24px;
+  padding: 0; /* Padding handled by children */
+  color: white;
+  /* Start off-screen to the right */
+  transform: translateX(110%);
+  opacity: 0;
+  /* keep existing movement transitions but also ensure background/color animate smoothly */
+  transition: background-color var(--transition-normal) cubic-bezier(0.16, 1, 0.3, 1),
+              color var(--transition-normal) cubic-bezier(0.16, 1, 0.3, 1),
+              transform var(--transition-normal) cubic-bezier(0.16, 1, 0.3, 1),
+              opacity var(--transition-normal) cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 1600;
+  /* Do not intercept pointer events when hidden */
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: -10px 0 40px rgba(0, 0, 0, 0.4);
+}
+
+/* Visible state - slide in */
+.transcript-box.visible {
+  transform: translateX(0);
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Transcript header */
+.transcript-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  background: rgba(255, 255, 255, 0.03);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  flex-shrink: 0;
+}
+
+.transcript-box h3 {
+  margin: 0;
+  font-weight: 600;
+  font-size: 1.1em;
+  color: white;
+  letter-spacing: 0.5px;
+}
+
+/* Clear chat button */
+.clear-chat-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.clear-chat-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  transform: scale(1.05);
+}
+
+/* Scrollable transcript content area */
+#transcriptContent {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Custom scrollbar styling */
+#transcriptContent::-webkit-scrollbar {
+  width: 6px;
+}
+
+#transcriptContent::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 3px;
+}
+
+#transcriptContent::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+/* Individual transcript message items */
+.transcript-item {
+  padding: 12px 16px;
+  border-radius: 18px;
+  max-width: 85%;
+  width: fit-content;
+  position: relative;
+  animation: slideUp 0.3s ease-out forwards;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  line-height: 1.5;
+  word-wrap: break-word;
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  /* ensure icon sits to the left and text is left-aligned inside the bubble */
+  justify-content: flex-start;
+}
+
+/* Transcript Icon */
+.transcript-icon {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 2px;
+  margin-right: 8px; /* space between icon and text */
+}
+
+.transcript-icon svg {
+  width: 20px;
+  height: 20px;
+  display: block;
+  stroke: currentColor;
+  fill: none;
+}
+
+/* User messages - Right aligned, Blue gradient */
+.transcript-item.user {
+  /* Keep bubble right-aligned but use theme purple gradient to match app theme */
+  align-self: flex-end;
+  background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+  color: white;
+  /* Small tail on the left side for right-aligned user bubble */
+  border-radius: 18px 18px 18px 4px;
+  margin-left: auto;
+  box-shadow: 0 6px 18px rgba(139,92,246,0.18);
+}
+
+/* Agent/Assistant messages - Left aligned, Glass/Dark style */
+.transcript-item.agent {
+  align-self: flex-start;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.95);
+  border-radius: 18px 18px 18px 4px;
+  margin-right: auto;
+}
+
+/* Ensure message text inside bubbles is left-aligned (overrides page-level centering) */
+.transcript-item .transcript-content {
+  text-align: left;
+  color: inherit;
+}
+
+/* System messages - Center aligned, subtle */
+.transcript-item.system {
+  align-self: center;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  font-size: 0.9em;
+  color: rgba(255, 255, 255, 0.6);
+  max-width: 90%;
+  text-align: center;
+  padding: 8px 12px;
+  display: block; /* No icon for system usually */
+}
+
+/* Message label (e.g., "👤 Tu:", "🤖 Assistente:") - REMOVED/HIDDEN */
+.transcript-label {
+  display: none;
+}
+
+/* Message content text */
+.transcript-content {
+  word-wrap: break-word;
+}
+
+/* ========================================
+   Text Input Row (for manual messages)
+   ======================================== */
+.text-input-row {
+  flex-shrink: 0;
+  display: flex;
+  gap: 10px;
+  padding: 16px 20px;
+  background: rgba(0, 0, 0, 0.2);
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  align-items: flex-end;
+}
+
+.text-input-row textarea {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 24px;
+  padding: 12px 16px;
+  color: #fff;
+  font-size: 0.95em;
+  outline: none;
+  font-family: inherit;
+  resize: none;
+  min-height: 46px;
+  max-height: 120px;
+  line-height: 1.4;
+  transition: all 0.2s ease;
+}
+
+.text-input-row textarea:focus {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.3);
+  box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.2);
+}
+
+.text-input-row textarea::placeholder {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+
+/* Send button - use theme purple, slightly flatter radius to match app */
+.text-input-row button {
+  background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+  color: white;
+  border: none;
+  border-radius: 12px; /* slight pill instead of full circle */
+  width: 56px;
+  height: 46px;
+  padding: 0 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.18s ease;
+  flex-shrink: 0;
+  box-shadow: 0 6px 18px rgba(139,92,246,0.18);
+}
+
+.text-input-row button:hover {
+  background: linear-gradient(135deg, var(--color-primary-light), var(--color-secondary-light));
+  transform: translateY(-2px) scale(1.03);
+  box-shadow: 0 10px 32px rgba(139, 92, 246, 0.26);
+}
+
+.text-input-row button svg {
+  width: 20px;
+  height: 20px;
+  margin-left: 2px; /* Visual optical adjustment */
+}
+
+/* ========================================
+   Settings Modal
+   ======================================== */
+.settings-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.6);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  display: none; /* Hidden by default */
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  animation: fadeIn var(--transition-normal) ease;
+}
+
+.settings-modal.visible {
+  display: flex;
+}
+
+/* Modal content card */
+.settings-content {
+  background: rgba(26, 11, 61, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 20px;
+  width: 90%;
+  max-width: 500px;
+  max-height: 80vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  animation: slideUp var(--transition-normal) ease;
+}
+
+/* Modal header */
+.settings-header {
+  padding: var(--spacing-lg);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.settings-header h2 {
+  margin: 0;
+  font-weight: 300;
+  font-size: 1.5em;
+}
+
+/* Close button */
+.close-settings-btn {
+  background: transparent;
+  border: none;
+  color: white;
+  font-size: 2em;
+  cursor: pointer;
+  width: auto;
+  height: auto;
+  padding: 0 10px;
+}
+
+.close-settings-btn:hover {
+  color: #f87171;
+  transform: none;
+}
+
+/* Modal body - scrollable settings form */
+.settings-body {
+  padding: var(--spacing-lg);
+  overflow-y: auto;
+  flex: 1;
+}
+
+/* Improved settings scrollbar and input-group for endpoint */
+.settings-body::-webkit-scrollbar {
+  width: 10px;
+}
+.settings-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+.settings-body::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, rgba(139,92,246,0.45), rgba(139,92,246,0.25));
+  border-radius: 8px;
+  border: 2px solid rgba(0,0,0,0.06);
+}
+
+.input-group {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.input-group .form-control[type="url"],
+.input-group .form-control[type="text"],
+.input-group .form-control {
+  flex: 1;
+  min-width: 0; /* allow input to shrink inside flex */
+  padding: 10px 12px;
+  border-radius: 8px;
+}
+
+.input-action-btn {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.06);
+  color: white;
+  padding: 8px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.12s ease;
+  font-size: 14px;
+  line-height: 1;
+}
+
+.input-action-btn:hover {
+  background: rgba(255,255,255,0.06);
+  transform: translateY(-2px);
+}
+
+.input-feedback {
+  margin-top: 8px;
+  font-size: 0.9em;
+  color: rgba(255,255,255,0.85);
+}
+
+.input-feedback.success { color: #bbf7d0; }
+.input-feedback.error { color: #fecaca; }
+
+/* Small devices: ensure settings modal remains fully usable */
+@media (max-width: 480px) {
+  .settings-content { max-width: 100%; }
+  .input-action-btn { padding: 8px; font-size: 12px; }
+}
+
+/* Individual setting group */
+.setting-group {
+  margin-bottom: var(--spacing-lg);
+}
+
+.setting-group label {
+  display: block;
+  margin-bottom: var(--spacing-xs);
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.setting-group select,
+.setting-group input,
+.setting-group textarea {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 8px;
+  padding: 10px;
+  color: white;
+  font-size: 1em;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  outline: none;
+  transition: all var(--transition-fast) ease;
+}
+
+.setting-group select:focus,
+.setting-group input:focus,
+.setting-group textarea:focus {
+  border-color: rgba(139, 92, 246, 0.7);
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.setting-group select option {
+  background: #1a0b3d;
+  color: white;
+}
+
+.setting-group textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+/* Hint text below inputs */
+.setting-hint {
+  display: block;
+  margin-top: 4px;
+  font-size: 0.85em;
+  color: rgba(255, 255, 255, 0.6);
+  font-style: italic;
+}
+
+/* Modal footer with save button */
+.settings-footer {
+  padding: var(--spacing-lg);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  justify-content: flex-end;
+}
+
+.save-settings-btn {
+  background: rgba(139, 92, 246, 0.5);
+  border: 1px solid rgba(139, 92, 246, 0.7);
+  border-radius: 12px;
+  padding: 12px 24px;
+  color: white;
+  font-size: 1em;
+  font-weight: 500;
+  cursor: pointer;
+  width: auto;
+  height: auto;
+}
+
+.save-settings-btn:hover {
+  background: rgba(139, 92, 246, 0.7);
+  box-shadow: 0 0 20px rgba(139, 92, 246, 0.5);
+  transform: none;
+}
+
+/* ========================================
+   Toast Notifications - Modern Design
+   ======================================== */
+.toast-container {
+  position: fixed;
+  bottom: 24px;
+  left: 24px;
+  z-index: 3000;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  pointer-events: none; /* Allow clicks through container */
+  max-width: 400px;
+}
+
+.toast {
+  /* Dark / themed toast by default to match app UI */
+  background: linear-gradient(180deg, rgba(26,11,61,0.9), rgba(20,10,40,0.9));
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  border-radius: 12px;
+  padding: 12px 16px;
+  color: white;
+  min-width: 320px;
+  max-width: 420px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
+  animation: slideInLeft var(--transition-normal) ease;
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  transition: all var(--transition-normal) ease;
+  border-left: 4px solid var(--color-primary);
+}
+
+.toast:hover {
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2), 0 4px 12px rgba(0, 0, 0, 0.15);
+  transform: translateX(8px);
+}
+
+/* Toast types */
+.toast.info { border-left-color: var(--color-secondary); }
+.toast.success { border-left-color: #22c55e; }
+.toast.warning { border-left-color: #f59e0b; }
+.toast.error { border-left-color: #ef4444; }
+
+.toast.info .toast-icon { color: var(--color-secondary); }
+.toast.success .toast-icon { color: #22c55e; }
+.toast.warning .toast-icon { color: #f59e0b; }
+.toast.error .toast-icon { color: #ef4444; }
+
+/* Toast icon */
+.toast-icon {
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  background: rgba(255,255,255,0.04);
+  color: var(--color-primary);
+  font-size: 1.1em;
+}
+
+/* Toast message container */
+.toast-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+/* Toast title */
+.toast-title {
+  font-weight: 600;
+  font-size: 0.95em;
+  color: white;
+}
+
+/* Toast message text */
+.toast-message {
+  font-size: 0.9em;
+  color: rgba(255,255,255,0.85);
+  line-height: 1.4;
+}
+
+/* Toast close button */
+.toast-close {
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.7);
+  cursor: pointer;
+  font-size: 1.2em;
+  padding: 0;
+  flex-shrink: 0;
+  transition: color var(--transition-fast) ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+}
+
+.toast-close:hover {
+  color: white;
+}
+
+/* Light mode override for toast to remain readable */
+body.light-mode .toast {
+  background: rgba(255,255,255,0.96);
+  color: #111827;
+  border-left-color: var(--color-primary);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.06);
+}
+
+body.light-mode .toast-title { color: #111827; }
+body.light-mode .toast-message { color: #374151; }
+body.light-mode .toast-icon { background: rgba(0,0,0,0.03); color: var(--color-primary); }
+
+/* Toast fade out animation */
+.toast.fade-out {
+  animation: slideOutLeft var(--transition-normal) ease forwards;
+}
+
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideOutLeft {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(-24px);
+  }
+}
+
+/* ========================================
+   Error Boundary
+   ======================================== */
+.error-boundary {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(ellipse at center, #2d1b69 0%, #1a0b3d 70%);
+  display: none; /* Hidden by default, shown via JavaScript */
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.error-boundary.visible {
+  display: flex;
+}
+
+.error-content {
+  text-align: center;
+  padding: var(--spacing-xl);
+  max-width: 600px;
+}
+
+.error-content h2 {
+  font-size: 2em;
+  margin-bottom: var(--spacing-lg);
+  color: #f87171;
+}
+
+.error-content p {
+  font-size: 1.1em;
+  margin-bottom: var(--spacing-xl);
+  color: rgba(255, 255, 255, 0.8);
+  line-height: 1.6;
+}
+
+#reloadButton {
+  background: rgba(139, 92, 246, 0.5);
+  border: 1px solid rgba(139, 92, 246, 0.7);
+  border-radius: 12px;
+  padding: 15px 30px;
+  color: white;
+  font-size: 1.1em;
+  cursor: pointer;
+  width: auto;
+  height: auto;
+}
+
+#reloadButton:hover {
+  background: rgba(139, 92, 246, 0.7);
+  transform: scale(1.05);
+}
+
+/* ========================================
+   Keyframe Animations
+   ======================================== */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(50px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideDown {
+  from {
+    transform: translateY(-20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* ========================================
+   Theme Support - Light/Dark Mode
+   ======================================== */
+body.light-mode {
+  --color-bg-start: #f5f3ff;
+  --color-bg-end: #ede9fe;
+  --color-primary: #7c3aed;
+  --color-primary-light: #a78bfa;
+  --color-secondary: #4f46e5;
+  --color-secondary-light: #818cf8;
+  --glass-bg: rgba(0, 0, 0, 0.05);
+  --glass-bg-hover: rgba(0, 0, 0, 0.1);
+  --glass-border: rgba(0, 0, 0, 0.1);
+}
+
+body.light-mode {
+  color: #1f1f1f;
+}
+
+body.light-mode h1 {
+  color: #1f1f1f;
+}
+
+body.light-mode .brand-l {
+  color: #1f1f1f;
+}
+
+body.light-mode button {
+  color: #1f1f1f;
+}
+
+body.light-mode .status-monitor {
+  background: rgba(255, 255, 255, 0.7);
+  color: #1f1f1f;
+}
+
+body.light-mode .status-monitor .status-indicator.connected {
+  background-color: #10b981;
+}
+
+body.light-mode .transcript-box,
+body.light-mode .trace-panel,
+body.light-mode .settings-modal .settings-content {
+  background: rgba(255, 255, 255, 0.95);
+  color: #1f1f1f;
+}
+
+body.light-mode .transcript-box h3,
+body.light-mode .trace-panel h3 {
+  color: #1f1f1f;
+}
+
+body.light-mode .message {
+  background: rgba(139, 92, 246, 0.15);
+  color: #1f1f1f;
+}
+
+body.light-mode .message.system {
+  background: rgba(100, 116, 139, 0.15);
+}
+
+body.light-mode .settings-modal .settings-content {
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+body.light-mode .setting-group label,
+body.light-mode .setting-group select,
+body.light-mode .setting-group input,
+body.light-mode .setting-group textarea,
+body.light-mode .setting-group input[type="checkbox"] {
+  color: #1f1f1f;
+}
+
+/* Theme toggle button */
+.theme-toggle-btn {
+  position: fixed;
+  top: var(--spacing-xl);
+  right: var(--spacing-xl);
+  z-index: 1700;
+  width: 60px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  backdrop-filter: var(--glass-blur);
+  border-radius: 50%;
+  cursor: pointer;
+  transition: background var(--transition-fast), transform var(--transition-fast);
+  color: var(--text-color);
+  padding: 0;
+}
+
+.theme-toggle-btn:hover {
+  background: rgba(255, 255, 255, 0.25);
+  transform: scale(1.08);
+}
+
+/* Logout button - styled like theme toggle, positioned below it */
+.logout-btn {
+  position: fixed;
+  top: calc(var(--spacing-xl) + 64px);
+  right: var(--spacing-xl);
+  z-index: 1700;
+  width: 60px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  backdrop-filter: var(--glass-blur);
+  border-radius: 50%;
+  cursor: pointer;
+  transition: background var(--transition-fast), transform var(--transition-fast);
+  color: var(--text-color);
+  text-decoration: none;
+  padding: 0;
+}
+
+.logout-btn:hover {
+  background: rgba(255, 255, 255, 0.25);
+  transform: scale(1.08);
+}
+
+.logout-btn svg {
+  stroke: currentColor;
+}
+
+body.light-mode .logout-btn {
+  background: rgba(255, 255, 255, 0.7);
+  border-color: rgba(0, 0, 0, 0.1);
+  color: #1f1f1f;
+}
+
+body.light-mode .logout-btn:hover {
+  background: rgba(255, 255, 255, 0.9);
+}
+
+#sunIcon {
+  display: none;
+}
+
+/* Light mode: reveal sun, hide moon with a subtle motion */
+body.light-mode #sunIcon {
+  display: block !important;
+}
+
+body.light-mode #moonIcon {
+  opacity: 0 !important;
+  transform: translateY(6px) scale(0.92) !important;
+}
+
+/* Home button (top-left) - appears next to hamburger */
+.home-btn {
+  position: fixed;
+  top: var(--spacing-xl);
+  left: calc(var(--spacing-xl) + 64px); /* sit to the right of hamburger */
+  z-index: 2003;
+  width: 52px;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  color: white;
+  text-decoration: none;
+  transition: all var(--transition-fast) ease;
+}
+
+.home-btn svg { width: 22px; height: 22px; }
+
+.home-btn:hover {
+  background: var(--glass-bg-hover);
+  transform: translateY(-3px) scale(1.04);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.18);
+}
+
+@media (max-width: 768px) {
+  .home-btn { left: calc(var(--spacing-xl) + 54px); }
+}
+
+/* ========================================
+   Trace Panel (Below Chat Button - Top Right)
+   ======================================== */
+.trace-toggle-btn {
+  position: fixed;
+  top: calc(var(--spacing-xl) + 140px);
+  right: var(--spacing-xl);
+  z-index: 1001;
+
+}
+
+/* Developer features panel removed */
+
+/* Generic hidden icon class to avoid inline styles (CSP friendly) */
+.icon-hidden { display: none; }
+
+.trace-toggle-btn:hover {
+  background: var(--glass-bg-hover);
+  transform: scale(1.08);
+  box-shadow: 0 4px 20px rgba(139, 92, 246, 0.3);
+}
+
+.trace-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  background: #ff4444;
+  color: white;
+  border-radius: 10px;
+  padding: 2px 6px;
+  font-size: 0.7em;
+  font-weight: bold;
+  min-width: 20px;
+  text-align: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.trace-toggle {
+  /* Position the trace toggle below the chat toggle (top-right) */
+  position: fixed;
+  top: calc(var(--spacing-xl) + 65px);
+  right: var(--spacing-xl);
+  z-index: 1000;
+  cursor: pointer;
+  width: 56px;
+  height: 56px;
+  background: var(--glass-bg);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  transition: all var(--transition-normal) ease;
+}
+
+.trace-toggle:hover {
+  background: var(--glass-bg-hover);
+  transform: scale(1.05);
+}
+
+.trace-panel {
+  position: fixed;
+  bottom: 80px;
+  left: 20px;
+  width: 350px;
+  max-height: 400px;
+  background: rgba(45, 27, 105, 0.95);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 15px;
+  display: none;
+  flex-direction: column;
+  z-index: 999;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  animation: slideUp var(--transition-slow) ease;
+}
+
+.trace-panel.visible {
+  display: flex;
+}
+
+.trace-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-md);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.trace-header h3 {
+  margin: 0;
+  font-size: 0.95em;
+  font-weight: 600;
+  color: #d89bd9;
+}
+
+.clear-trace-btn {
+  background: transparent;
+  border: none;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+  transition: color var(--transition-fast) ease;
+}
+
+.clear-trace-btn:hover {
+  color: white;
+}
+
+.trace-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--spacing-sm);
+  font-size: 0.8em;
+  font-family: 'Courier New', monospace;
+}
+
+/* Improved vertical scrollbar for trace and transcript panels */
+.trace-content,
+#transcriptContent {
+  position: relative; /* needed for scroll hint overlays */
+}
+
+/* WebKit browsers (Chrome, Edge, Safari) */
+.trace-content::-webkit-scrollbar,
+#transcriptContent::-webkit-scrollbar {
+  width: 12px;
+}
+
+.trace-content::-webkit-scrollbar-track,
+#transcriptContent::-webkit-scrollbar-track {
+  background: rgba(0,0,0,0.06);
+  border-radius: 8px;
+}
+
+.trace-content::-webkit-scrollbar-thumb,
+#transcriptContent::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, rgba(139,92,246,0.55), rgba(139,92,246,0.35));
+  border-radius: 8px;
+  box-shadow: inset 0 0 2px rgba(0,0,0,0.4);
+  border: 2px solid rgba(0,0,0,0.06);
+}
+
+.trace-content::-webkit-scrollbar-thumb:hover,
+#transcriptContent::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, rgba(139,92,246,0.75), rgba(139,92,246,0.5));
+}
+
+/* Firefox scrollbar support
+   NOTE: Firefox-only properties were removed to avoid compatibility warnings in the build
+   pipeline. WebKit scrollbar rules above provide appearance for Chrome/Edge/Safari; Firefox
+   will use its default scrollbar styling which is acceptable for this UI.
+*/
+
+/* Scroll hint overlays to indicate more content above/below */
+.trace-content::before,
+.trace-content::after,
+#transcriptContent::before,
+#transcriptContent::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 22px;
+  pointer-events: none;
+  transition: opacity 200ms ease;
+  opacity: 0;
+  z-index: 20;
+}
+
+.trace-content::before,
+#transcriptContent::before {
+  top: 0;
+  background: linear-gradient(to bottom, rgba(10,8,20,0.6), rgba(10,8,20,0));
+}
+
+.trace-content::after,
+#transcriptContent::after {
+  bottom: 0;
+  background: linear-gradient(to top, rgba(10,8,20,0.6), rgba(10,8,20,0));
+}
+
+/* When content is scrollable, show bottom hint; when scrolled down, show top hint */
+.trace-content.has-scroll::after,
+#transcriptContent.has-scroll::after {
+  opacity: 1;
+}
+
+.trace-content.scrolled::before,
+#transcriptContent.scrolled::before {
+  opacity: 1;
+}
+
+/* Slightly increase right padding so content doesn't hide behind scrollbar */
+.trace-content.has-scroll,
+#transcriptContent.has-scroll {
+  padding-right: 14px;
+}
+
+.trace-entry {
+  padding: 6px 10px;
+  margin-bottom: 4px;
+  border-radius: 6px;
+  border-left: 3px solid;
+  background: rgba(255, 255, 255, 0.05);
+  word-break: break-word;
+  line-height: 1.3;
+  text-align: left;
+}
+
+.trace-entry.user {
+  border-left-color: #60a5fa;
+  color: #93c5fd;
+}
+
+.trace-entry.assistant {
+  border-left-color: #34d399;
+  color: #6ee7b7;
+}
+
+.trace-entry.system {
+  border-left-color: #fbbf24;
+  color: #fde047;
+}
+
+.trace-timestamp {
+  /* Make timestamp more readable on dark backgrounds */
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 0.75em;
+  margin-right: 6px;
+}
+
+body.light-mode .trace-panel {
+  background: rgba(255, 255, 255, 0.95);
+  color: #1f1f1f;
+}
+
+body.light-mode .trace-header h3 {
+  color: #7c3aed;
+}
+
+body.light-mode .trace-content {
+  color: #1f1f1f;
+}
+
+/* Ensure timestamps are still readable in light mode */
+body.light-mode .trace-timestamp {
+  color: rgba(0, 0, 0, 0.6);
+}
+
+body.light-mode .trace-entry {
+  background: rgba(139, 92, 246, 0.1);
+}
+
+body.light-mode .trace-entry.user {
+  border-left-color: #2563eb;
+  color: #1e40af;
+}
+
+body.light-mode .trace-entry.assistant {
+  border-left-color: #059669;
+  color: #065f46;
+}
+
+body.light-mode .trace-entry.system {
+  border-left-color: #d97706;
+  color: #92400e;
+}
+
+/* ========================================
+   Settings Modal - Toggle Switch
+   ======================================== */
+.setting-toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  flex-wrap: wrap;
+}
+
+.setting-toggle input[type="checkbox"] {
+  width: 50px;
+  height: 25px;
+  appearance: none;
+  background: rgba(139, 92, 246, 0.2);
+  border: 1px solid rgba(139, 92, 246, 0.5);
+  border-radius: 12px;
+  cursor: pointer;
+  position: relative;
+  transition: all var(--transition-fast) ease;
+  margin: 0;
+}
+
+.setting-toggle input[type="checkbox"]::before {
+  content: '';
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  border-radius: 10px;
+  background: white;
+  top: 2px;
+  left: 2px;
+  transition: left var(--transition-fast) ease;
+}
+
+.setting-toggle input[type="checkbox"]:checked {
+  background: rgba(139, 92, 246, 0.5);
+  border-color: rgba(139, 92, 246, 0.7);
+}
+
+.setting-toggle input[type="checkbox"]:checked::before {
+  left: 26px;
+}
+
+.toggle-label {
+  font-size: 0.9em;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+body.light-mode .setting-toggle input[type="checkbox"] {
+  background: rgba(124, 58, 237, 0.2);
+  border-color: rgba(124, 58, 237, 0.5);
+}
+
+body.light-mode .toggle-label {
+  color: #1f1f1f;
+}
+
+/* ========================================
+   Responsive Design - Improved
+   ======================================== */
+@media (max-width: 768px) {
+  h1 {
+    font-size: 4em;
+  }
+  
+  #voiceCanvas {
+    width: 80vw;
+    height: auto;
+  }
+  
+  .transcript-box {
+    width: 90%;
+    right: 5%;
+    height: 70vh;
+    max-height: 70vh;
+    border-radius: 20px;
+  }
+  
+  .trace-panel {
+    width: calc(100vw - 40px);
+    max-width: 400px;
+    bottom: 80px;
+    left: 20px;
+  }
+  
+  .status-monitor {
+    bottom: 10px;
+    right: 10px;
+    min-width: 200px;
+    font-size: 0.8em;
+  }
+  
+  .chat-toggle,
+  #startButton,
+  #settingsButton,
+  .theme-toggle-btn {
+    right: 10px;
+    z-index: 1700;
+  }
+  .settings-content {
+    width: 95%;
+    max-height: 80vh;
+  }
+  
+  .setting-group {
+    margin-bottom: 15px;
+  }
+  
+  button {
+    width: 55px;
+    height: 55px;
+  }
+}
+
+@media (max-width: 480px) {
+  h1 {
+    font-size: 3em;
+    top: 15px;
+    letter-spacing: 4px;
+  }
+  
+  #voiceCanvas {
+    width: 100%;
+    height: 250px;
+    top: 45%;
+  }
+  
+  button {
+    width: 48px;
+    height: 48px;
+  }
+  
+  #muteButton {
+    width: 55px;
+    height: 55px;
+    bottom: 85px;
+  }
+  
+  .chat-toggle,
+  #startButton,
+  #settingsButton,
+  .theme-toggle-btn {
+    right: 8px;
+  }
+  
+  #startButton {
+    /* Place start below settings on small screens as well */
+    top: calc(var(--spacing-xl) + 280px);
+  }
+  
+  #settingsButton {
+    top: 140px;
+  }
+  
+  .theme-toggle-btn {
+    top: 15px;
+    width: 45px;
+    height: 45px;
+  }
+  
+  .trace-toggle {
+    /* Keep trace toggle below the chat toggle on small screens as well */
+    top: calc(var(--spacing-xl) + 65px);
+    right: var(--spacing-xl);
+    width: 56px;
+    height: 56px;
+    border-radius: 14px;
+  }
+  
+  .trace-panel {
+    bottom: 70px;
+    left: 10px;
+    right: 10px;
+    width: calc(100vw - 20px);
+    max-width: calc(100vw - 20px);
+  }
+  
+  .transcript-box {
+    width: 100vw;
+    right: 0;
+    top: auto;
+    bottom: 0;
+    height: 80vh;
+    max-height: 80vh;
+    border-radius: 24px 24px 0 0;
+    transform: translateY(110%);
+  }
+
+  .transcript-box.visible {
+    transform: translateY(0);
+  }
+  
+  .settings-content {
+    width: 95vw;
+    border-radius: 15px;
+  }
+  
+  .settings-body {
+    max-height: 70vh;
+    overflow-y: auto;
+  }
+  
+  .status-monitor {
+    bottom: 8px;
+    right: 8px;
+    font-size: 0.75em;
+    padding: 8px 12px;
+  }
+  
+  .setting-toggle {
+    gap: 10px;
+  }
+}
+
+/* Left panel (hamburger) - mobile friendly menu */
+.hamburger-btn {
+  position: fixed;
+  top: var(--spacing-xl);
+  left: var(--spacing-xl);
+  z-index: 2002;
+  width: 52px;
+  height: 52px;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.left-panel {
+  position: fixed;
+  top: 0;
+  left: -380px; /* hidden off-screen by default */
+  width: 320px;
+  height: 100vh;
+  background: rgba(26, 11, 61, 0.98);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  border-right: 1px solid rgba(255,255,255,0.06);
+  z-index: 2001;
+  transition: left 0.28s ease;
+  display: flex;
+  flex-direction: column;
+}
+
+.left-panel[aria-hidden="false"] {
+  left: 0; /* slide in */
+}
+
+.left-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-lg);
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+
+.left-panel-body {
+  padding: var(--spacing-md);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.lp-btn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: transparent;
+  border: none;
+  color: white;
+  padding: 12px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.lp-btn svg { position: static; transform: none; }
+
+.lp-btn span { font-size: 0.95em; }
+
+/* Overlay to dim content when left panel is open */
+.left-panel-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.45);
+  z-index: 2000;
+  display: none;
+}
+
+.left-panel-overlay.visible { display: block; }
+
+@media (min-width: 769px) {
+  /* Hide hamburger on large screens */
+  .hamburger-btn { display: none; }
+}
+
+/* Light mode overrides for transcript */
+body.light-mode .transcript-box {
+  background: rgba(255, 255, 255, 0.9);
+  border-color: rgba(0, 0, 0, 0.1);
+  box-shadow: -10px 0 40px rgba(0, 0, 0, 0.1);
+}
+
+body.light-mode .transcript-header {
+  background: rgba(0, 0, 0, 0.02);
+  border-bottom-color: rgba(0, 0, 0, 0.05);
+}
+
+body.light-mode .transcript-box h3 {
+  color: #1f1f1f;
+}
+
+body.light-mode .clear-chat-btn {
+  background: rgba(0, 0, 0, 0.05);
+  color: rgba(0, 0, 0, 0.5);
+}
+
+body.light-mode .clear-chat-btn:hover {
+  background: rgba(0, 0, 0, 0.1);
+  color: #1f1f1f;
+}
+
+body.light-mode .transcript-item.user {
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  color: white;
+}
+
+body.light-mode .transcript-item.agent {
+  background: white;
+  border-color: rgba(0, 0, 0, 0.1);
+  color: #1f1f1f;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+}
+
+body.light-mode .text-input-row {
+  background: rgba(255, 255, 255, 0.8);
+  border-top-color: rgba(0, 0, 0, 0.05);
+}
+
+body.light-mode .text-input-row textarea {
+  background: white;
+  border-color: rgba(0, 0, 0, 0.15);
+  color: #1f1f1f;
+}
+
+body.light-mode .text-input-row textarea:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px rgba(124, 58, 237, 0.1);
+}
+
+body.light-mode .text-input-row textarea::placeholder {
+  color: rgba(0, 0, 0, 0.4);
+}
+
+/* Make feature cards and glass elements visible on light backgrounds */
+body.light-mode .feature-card {
+  background: linear-gradient(180deg, rgba(0,0,0,0.02), rgba(0,0,0,0.01));
+  border: 1px solid rgba(0,0,0,0.06);
+  box-shadow: 0 6px 18px rgba(0,0,0,0.04);
+  color: #1f1f1f;
+}
+
+body.light-mode .feature-icon {
+  /* darker primary for icons on light background */
+  color: var(--color-primary);
+}
+
+body.light-mode .feature-card .feature-title {
+  color: #111827; /* ensure title contrast */
+}
+
+/* Ensure the theme toggle button is clearly visible (circular glass element) */
+body.light-mode .theme-toggle-btn {
+  border: 1px solid rgba(0,0,0,0.12);
+  background: rgba(255,255,255,0.95);
+  color: #1f1f1f;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.04);
+}
+
+body.light-mode .theme-toggle-btn:hover {
+  background: rgba(255, 255, 255, 0.9);
+  transform: scale(1.08);
+}
+
+/* Ensure the hamburger and other small round controls contrast well */
+body.light-mode .hamburger-btn,
+body.light-mode .trace-toggle,
+body.light-mode .status-action-btn {
+  background: rgba(255,255,255,0.95);
+  border: 1px solid rgba(0,0,0,0.08);
+  color: #1f1f1f;
+}
+
+/* ========================================
+   Feature selection grid (Index page)
+   ======================================== */
+.feature-grid {
+  display: flex;
+  gap: var(--spacing-lg);
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -10%);
+  z-index: 100;
+  width: min(1100px, 90vw);
+  justify-content: center;
+  align-items: center;
+}
+
+.feature-card {
+  background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));
+  border: 1px solid rgba(255,255,255,0.06);
+  padding: 22px;
+  border-radius: 14px;
+  width: 280px;
+  height: 180px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  color: inherit;
+  transition: transform var(--transition-normal) ease, box-shadow var(--transition-normal) ease, background var(--transition-normal) ease;
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+}
+
+.feature-card:hover,
+.feature-card:focus {
+  transform: translateY(-6px) scale(1.02);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.45), 0 6px 18px rgba(139,92,246,0.12);
+  background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.03));
+}
+
+.feature-icon {
+  width: 64px;
+  height: 64px;
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-primary);
+}
+
+.feature-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+}
+
+@media (max-width: 880px) {
+  .feature-grid { flex-direction: column; transform: translate(-50%, -5%); gap: 14px; }
+  .feature-card { width: min(86vw, 360px); height: 140px; }
+}
+
+/* ========================================
+   Light mode: improve button borders and icon contrast
+   Fixes: button borders are hard to see in light theme and
+   the home icon (top-left) appears white instead of dark.
+   These rules increase border contrast and ensure icons
+   inherit a dark color in light mode.
+   ======================================== */
+body.light-mode button,
+body.light-mode .status-action-btn,
+body.light-mode .trace-toggle,
+body.light-mode .theme-toggle-btn,
+body.light-mode .hamburger-btn,
+body.light-mode .clear-chat-btn,
+body.light-mode .lp-btn {
+  /* stronger border on light backgrounds for better visibility */
+  border-color: rgba(0, 0, 0, 0.12);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+body.light-mode button {
+  /* ensure circular buttons keep a subtle light background */
+  background: rgba(255, 255, 255, 0.9);
+}
+
+/* Home/hamburger and other small controls should show dark icons */
+body.light-mode .home-btn,
+body.light-mode .hamburger-btn,
+body.light-mode .theme-toggle-btn,
+body.light-mode .trace-toggle,
+body.light-mode .status-action-btn,
+body.light-mode .clear-chat-btn,
+body.light-mode .lp-btn {
+  color: #1f1f1f; /* icon and text color */
+  background: rgba(0, 0, 0, 0.03);
+}
+
+body.light-mode .home-btn svg,
+body.light-mode .hamburger-btn svg,
+body.light-mode .theme-toggle-btn svg,
+body.light-mode .trace-toggle svg,
+body.light-mode .status-action-btn svg,
+body.light-mode .clear-chat-btn svg,
+body.light-mode .lp-btn svg {
+  /* make sure SVG icons use currentColor for fill/stroke when possible */
+  fill: currentColor;
+  stroke: currentColor;
+}
+
+/* Small extra: the top-left home button border may still be subtle on some displays */
+body.light-mode .home-btn {
+  border-color: rgba(0, 0, 0, 0.14);
+}
+
+/* Stronger, scoped overrides to guarantee visibility of interactive controls in light mode */
+body.light-mode button,
+body.light-mode .home-btn,
+body.light-mode .theme-toggle-btn,
+body.light-mode .hamburger-btn,
+body.light-mode #muteButton,
+body.light-mode #startButton,
+body.light-mode #settingsButton,
+body.light-mode .status-action-btn,
+body.light-mode .trace-toggle,
+body.light-mode .clear-chat-btn,
+body.light-mode .lp-btn {
+  border: 1px solid rgba(0,0,0,0.14) !important;
+  background: rgba(255,255,255,0.96) !important;
+  color: #111827 !important; /* dark text/icon color */
+  box-shadow: 0 6px 18px rgba(0,0,0,0.06);
+}
+
+/* Make sure SVG icons inside those controls inherit the dark color and are stroked (not filled) */
+body.light-mode button svg,
+body.light-mode .home-btn svg,
+body.light-mode .hamburger-btn svg,
+body.light-mode .theme-toggle-btn svg,
+body.light-mode .trace-toggle svg,
+body.light-mode .status-action-btn svg,
+body.light-mode .clear-chat-btn svg,
+body.light-mode .lp-btn svg,
+body.light-mode .feature-card svg {
+  stroke: currentColor !important;
+  fill: none !important;
+}
+
+/* Ensure inner SVG path/circle/rect elements use currentColor where browsers allow */
+body.light-mode button svg path,
+body.light-mode button svg circle,
+body.light-mode button svg rect,
+body.light-mode button svg line,
+body.light-mode .home-btn svg path,
+body.light-mode .home-btn svg circle,
+body.light-mode .home-btn svg rect,
+body.light-mode .home-btn svg line {
+  stroke: currentColor !important;
+  fill: none !important;
+}
+
+/* Hover feedback in light mode */
+body.light-mode button:hover:not(:disabled),
+body.light-mode .home-btn:hover,
+body.light-mode .hamburger-btn:hover,
+body.light-mode .theme-toggle-btn:hover {
+  box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+  transform: translateY(-2px) scale(1.02);
+}
+
+/* Stronger mouse-over shadows across light-mode interactive elements */
+body.light-mode button:hover:not(:disabled),
+body.light-mode .home-btn:hover,
+body.light-mode .hamburger-btn:hover,
+body.light-mode .theme-toggle-btn:hover,
+body.light-mode .trace-toggle:hover,
+body.light-mode .status-action-btn:hover,
+body.light-mode .clear-chat-btn:hover,
+body.light-mode .lp-btn:hover {
+  /* more pronounced shadow to match light backgrounds */
+  box-shadow: 0 14px 40px rgba(0,0,0,0.12), 0 4px 12px rgba(0,0,0,0.06);
+  transform: translateY(-3px) scale(1.03);
+}
+
+/* Feature card hover should lift with clearer shadow in light mode */
+body.light-mode .feature-card:hover,
+body.light-mode .feature-card:focus {
+  box-shadow: 0 20px 50px rgba(16,24,40,0.08), 0 8px 20px rgba(16,24,40,0.04);
+  transform: translateY(-8px) scale(1.02);
+}
+
+/* Slightly increase hover for the mute/start/settings buttons in light mode */
+body.light-mode #muteButton:hover,
+body.light-mode #startButton:hover,
+body.light-mode #settingsButton:hover {
+  box-shadow: 0 18px 48px rgba(0,0,0,0.12);
+  transform: translateY(-4px) scale(1.04);
+}
+
+.hidden { display: none !important; }
+/* ========================================
+   Incoming Call Settings Modal
+   ======================================== */
+
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.6);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  opacity: 0;
+  transition: opacity var(--transition-normal) ease;
+}
+
+.modal.show {
+  display: flex;
+  opacity: 1;
+}
+
+.modal-content {
+  background: rgba(26, 11, 61, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 20px;
+  width: 90%;
+  max-width: 550px;
+  max-height: 85vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  animation: slideUp var(--transition-normal) ease;
+}
+
+.modal-header {
+  padding: var(--spacing-lg);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modal-header h2 {
+  margin: 0;
+  font-weight: 300;
+  font-size: 1.4em;
+}
+
+.close-modal-btn {
+  background: transparent;
+  border: none;
+  color: white;
+  font-size: 1.8em;
+  cursor: pointer;
+  width: auto;
+  height: auto;
+  padding: 0;
+  line-height: 1;
+  transition: color var(--transition-fast) ease;
+}
+
+.close-modal-btn:hover {
+  color: #f87171;
+}
+
+.modal-body {
+  padding: var(--spacing-lg);
+  overflow-y: auto;
+  flex: 1;
+}
+
+.modal-body::-webkit-scrollbar {
+  width: 10px;
+}
+
+.modal-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.modal-body::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, rgba(139, 92, 246, 0.45), rgba(139, 92, 246, 0.25));
+  border-radius: 8px;
+  border: 2px solid rgba(0, 0, 0, 0.06);
+}
+
+.modal-footer {
+  padding: var(--spacing-lg);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-md);
+}
+
+.status-message {
+  padding: var(--spacing-md);
+  margin-bottom: var(--spacing-md);
+  border-radius: 8px;
+  font-size: 0.95em;
+  animation: slideDown var(--transition-fast) ease;
+}
+
+.status-success {
+  background: rgba(34, 197, 94, 0.2);
+  border: 1px solid rgba(34, 197, 94, 0.5);
+  color: #86efac;
+}
+
+.status-error {
+  background: rgba(239, 68, 68, 0.2);
+  border: 1px solid rgba(239, 68, 68, 0.5);
+  color: #fecaca;
+}
+
+.status-info {
+  background: rgba(59, 130, 246, 0.2);
+  border: 1px solid rgba(59, 130, 246, 0.5);
+  color: #bfdbfe;
+}
+
+/* Button styles */
+.btn {
+  padding: 10px 16px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.95em;
+  font-weight: 500;
+  transition: all var(--transition-fast) ease;
+  display: inline-block;
+  white-space: nowrap;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-light) 100%);
+  color: white;
+  border: none;
+}
+
+.btn-primary:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px rgba(155, 127, 217, 0.4);
+}
+
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-secondary {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.3);
+  transform: translateY(-2px);
+}
+
+.btn-secondary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Setting group hint text */
+.setting-hint {
+  display: block;
+  font-size: 0.85em;
+  color: rgba(255, 255, 255, 0.6);
+  margin-top: 4px;
+}
+
+/* Form controls in modal */
+.form-control {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: white;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-family: inherit;
+  transition: all var(--transition-fast) ease;
+}
+
+.form-control:focus {
+  outline: none;
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(155, 127, 217, 0.5);
+  box-shadow: 0 0 0 3px rgba(155, 127, 217, 0.1);
+}
+
+.form-control::placeholder {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.form-control option {
+  background: rgba(26, 11, 61, 0.95);
+  color: white;
+}
+
+/* Toggle switch style */
+.setting-group input[type="checkbox"] {
+  margin-right: var(--spacing-sm);
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: var(--color-primary);
+}
+
+/* Responsive adjustments */
+@media (max-width: 480px) {
+  .modal-content {
+    max-width: 100%;
+    max-height: 90vh;
+    border-radius: 16px;
+    margin: var(--spacing-md);
+  }
+
+  .modal-header {
+    padding: var(--spacing-md);
+  }
+
+  .modal-header h2 {
+    font-size: 1.2em;
+  }
+
+  .modal-body {
+    padding: var(--spacing-md);
+  }
+
+  .modal-footer {
+    flex-direction: column;
+    gap: var(--spacing-sm);
+  }
+
+  .btn {
+    width: 100%;
+  }
+}
+
+/* Light mode adjustments */
+body.light-mode .modal {
+  background: rgba(255, 255, 255, 0.8);
+}
+
+body.light-mode .modal-content {
+  background: rgba(255, 255, 255, 0.98);
+  border-color: rgba(0, 0, 0, 0.1);
+  color: #1a0b3d;
+}
+
+body.light-mode .modal-header,
+body.light-mode .modal-footer {
+  border-color: rgba(0, 0, 0, 0.08);
+}
+
+body.light-mode .modal-header h2 {
+  color: #1a0b3d;
+}
+
+body.light-mode .form-control {
+  background: rgba(0, 0, 0, 0.04);
+  border-color: rgba(0, 0, 0, 0.1);
+  color: #1a0b3d;
+}
+
+body.light-mode .form-control:focus {
+  background: rgba(0, 0, 0, 0.06);
+  border-color: rgba(155, 127, 217, 0.4);
+  box-shadow: 0 0 0 3px rgba(155, 127, 217, 0.08);
+}
+
+body.light-mode .form-control::placeholder {
+  color: rgba(0, 0, 0, 0.4);
+}
+
+body.light-mode .form-control option {
+  background: white;
+  color: #1a0b3d;
+}
+
+body.light-mode .setting-group label {
+  color: #1a0b3d;
+}
+
+body.light-mode .setting-hint {
+  color: rgba(0, 0, 0, 0.6);
+}
+
+body.light-mode .btn-secondary {
+  background: rgba(0, 0, 0, 0.05);
+  border-color: rgba(0, 0, 0, 0.1);
+  color: #1a0b3d;
+}
+
+body.light-mode .btn-secondary:hover:not(:disabled) {
+  background: rgba(0, 0, 0, 0.08);
+  border-color: rgba(0, 0, 0, 0.15);
+}
+
+/* Icon button style for incoming call button */
+.icon-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: white;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all var(--transition-fast) ease;
+  padding: 0;
+  position: fixed;
+  top: var(--spacing-xl);
+  right: 110px;
+}
+
+.icon-btn:hover {
+  background: rgba(155, 127, 217, 0.2);
+  border-color: rgba(155, 127, 217, 0.5);
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(155, 127, 217, 0.3);
+}
+
+body.light-mode .icon-btn {
+  background: rgba(0, 0, 0, 0.05);
+  border-color: rgba(0, 0, 0, 0.1);
+  color: #1a0b3d;
+}
+
+body.light-mode .icon-btn:hover {
+  background: rgba(155, 127, 217, 0.1);
+  border-color: rgba(155, 127, 217, 0.3);
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

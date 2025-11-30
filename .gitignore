@@ -1,0 +1,12 @@
+bin/
+obj/
+*.user
+*.suo
+.vs/
+.vscode/
+appsettings.Development.json
+appsettings.*.json
+!appsettings.json
+*.log
+wwwroot/lib/
+logs/

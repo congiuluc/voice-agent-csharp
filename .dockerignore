@@ -1,0 +1,53 @@
+# .dockerignore for Voice Agent C#
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Build artifacts
+bin/
+obj/
+out/
+publish/
+
+# Visual Studio / Rider
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# User secrets and local config
+appsettings.Development.json
+appsettings.*.json
+!appsettings.json
+*.user.json
+secrets.json
+
+# Logs
+*.log
+logs/
+
+# Azure
+.azure/
+
+# Node modules (if any)
+node_modules/
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Documentation
+README.md
+*.md
+!infra/**/*.md
+
+# Environment files
+.env
+.env.*
+!.env-sample.txt

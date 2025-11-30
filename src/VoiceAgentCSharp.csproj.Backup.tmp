@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>aspnet-VoiceAgentCSharp-20251121</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Azure.AI.Agents.Persistent" Version="1.2.0-beta.7" />
+    <PackageReference Include="Azure.AI.Projects" Version="1.1.0" />
+    <PackageReference Include="Azure.AI.VoiceLive" Version="1.0.0" />
+    <PackageReference Include="Azure.Communication.CallAutomation" Version="1.5.0" />
+    <PackageReference Include="Azure.Identity" Version="1.17.1" />
+    <PackageReference Include="Azure.Messaging.EventGrid" Version="5.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Azure" Version="1.13.1" />
+    <!-- MCP Client SDK -->
+    <PackageReference Include="ModelContextProtocol" Version="*-*" />
+    <!-- Logging: Serilog and Application Insights -->
+    <PackageReference Include="Serilog.AspNetCore" Version="10.0.0" />
+    <PackageReference Include="Serilog.Sinks.Console" Version="6.1.1" />
+    <PackageReference Include="Serilog.Sinks.File" Version="7.0.0" />
+    <PackageReference Include="Serilog.Sinks.ApplicationInsights" Version="4.1.0" />
+    <PackageReference Include="Microsoft.ApplicationInsights.AspNetCore" Version="2.23.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\aspire\voice-agent-csharp.ServiceDefaults\voice-agent-csharp.ServiceDefaults.csproj" />
+    <ProjectReference Include="..\voice-agent-csharp.ServiceDefaults\voice-agent-csharp.ServiceDefaults.csproj" />
+  </ItemGroup>
+
+</Project>

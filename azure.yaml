@@ -1,0 +1,29 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Azure/azure-dev/main/schemas/v1.0/azure.yaml.json
+name: voice-agent-csharp
+metadata:
+  template: voice-agent-csharp@0.0.1-beta
+
+requiredVersions:
+  azd: ">=1.14.0"
+services:
+    app:
+        project: src
+        host: containerapp
+        language: csharp
+        docker:
+          path: Dockerfile
+          remoteBuild: true
+    mcp:
+        project: mcp
+        host: containerapp
+        language: csharp
+        docker:
+          path: Dockerfile
+          remoteBuild: true
+pipeline:
+  variables:
+    - AZURE_LOCATION
+    - AZURE_RESOURCE_GROUP
+    - AZURE_CONTAINER_REGISTRY_ENDPOINT
+    - SERVICE_API_ENDPOINTS
+    - AZURE_VOICE_LIVE_ENDPOINT
