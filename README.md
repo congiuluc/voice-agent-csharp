@@ -15,6 +15,8 @@
 **A lightweight, enterprise-ready template to create speech-to-speech voice agents**  
 with natural-sounding voices and seamless telephony integration.
 
+![Voice Agent C# - Home](docs/images/Home.png)
+
 [Quick Start](#-quick-start) • [Features](#-features) • [Architecture](#-architecture) • [Documentation](#-documentation) • [Resources](#-resources)
 
 
@@ -25,6 +27,7 @@ with natural-sounding voices and seamless telephony integration.
 - [Overview](#-overview)
 - [Quick Start](#-quick-start)
 - [Features](#-features)
+- [Screenshots](#-screenshots)
 - [Architecture](#-architecture)
 - [Session Types](#-session-types)
 - [MCP Server](#-mcp-server)
@@ -182,6 +185,22 @@ Or use environment variables (recommended for production):
 - `Security__Authentication__PasswordHash`
 
 </details>
+
+---
+
+## 📸 Screenshots
+
+### Login
+![Login](docs/images/Login.png)
+
+### Voice Assistant
+![Voice Assistant](docs/images/Voice_Assistant.png)
+
+### Voice Agent
+![Voice Agent](docs/images/Voice_Agent.png)
+
+### Voice Avatar
+![Voice Avatar](docs/images/Voice_Avatar.png)
 
 ---
 
