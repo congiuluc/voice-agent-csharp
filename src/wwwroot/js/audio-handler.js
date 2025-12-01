@@ -25,7 +25,7 @@ export class AudioHandler {
     // Microphone state
     this.mediaStream = null;
     this.micSource = null;
-    this.scriptProcessor = null;
+    this.audioWorkletNode = null;
     this.isMuted = true;
     
     // Playback state
@@ -69,29 +69,36 @@ export class AudioHandler {
       // Create media stream source
       this.micSource = this.audioContext.createMediaStreamSource(this.mediaStream);
       
-      // Create script processor for audio processing
-      // Note: ScriptProcessorNode is deprecated but needed for RMS calculation and encoding
-      const bufferSize = 4096;
-      this.scriptProcessor = this.audioContext.createScriptProcessor(bufferSize, 1, 1);
-      
-      // Process audio chunks
-      this.scriptProcessor.onaudioprocess = (event) => {
-        const inputData = event.inputBuffer.getChannelData(0);
+      // Load audio worklet module
+      try {
+        await this.audioContext.audioWorklet.addModule('js/audio-processor.js');
+      } catch (e) {
+        console.error('Failed to load audio processor:', e);
+        throw e;
+      }
+
+      // Create AudioWorkletNode
+      this.audioWorkletNode = new AudioWorkletNode(this.audioContext, 'audio-processor');
+
+      // Handle messages from processor
+      this.audioWorkletNode.port.onmessage = (event) => {
+        const { type, rms, buffer } = event.data;
         
-        // Calculate RMS for visualization
-        const rms = this.calculateRMS(inputData);
-        this.onRMS(rms, 'user');
-        
-        // Convert to PCM16 for WebSocket transmission (if not muted)
-        if (!this.isMuted && this.onAudioData) {
-          const pcm16 = this.float32ToInt16(inputData);
-          this.onAudioData(pcm16.buffer);
+        if (type === 'audio-data') {
+          // RMS callback
+          this.onRMS(rms, 'user');
+          
+          // Audio data callback (if not muted)
+          if (!this.isMuted && this.onAudioData) {
+            this.onAudioData(buffer);
+          }
         }
       };
-      
-      // Connect audio graph: microphone -> processor -> destination
-      this.micSource.connect(this.scriptProcessor);
-      this.scriptProcessor.connect(this.audioContext.destination);
+
+      // Connect audio graph: microphone -> worklet
+      this.micSource.connect(this.audioWorkletNode);
+      // Note: AudioWorkletNode doesn't need to be connected to destination to run,
+      // unlike ScriptProcessorNode. We avoid connecting to destination to prevent feedback.
       
       this.isMuted = false;
       
@@ -106,10 +113,10 @@ export class AudioHandler {
    * Stop microphone capture
    */
   stopMicrophone() {
-    // Disconnect script processor
-    if (this.scriptProcessor) {
-      this.scriptProcessor.disconnect();
-      this.scriptProcessor = null;
+    // Disconnect audio worklet
+    if (this.audioWorkletNode) {
+      this.audioWorkletNode.disconnect();
+      this.audioWorkletNode = null;
     }
     
     // Disconnect microphone source
@@ -150,35 +157,6 @@ export class AudioHandler {
    */
   isMicrophoneMuted() {
     return this.isMuted;
-  }
-  
-  /**
-   * Calculate RMS (Root Mean Square) energy from audio samples
-   * @param {Float32Array} samples - Audio samples
-   * @returns {number} - RMS value (0-1)
-   */
-  calculateRMS(samples) {
-    let sum = 0;
-    for (let i = 0; i < samples.length; i++) {
-      sum += samples[i] * samples[i];
-    }
-    return Math.sqrt(sum / samples.length);
-  }
-  
-  /**
-   * Convert Float32 audio to Int16 PCM
-   * @param {Float32Array} float32Array - Input audio samples
-   * @returns {Int16Array} - PCM16 encoded audio
-   */
-  float32ToInt16(float32Array) {
-    const int16 = new Int16Array(float32Array.length);
-    for (let i = 0; i < float32Array.length; i++) {
-      // Clamp to [-1, 1] range
-      const sample = Math.max(-1, Math.min(1, float32Array[i]));
-      // Convert to 16-bit signed integer
-      int16[i] = sample < 0 ? sample * 0x8000 : sample * 0x7FFF;
-    }
-    return int16;
   }
   
   /**
