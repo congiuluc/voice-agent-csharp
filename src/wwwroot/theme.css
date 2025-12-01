@@ -1,0 +1,501 @@
+/**
+ * Centralized Theme Configuration - Cyan/Blue
+ * 
+ * This file contains all theme-related CSS variables and centralized
+ * theme definitions to make it easy to change the entire color scheme.
+ * 
+ * To change the theme, simply modify the color variables below.
+ */
+
+/* ========================================
+   DARK MODE - Cyan/Blue Theme (Default)
+   ======================================== */
+:root {
+  /* Primary Colors - Cyan/Blue Gradient */
+  --theme-primary: #00d4ff;           /* Bright cyan */
+  --theme-primary-light: #4dd9ff;    /* Light cyan */
+  --theme-secondary: #0099cc;        /* Deep blue */
+  --theme-secondary-light: #33b3e6;  /* Light blue */
+  
+  /* Background Colors */
+  --theme-bg-start: #0f2c4a;         /* Dark blue start */
+  --theme-bg-end: #071a2e;           /* Darker blue end */
+  
+  /* Accent Colors - Cyan/Blue with varying opacities */
+  --theme-accent: rgba(0, 212, 255, 0.3);
+  --theme-accent-hover: rgba(0, 212, 255, 0.45);
+  --theme-accent-light: rgba(0, 212, 255, 0.3);
+  --theme-accent-medium: rgba(0, 212, 255, 0.5);
+  --theme-accent-strong: rgba(0, 212, 255, 0.7);
+  
+  /* Component-specific colors */
+  --theme-modal-bg: rgba(15, 44, 74, 0.95);
+  --theme-panel-bg: rgba(15, 44, 74, 0.95);
+  --theme-header-color: #4dd9ff;
+  
+  /* Shadow & Glow Effects */
+  --theme-glow-small: rgba(0, 212, 255, 0.3);
+  --theme-glow-medium: rgba(0, 212, 255, 0.45);
+  --theme-glow-large: rgba(0, 212, 255, 0.5);
+  
+  /* Scrollbar Colors */
+  --theme-scrollbar-light: rgba(0, 212, 255, 0.45);
+  --theme-scrollbar-dark: rgba(0, 212, 255, 0.3);
+  
+  /* Canvas Effects - Voice Visualizer */
+  --theme-canvas-glow-idle: rgba(0, 212, 255, 0.3);
+  --theme-canvas-glow-active: rgba(0, 212, 255, 0.45);
+  --theme-canvas-glow-speaking-light: rgba(59, 130, 246, 0.7);
+  --theme-canvas-glow-speaking-medium: rgba(96, 165, 250, 0.4);
+  --theme-canvas-glow-speaking-strong: rgba(59, 130, 246, 0.9);
+  --theme-canvas-glow-speaking-intense: rgba(96, 165, 250, 0.6);
+  
+  /* Red Accent for Muted/Error States */
+  --theme-red-accent-light: rgba(239, 68, 68, 0.25);
+  --theme-red-accent-medium: rgba(239, 68, 68, 0.35);
+  --theme-red-accent-hover: rgba(239, 68, 68, 0.5);
+  --theme-red-border: rgba(239, 68, 68, 0.25);
+  
+  /* Shadow Effects - General */
+  --theme-shadow-small: rgba(0, 0, 0, 0.3);
+  --theme-shadow-medium: rgba(0, 0, 0, 0.4);
+  --theme-shadow-large: rgba(0, 0, 0, 0.45);
+  --theme-shadow-xl: rgba(0, 0, 0, 0.5);
+  --theme-shadow-xs: rgba(0, 0, 0, 0.1);
+  --theme-shadow-xxs: rgba(0, 0, 0, 0.06);
+  --theme-shadow-xxxs: rgba(0, 0, 0, 0.04);
+  --theme-shadow-thin: rgba(0, 0, 0, 0.3);
+  --theme-shadow-inset: rgba(0, 0, 0, 0.4);
+  --theme-shadow-light: rgba(0, 0, 0, 0.1);
+  
+  /* Blue Theme Messages */
+  --theme-blue-bg-light: rgba(59, 130, 246, 0.15);
+  --theme-blue-bg-medium: rgba(59, 130, 246, 0.08);
+  --theme-blue-border: rgba(59, 130, 246, 0.25);
+  --theme-blue-text: #e6f0ff;
+  
+  /* Status Colors - Success/Error/Info */
+  --theme-status-success-bg: rgba(34, 197, 94, 0.2);
+  --theme-status-success-border: rgba(34, 197, 94, 0.5);
+  --theme-status-success-text: #86efac;
+  
+  --theme-status-error-bg: rgba(239, 68, 68, 0.2);
+  --theme-status-error-border: rgba(239, 68, 68, 0.5);
+  --theme-status-error-text: #fecaca;
+  
+  --theme-status-info-bg: rgba(59, 130, 246, 0.2);
+  --theme-status-info-border: rgba(59, 130, 246, 0.5);
+  --theme-status-info-text: #bfdbfe;
+  
+  /* Glass Morphism Effects */
+  --theme-glass-bg: rgba(255, 255, 255, 0.1);
+  --theme-glass-bg-hover: rgba(255, 255, 255, 0.2);
+  --theme-glass-border: rgba(255, 255, 255, 0.2);
+  --theme-glass-blur: blur(20px);
+  
+  /* Form Controls - Input, Select, Textarea */
+  --theme-input-bg: rgba(255, 255, 255, 0.08);
+  --theme-input-bg-hover: rgba(255, 255, 255, 0.12);
+  --theme-input-bg-focus: rgba(255, 255, 255, 0.15);
+  --theme-input-text: #ffffff;
+  --theme-input-placeholder: rgba(255, 255, 255, 0.5);
+  --theme-input-border: rgba(255, 255, 255, 0.15);
+  --theme-input-border-hover: rgba(255, 255, 255, 0.25);
+  --theme-input-border-focus: rgba(0, 212, 255, 0.4);
+  --theme-input-border-error: rgba(239, 68, 68, 0.5);
+  --theme-input-focus-shadow: 0 0 0 3px rgba(0, 212, 255, 0.2);
+  --theme-input-error-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15);
+  
+  /* Transcript Box Colors */
+  --theme-transcript-bg: rgba(15, 44, 74, 0.92);
+  --theme-transcript-border: rgba(0, 212, 255, 0.15);
+  --theme-transcript-text: #ffffff;
+  --theme-transcript-header-bg: rgba(0, 212, 255, 0.08);
+  --theme-transcript-header-border: rgba(0, 212, 255, 0.12);
+  --theme-transcript-header-text: #ffffff;
+  --theme-transcript-btn-bg: rgba(0, 212, 255, 0.1);
+  --theme-transcript-btn-bg-hover: rgba(0, 212, 255, 0.2);
+  --theme-transcript-btn-text: rgba(255, 255, 255, 0.7);
+  --theme-transcript-btn-text-hover: #ffffff;
+  --theme-transcript-scrollbar: rgba(0, 212, 255, 0.25);
+  --theme-transcript-scrollbar-hover: rgba(0, 212, 255, 0.4);
+  --theme-transcript-item-system-bg: rgba(0, 212, 255, 0.08);
+  --theme-transcript-item-system-text: rgba(255, 255, 255, 0.6);
+  --theme-transcript-agent-bg: rgba(0, 212, 255, 0.1);
+  --theme-transcript-agent-border: rgba(0, 212, 255, 0.15);
+  --theme-transcript-agent-text: rgba(255, 255, 255, 0.95);
+  --theme-transcript-textarea-bg: rgba(0, 212, 255, 0.08);
+  --theme-transcript-textarea-border: rgba(0, 212, 255, 0.15);
+  --theme-transcript-textarea-text: #ffffff;
+  --theme-transcript-textarea-placeholder: rgba(255, 255, 255, 0.4);
+  --theme-transcript-textarea-bg-focus: rgba(0, 212, 255, 0.15);
+  --theme-transcript-textarea-border-focus: rgba(0, 212, 255, 0.35);
+  --theme-transcript-textarea-focus-shadow: 0 0 0 2px rgba(0, 212, 255, 0.3);
+  --theme-transcript-text-input-row-bg: rgba(0, 20, 40, 0.4);
+  --theme-transcript-text-input-row-border: rgba(0, 212, 255, 0.1);
+  
+  /* Toast Notifications */
+  --theme-toast-bg-start: rgba(15, 44, 74, 0.95);
+  --theme-toast-bg-end: rgba(7, 26, 46, 0.95);
+  --theme-toast-border-left: var(--theme-primary);
+  
+  /* Microphone Tooltip */
+  --theme-mic-tooltip-bg: rgba(0, 0, 0, 0.7);
+  --theme-mic-tooltip-border: rgba(255, 255, 255, 0.08);
+  
+  /* Status Indicators */
+  --theme-status-indicator-connected: #4CAF50;
+  --theme-status-indicator-connected-glow: #4CAF50;
+  --theme-status-indicator-disconnected: #f44336;
+  --theme-status-indicator-disconnected-glow: #f44336;
+  --theme-status-indicator-speaking: #2196F3;
+  --theme-status-indicator-speaking-glow: #2196F3;
+}
+
+/* ========================================
+   LIGHT MODE - Cyan/Blue Theme Adaptation
+   ======================================== */
+body.light-mode {
+  --theme-primary: #0099cc;
+  --theme-primary-light: #00bfff;
+  --theme-secondary: #0073a6;
+  --theme-secondary-light: #0099cc;
+  
+  --theme-bg-start: #e0f7ff;
+  --theme-bg-end: #cef2ff;
+  
+  --theme-accent: rgba(0, 153, 204, 0.1);
+  --theme-accent-hover: rgba(0, 153, 204, 0.15);
+  --theme-accent-light: rgba(0, 153, 204, 0.1);
+  --theme-accent-medium: rgba(0, 153, 204, 0.15);
+  --theme-accent-strong: rgba(0, 153, 204, 0.2);
+  
+  --theme-modal-bg: rgba(255, 255, 255, 0.95);
+  --theme-panel-bg: rgba(255, 255, 255, 0.95);
+  --theme-header-color: #0099cc;
+  
+  --theme-glow-small: rgba(0, 153, 204, 0.1);
+  --theme-glow-medium: rgba(0, 153, 204, 0.15);
+  --theme-glow-large: rgba(0, 153, 204, 0.2);
+  
+  /* Canvas Effects - Voice Visualizer */
+  --theme-canvas-glow-idle: rgba(0, 153, 204, 0.1);
+  --theme-canvas-glow-active: rgba(0, 153, 204, 0.15);
+  --theme-canvas-glow-speaking-light: rgba(59, 130, 246, 0.3);
+  --theme-canvas-glow-speaking-medium: rgba(96, 165, 250, 0.2);
+  --theme-canvas-glow-speaking-strong: rgba(59, 130, 246, 0.5);
+  --theme-canvas-glow-speaking-intense: rgba(96, 165, 250, 0.3);
+  
+  /* Red Accent for Muted/Error States */
+  --theme-red-accent-light: rgba(239, 68, 68, 0.15);
+  --theme-red-accent-medium: rgba(239, 68, 68, 0.2);
+  --theme-red-accent-hover: rgba(239, 68, 68, 0.3);
+  --theme-red-border: rgba(239, 68, 68, 0.15);
+  
+  /* Shadow Effects - General */
+  --theme-shadow-small: rgba(0, 0, 0, 0.1);
+  --theme-shadow-medium: rgba(0, 0, 0, 0.15);
+  --theme-shadow-large: rgba(0, 0, 0, 0.2);
+  --theme-shadow-xl: rgba(0, 0, 0, 0.05);
+  --theme-shadow-xs: rgba(0, 0, 0, 0.05);
+  --theme-shadow-xxs: rgba(0, 0, 0, 0.02);
+  --theme-shadow-xxxs: rgba(0, 0, 0, 0.02);
+  --theme-shadow-thin: rgba(0, 0, 0, 0.1);
+  --theme-shadow-inset: rgba(0, 0, 0, 0.1);
+  --theme-shadow-light: rgba(0, 0, 0, 0.05);
+  
+  /* Blue Theme Messages */
+  --theme-blue-bg-light: rgba(59, 130, 246, 0.08);
+  --theme-blue-bg-medium: rgba(59, 130, 246, 0.05);
+  --theme-blue-border: rgba(59, 130, 246, 0.15);
+  --theme-blue-text: #1e40af;
+  
+  /* Status Colors - Success/Error/Info */
+  --theme-status-success-bg: rgba(34, 197, 94, 0.1);
+  --theme-status-success-border: rgba(34, 197, 94, 0.3);
+  --theme-status-success-text: #047857;
+  
+  --theme-status-error-bg: rgba(239, 68, 68, 0.1);
+  --theme-status-error-border: rgba(239, 68, 68, 0.3);
+  --theme-status-error-text: #dc2626;
+  
+  --theme-status-info-bg: rgba(59, 130, 246, 0.1);
+  --theme-status-info-border: rgba(59, 130, 246, 0.3);
+  --theme-status-info-text: #1e40af;
+  
+  /* Glass Morphism Effects */
+  --theme-glass-bg: rgba(0, 0, 0, 0.05);
+  --theme-glass-bg-hover: rgba(0, 0, 0, 0.1);
+  --theme-glass-border: rgba(0, 0, 0, 0.1);
+  --theme-glass-blur: blur(20px);
+  
+  /* Form Controls - Input, Select, Textarea */
+  --theme-input-bg: #ffffff;
+  --theme-input-bg-hover: #f5f5f5;
+  --theme-input-bg-focus: #ffffff;
+  --theme-input-text: #1f1f1f;
+  --theme-input-placeholder: rgba(0, 0, 0, 0.4);
+  --theme-input-border: rgba(0, 0, 0, 0.15);
+  --theme-input-border-hover: rgba(0, 0, 0, 0.25);
+  --theme-input-border-focus: rgba(0, 153, 204, 0.6);
+  --theme-input-border-error: rgba(239, 68, 68, 0.6);
+  --theme-input-focus-shadow: 0 0 0 3px rgba(0, 153, 204, 0.15);
+  --theme-input-error-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+  
+  /* Transcript Box Colors */
+  --theme-transcript-bg: rgba(255, 255, 255, 0.95);
+  --theme-transcript-border: rgba(0, 153, 204, 0.15);
+  --theme-transcript-text: #1f1f1f;
+  --theme-transcript-header-bg: rgba(0, 153, 204, 0.05);
+  --theme-transcript-header-border: rgba(0, 153, 204, 0.1);
+  --theme-transcript-header-text: #1f1f1f;
+  --theme-transcript-btn-bg: rgba(0, 153, 204, 0.08);
+  --theme-transcript-btn-bg-hover: rgba(0, 153, 204, 0.15);
+  --theme-transcript-btn-text: rgba(0, 0, 0, 0.5);
+  --theme-transcript-btn-text-hover: #1f1f1f;
+  --theme-transcript-scrollbar: rgba(0, 153, 204, 0.2);
+  --theme-transcript-scrollbar-hover: rgba(0, 153, 204, 0.35);
+  --theme-transcript-item-system-bg: rgba(0, 153, 204, 0.08);
+  --theme-transcript-item-system-text: rgba(0, 0, 0, 0.6);
+  --theme-transcript-agent-bg: rgba(255, 255, 255, 0.9);
+  --theme-transcript-agent-border: rgba(0, 153, 204, 0.15);
+  --theme-transcript-agent-text: #1f1f1f;
+  --theme-transcript-textarea-bg: rgba(255, 255, 255, 0.95);
+  --theme-transcript-textarea-border: rgba(0, 153, 204, 0.15);
+  --theme-transcript-textarea-text: #1f1f1f;
+  --theme-transcript-textarea-placeholder: rgba(0, 0, 0, 0.4);
+  --theme-transcript-textarea-bg-focus: #ffffff;
+  --theme-transcript-textarea-border-focus: rgba(0, 153, 204, 0.3);
+  --theme-transcript-textarea-focus-shadow: 0 0 0 2px rgba(0, 153, 204, 0.2);
+  --theme-transcript-text-input-row-bg: rgba(0, 153, 204, 0.05);
+  --theme-transcript-text-input-row-border: rgba(0, 153, 204, 0.1);
+  
+  /* Toast Notifications */
+  --theme-toast-bg-start: rgba(240, 245, 250, 0.95);
+  --theme-toast-bg-end: rgba(230, 240, 250, 0.95);
+  --theme-toast-border-left: var(--theme-primary);
+  
+  /* Microphone Tooltip */
+  --theme-mic-tooltip-bg: rgba(0, 0, 0, 0.3);
+  --theme-mic-tooltip-border: rgba(0, 0, 0, 0.1);
+  
+  /* Status Indicators */
+  --theme-status-indicator-connected: #4CAF50;
+  --theme-status-indicator-connected-glow: #4CAF50;
+  --theme-status-indicator-disconnected: #f44336;
+  --theme-status-indicator-disconnected-glow: #f44336;
+  --theme-status-indicator-speaking: #2196F3;
+  --theme-status-indicator-speaking-glow: #2196F3;
+}
+
+/* ========================================
+   COMPONENT THEME MAPPINGS
+   ======================================== */
+
+/* Settings Modal */
+.settings-content {
+  background: var(--theme-modal-bg);
+}
+
+body.light-mode .settings-content {
+  border-color: rgba(0, 0, 0, 0.1);
+  color: #1f1f1f;
+}
+
+/* Trace Panel */
+.trace-panel {
+  background: var(--theme-panel-bg);
+}
+
+.trace-header h3 {
+  color: var(--theme-header-color);
+}
+
+/* Chat/Transcript Panel */
+body.light-mode .transcript-box {
+  background: var(--theme-modal-bg);
+  color: #1f1f1f;
+}
+
+body.light-mode .transcript-box h3 {
+  color: #1f1f1f;
+}
+
+body.light-mode .trace-panel {
+  background: var(--theme-modal-bg);
+  color: #1f1f1f;
+}
+
+body.light-mode .trace-panel h3 {
+  color: #1f1f1f;
+}
+
+/* Toggle Switches */
+.setting-toggle input[type="checkbox"] {
+  background: var(--theme-accent);
+  border-color: var(--theme-accent-light);
+}
+
+.setting-toggle input[type="checkbox"]:checked {
+  background: var(--theme-accent-medium);
+  border-color: var(--theme-accent-strong);
+}
+
+body.light-mode .setting-toggle input[type="checkbox"] {
+  background: rgba(0, 153, 204, 0.2);
+  border-color: rgba(0, 153, 204, 0.5);
+}
+
+/* Buttons */
+.save-settings-btn {
+  background: var(--theme-accent-medium);
+  border-color: var(--theme-accent-strong);
+  box-shadow: 0 0 20px var(--theme-glow-large);
+}
+
+.save-settings-btn:hover {
+  background: var(--theme-accent-strong);
+}
+
+#reloadButton {
+  background: var(--theme-accent-medium);
+  border-color: var(--theme-accent-strong);
+}
+
+#reloadButton:hover {
+  background: rgba(0, 212, 255, 0.7);
+}
+
+/* Scrollbars */
+.trace-content::-webkit-scrollbar-thumb,
+#transcriptContent::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, var(--theme-scrollbar-light), var(--theme-scrollbar-dark));
+}
+
+.trace-content::-webkit-scrollbar-thumb:hover,
+#transcriptContent::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, var(--theme-accent-strong), var(--theme-accent-medium));
+}
+
+.settings-body::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, var(--theme-glow-medium), var(--theme-glow-small));
+}
+
+/* Canvas Glow Effects */
+#voiceCanvas {
+  filter: drop-shadow(0 0 40px var(--theme-glow-small));
+}
+
+#voiceCanvas.active {
+  filter: drop-shadow(0 0 60px var(--theme-glow-medium));
+}
+
+/* Input Focus States */
+.form-control:focus {
+  border-color: var(--theme-accent-strong);
+  box-shadow: 0 0 0 3px var(--theme-glow-small);
+}
+
+body.light-mode .form-control:focus {
+  border-color: rgba(0, 153, 204, 0.4);
+  box-shadow: 0 0 0 3px rgba(0, 153, 204, 0.08);
+}
+
+/* Settings Input Focus */
+.setting-group select:focus,
+.setting-group input:focus,
+.setting-group textarea:focus {
+  border-color: var(--theme-accent-strong);
+}
+
+/* Textarea Focus */
+.text-input-row textarea:focus {
+  border-color: var(--theme-accent-strong);
+  box-shadow: 0 0 0 2px var(--theme-glow-small);
+}
+
+body.light-mode .text-input-row textarea:focus {
+  border-color: rgba(0, 153, 204, 0.4);
+  box-shadow: 0 0 0 2px rgba(0, 153, 204, 0.1);
+}
+
+/* Mute Button */
+#muteButton {
+  border-color: var(--theme-accent-light);
+  color: var(--theme-primary-light);
+}
+
+#muteButton:hover {
+  border-color: var(--theme-accent-strong);
+  box-shadow: 0 0 30px var(--theme-accent-medium);
+}
+
+/* Icon Buttons */
+.icon-btn:hover {
+  background: var(--theme-glow-small);
+  border-color: var(--theme-accent-light);
+  box-shadow: 0 5px 15px var(--theme-glow-small);
+}
+
+body.light-mode .icon-btn:hover {
+  background: rgba(0, 153, 204, 0.1);
+  border-color: rgba(0, 153, 204, 0.3);
+}
+
+/* Trace Toggle Button */
+.trace-toggle-btn:hover {
+  box-shadow: 0 4px 20px var(--theme-glow-small);
+}
+
+/* Feature Cards */
+.feature-card:hover,
+.feature-card:focus {
+  box-shadow: 0 10px 30px rgba(0,0,0,0.45), 0 6px 18px var(--theme-glow-small);
+}
+
+/* Messages & Transcripts */
+body.light-mode .message {
+  background: var(--theme-accent);
+}
+
+body.light-mode .trace-entry {
+  background: rgba(0, 153, 204, 0.1);
+}
+
+/* Send Button */
+.text-input-row button {
+  box-shadow: 0 6px 18px var(--theme-glow-small);
+}
+
+.text-input-row button:hover {
+  box-shadow: 0 10px 32px var(--theme-glow-medium);
+}
+
+/* Primary Button */
+.btn-primary:hover:not(:disabled) {
+  box-shadow: 0 10px 25px var(--theme-glow-medium);
+}
+
+/* Light mode overrides for primary button */
+body.light-mode .btn-primary:hover:not(:disabled) {
+  box-shadow: 0 10px 25px rgba(0, 153, 204, 0.3);
+}
+
+/* ========================================
+   NOTES FOR THEME CUSTOMIZATION
+   ======================================== */
+/*
+ * To customize the entire theme:
+ * 1. Modify the color variables in :root { } section above
+ * 2. Keep the naming consistent (primary, secondary, accent, etc.)
+ * 3. Ensure both dark and light mode definitions are updated
+ * 4. Test with body.light-mode to ensure light mode works correctly
+ * 
+ * Example: To use a different color scheme (e.g., Green/Teal):
+ * --theme-primary: #00ff88;           // Bright green
+ * --theme-primary-light: #33ffaa;     // Light green
+ * --theme-secondary: #009966;         // Deep teal
+ * --theme-secondary-light: #33ccaa;   // Light teal
+ * --theme-bg-start: #0a3d2a;          // Dark teal start
+ * --theme-bg-end: #051a14;            // Darker teal end
+ */
