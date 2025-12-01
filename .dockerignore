@@ -10,6 +10,7 @@ bin/
 obj/
 out/
 publish/
+aspire/voice-agent-csharp.AppHost
 
 # Visual Studio / Rider
 .vs/
@@ -46,6 +47,13 @@ desktop.ini
 README.md
 *.md
 !infra/**/*.md
+
+# Infrastructure and build files
+infra/
+docs/
+.github/
+.gitignore
+.git/
 
 # Environment files
 .env
