@@ -1,17 +1,36 @@
 # Build stage
-FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /source
 
-# Copy csproj and restore dependencies
-COPY *.csproj ./
+# Copy NuGet config first
+COPY src/NuGet.Config ./
+
+# Copy the aspire ServiceDefaults project (referenced by main project)
+COPY aspire/voice-agent-csharp.ServiceDefaults/voice-agent-csharp.ServiceDefaults.csproj ./aspire/voice-agent-csharp.ServiceDefaults/
+
+# Copy main project csproj
+COPY src/VoiceAgentCSharp.csproj ./src/
+
+# Ensure NuGet uses Linux-friendly packages folder inside the container
+ENV NUGET_PACKAGES=/root/.nuget/packages
+
+# Restore from src folder
+WORKDIR /source/src
 RUN dotnet restore
 
-# Copy everything else and build
-COPY . ./
-RUN dotnet publish -c Release -o /app --no-restore
+# Copy aspire ServiceDefaults source files
+WORKDIR /source
+COPY aspire/voice-agent-csharp.ServiceDefaults/ ./aspire/voice-agent-csharp.ServiceDefaults/
+
+# Copy main project source files
+COPY src/ ./src/
+
+# Build from src folder
+WORKDIR /source/src
+RUN dotnet publish -c Release -o /app
 
 # Runtime stage - use Alpine for smaller image
-FROM mcr.microsoft.com/dotnet/aspnet:9.0-alpine
+FROM mcr.microsoft.com/dotnet/aspnet:10.0-alpine
 WORKDIR /app
 
 # Copy published app

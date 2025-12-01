@@ -2,7 +2,6 @@
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /source
 
-# Copy csproj and restore dependencies
 # Copy csproj and NuGet config then restore dependencies
 COPY NuGet.Config ./
 COPY *.csproj ./

@@ -55,9 +55,19 @@
             width: 100%;
             padding: 10px;
             border-radius: 5px;
-            border: none;
-            background: rgba(255, 255, 255, 0.9);
-            color: #333;
+            border: 1px solid #ccc;
+            background: #ffffff !important;
+            color: #333 !important;
+        }
+        .form-control:focus {
+            outline: none;
+            border-color: var(--color-primary);
+            box-shadow: 0 0 0 3px rgba(155, 127, 217, 0.2);
+            background: #ffffff !important;
+            color: #333 !important;
+        }
+        .form-control::placeholder {
+            color: #999;
         }
         .btn-primary {
             background: var(--color-primary);

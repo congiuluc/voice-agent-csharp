@@ -1,22 +1,27 @@
 # Build stage
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS builder
-WORKDIR /build
+WORKDIR /source
 
-# Copy project file
-COPY mcp-server.csproj .
+# Copy the aspire ServiceDefaults project (referenced by mcp project)
+COPY aspire/voice-agent-csharp.ServiceDefaults/voice-agent-csharp.ServiceDefaults.csproj ./aspire/voice-agent-csharp.ServiceDefaults/
 
-# Restore packages
+# Copy mcp project file
+COPY mcp/mcp-server.csproj ./mcp/
+
+# Restore packages from mcp folder
+WORKDIR /source/mcp
 RUN dotnet restore
 
-# Copy source files
-COPY *.cs ./
-COPY Tools/ ./Tools/
+# Copy aspire ServiceDefaults source files
+WORKDIR /source
+COPY aspire/voice-agent-csharp.ServiceDefaults/ ./aspire/voice-agent-csharp.ServiceDefaults/
 
-# Build release
-RUN dotnet build -c Release --no-restore
+# Copy mcp source files
+COPY mcp/ ./mcp/
 
-# Publish
-RUN dotnet publish -c Release --no-restore -o /app/publish
+# Build and publish from mcp folder
+WORKDIR /source/mcp
+RUN dotnet publish -c Release -o /app/publish
 
 # Runtime stage
 FROM mcr.microsoft.com/dotnet/aspnet:10.0-alpine

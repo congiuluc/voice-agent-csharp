@@ -340,7 +340,7 @@ button svg {
    ======================================== */
 .chat-toggle {
   position: fixed;
-  top: calc(var(--spacing-xl) + 70px);
+  top: calc(var(--spacing-xl) + 140px);
   right: var(--spacing-xl);
   z-index: 1700; /* Ensure chat toggle sits above transcript when visible */
 }
@@ -368,7 +368,7 @@ button svg {
    ======================================== */
 #settingsButton {
   position: fixed;
-  top: calc(var(--spacing-xl) + 210px);
+  top: calc(var(--spacing-xl) + 280px);
   right: var(--spacing-xl);
   z-index: 1700;
 }
@@ -379,8 +379,8 @@ button svg {
    ======================================== */
 #startButton {
   position: fixed;
-  /* Placed below settings which is at +210px; add spacing to avoid overlap (button height ~60px + 10px gap) */
-  top: calc(var(--spacing-xl) + 280px);
+  /* Placed below settings which is at +280px; add spacing to avoid overlap (button height ~60px + 10px gap) */
+  top: calc(var(--spacing-xl) + 350px);
   right: var(--spacing-xl);
   z-index: 1700;
 }
@@ -1331,7 +1331,7 @@ body.light-mode .setting-group input[type="checkbox"] {
 /* Logout button - styled like theme toggle, positioned below it */
 .logout-btn {
   position: fixed;
-  top: calc(var(--spacing-xl) + 64px);
+  top: calc(var(--spacing-xl) + 70px);
   right: var(--spacing-xl);
   z-index: 1700;
   width: 60px;
@@ -1419,10 +1419,21 @@ body.light-mode #moonIcon {
    ======================================== */
 .trace-toggle-btn {
   position: fixed;
-  top: calc(var(--spacing-xl) + 140px);
+  top: calc(var(--spacing-xl) + 210px);
   right: var(--spacing-xl);
-  z-index: 1001;
-
+  z-index: 1700;
+  width: 60px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  backdrop-filter: var(--glass-blur);
+  border-radius: 50%;
+  cursor: pointer;
+  transition: background var(--transition-fast), transform var(--transition-fast);
+  color: var(--text-color);
 }
 
 /* Developer features panel removed */
@@ -1788,7 +1799,9 @@ body.light-mode .toggle-label {
   .chat-toggle,
   #startButton,
   #settingsButton,
-  .theme-toggle-btn {
+  .theme-toggle-btn,
+  .logout-btn,
+  .trace-toggle-btn {
     right: 10px;
     z-index: 1700;
   }
@@ -1834,16 +1847,16 @@ body.light-mode .toggle-label {
   .chat-toggle,
   #startButton,
   #settingsButton,
-  .theme-toggle-btn {
+  .theme-toggle-btn,
+  .logout-btn,
+  .trace-toggle-btn {
     right: 8px;
   }
-  
+
   #startButton {
     /* Place start below settings on small screens as well */
-    top: calc(var(--spacing-xl) + 280px);
-  }
-  
-  #settingsButton {
+    top: calc(var(--spacing-xl) + 350px);
+  }  #settingsButton {
     top: 140px;
   }
   
