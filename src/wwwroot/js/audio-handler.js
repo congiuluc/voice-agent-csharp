@@ -85,8 +85,10 @@ export class AudioHandler {
         const { type, rms, buffer } = event.data;
         
         if (type === 'audio-data') {
-          // RMS callback
-          this.onRMS(rms, 'user');
+          // RMS callback (only when not muted, otherwise visualizer stays animated)
+          if (!this.isMuted) {
+            this.onRMS(rms, 'user');
+          }
           
           // Audio data callback (if not muted)
           if (!this.isMuted && this.onAudioData) {

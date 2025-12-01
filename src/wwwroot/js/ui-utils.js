@@ -126,7 +126,7 @@ export function addTranscript(role, text) {
 
   const content = document.createElement('div');
   content.className = 'transcript-content';
-  content.innerHTML = escapeHtml(text);
+  content.innerHTML = markdownToHtml(text);
 
   item.appendChild(iconDiv);
   item.appendChild(content);
@@ -191,6 +191,49 @@ function escapeHtml(text) {
   const div = document.createElement('div');
   div.textContent = text;
   return div.innerHTML;
+}
+
+/**
+ * Convert markdown syntax to HTML
+ * Supports: **bold**, *italic*, `code`, ```code blocks```, [links](url), line breaks
+ * @param {string} text - Markdown text
+ * @returns {string} - HTML formatted text
+ */
+function markdownToHtml(text) {
+  if (!text) return '';
+  
+  // First escape HTML to prevent XSS
+  let html = escapeHtml(text);
+  
+  // Code blocks (```code```) - must be processed before inline code
+  html = html.replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>');
+  
+  // Inline code (`code`)
+  html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+  
+  // Bold (**text** or __text__)
+  html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+  html = html.replace(/__([^_]+)__/g, '<strong>$1</strong>');
+  
+  // Italic (*text* or _text_) - be careful not to match already processed bold
+  html = html.replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, '<em>$1</em>');
+  html = html.replace(/(?<!_)_([^_]+)_(?!_)/g, '<em>$1</em>');
+  
+  // Links [text](url)
+  html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+  
+  // Line breaks (two spaces at end of line or actual newlines)
+  html = html.replace(/  \n/g, '<br>');
+  html = html.replace(/\n/g, '<br>');
+  
+  // Unordered lists (- item or * item)
+  html = html.replace(/(?:^|<br>)[-*]\s+(.+?)(?=<br>|$)/g, '<li>$1</li>');
+  html = html.replace(/(<li>.*<\/li>)+/g, '<ul>$&</ul>');
+  
+  // Ordered lists (1. item)
+  html = html.replace(/(?:^|<br>)\d+\.\s+(.+?)(?=<br>|$)/g, '<li>$1</li>');
+  
+  return html;
 }
 
 /**

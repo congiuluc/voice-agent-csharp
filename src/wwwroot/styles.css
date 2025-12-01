@@ -574,9 +574,11 @@ button svg {
   overflow-y: auto;
   overflow-x: hidden;
   padding: 20px;
+  padding-bottom: 28px; /* Extra padding to prevent clipping at rounded corners */
   display: flex;
   flex-direction: column;
   gap: 16px;
+  border-radius: 0 0 24px 24px; /* Match parent's bottom border radius */
 }
 
 /* Custom scrollbar styling */
@@ -680,6 +682,68 @@ button svg {
 /* Message content text */
 .transcript-content {
   word-wrap: break-word;
+}
+
+/* Markdown styling within transcript */
+.transcript-content strong {
+  font-weight: 600;
+}
+
+.transcript-content em {
+  font-style: italic;
+}
+
+.transcript-content code {
+  background: rgba(0, 0, 0, 0.2);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: 'Courier New', monospace;
+  font-size: 0.9em;
+}
+
+.transcript-content pre {
+  background: rgba(0, 0, 0, 0.25);
+  padding: 10px 12px;
+  border-radius: 8px;
+  overflow-x: auto;
+  margin: 8px 0;
+}
+
+.transcript-content pre code {
+  background: none;
+  padding: 0;
+}
+
+.transcript-content a {
+  color: var(--theme-primary-light);
+  text-decoration: underline;
+}
+
+.transcript-content a:hover {
+  color: var(--theme-accent-strong);
+}
+
+.transcript-content ul,
+.transcript-content ol {
+  margin: 8px 0;
+  padding-left: 20px;
+}
+
+.transcript-content li {
+  margin: 4px 0;
+}
+
+/* User message markdown - lighter backgrounds for contrast */
+.transcript-item.user .transcript-content code {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.transcript-item.user .transcript-content pre {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.transcript-item.user .transcript-content a {
+  color: rgba(255, 255, 255, 0.9);
 }
 
 /* ========================================
@@ -1480,6 +1544,7 @@ body.light-mode #moonIcon {
   z-index: 999;
   box-shadow: 0 8px 32px var(--theme-shadow-small);
   animation: slideUp var(--transition-slow) ease;
+  overflow: hidden; /* Prevent content from spilling outside rounded corners */
 }
 
 .trace-panel.visible {
@@ -1523,15 +1588,14 @@ body.light-mode #moonIcon {
   flex: 1;
   overflow-y: auto;
   padding: var(--spacing-sm);
+  padding-top: var(--spacing-md); /* Extra padding at top */
+  padding-bottom: var(--spacing-lg); /* Extra padding to prevent clipping at rounded corners */
   font-size: 0.8em;
   font-family: 'Courier New', monospace;
+  border-radius: 0 0 15px 15px; /* Match parent's bottom border radius */
 }
 
 /* Improved vertical scrollbar for trace and transcript panels */
-.trace-content,
-#transcriptContent {
-  position: relative; /* needed for scroll hint overlays */
-}
 
 /* WebKit browsers (Chrome, Edge, Safari) */
 .trace-content::-webkit-scrollbar,
@@ -1564,44 +1628,7 @@ body.light-mode #moonIcon {
    will use its default scrollbar styling which is acceptable for this UI.
 */
 
-/* Scroll hint overlays to indicate more content above/below */
-.trace-content::before,
-.trace-content::after,
-#transcriptContent::before,
-#transcriptContent::after {
-  content: '';
-  position: absolute;
-  left: 0;
-  right: 0;
-  height: 22px;
-  pointer-events: none;
-  transition: opacity 200ms ease;
-  opacity: 0;
-  z-index: 20;
-}
-
-.trace-content::before,
-#transcriptContent::before {
-  top: 0;
-  background: linear-gradient(to bottom, rgba(10,8,20,0.6), rgba(10,8,20,0));
-}
-
-.trace-content::after,
-#transcriptContent::after {
-  bottom: 0;
-  background: linear-gradient(to top, rgba(10,8,20,0.6), rgba(10,8,20,0));
-}
-
-/* When content is scrollable, show bottom hint; when scrolled down, show top hint */
-.trace-content.has-scroll::after,
-#transcriptContent.has-scroll::after {
-  opacity: 1;
-}
-
-.trace-content.scrolled::before,
-#transcriptContent.scrolled::before {
-  opacity: 1;
-}
+/* Scroll hint overlays removed - they were causing content cut-off effect when scrolling */
 
 /* Slightly increase right padding so content doesn't hide behind scrollbar */
 .trace-content.has-scroll,
