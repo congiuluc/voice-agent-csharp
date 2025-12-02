@@ -21,14 +21,14 @@ public class VoiceMediaHandler
     private WebSocket? _clientWebSocket;
     private IVoiceSession? _voiceSession;
     private VoiceAvatarSession? _avatarSession;
-    
+
     /// <summary>
     /// Static dictionary to store avatar sessions by connection ID for SDP exchange.
     /// This allows the REST endpoint to access the WebSocket session.
     /// </summary>
-    private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, VoiceAvatarSession> 
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, VoiceAvatarSession>
         _activeAvatarSessions = new();
-    
+
     private string? _avatarConnectionId;
 
     private readonly JsonSerializerOptions _jsonOptions = new JsonSerializerOptions
@@ -38,7 +38,7 @@ public class VoiceMediaHandler
     };
 
     private bool _isRawAudio;
-    
+
     // Values optionally provided by the web client via Config message
     private string? _clientProvidedEndpoint;
     private string? _clientProvidedApiKey;
@@ -86,12 +86,22 @@ public class VoiceMediaHandler
 
         _logger.LogInformation("Initializing Voice WebSocket handler. RawAudio={IsRaw}", _isRawAudio);
 
+        _clientProvidedModelInstructions = _configuration["AzureVoiceLive:CallInstructions"] ?? "You are a helpful virtual assistant.";
+        
         await InitializeVoiceLiveConnectionAsync();
+        var session = _voiceSession;
+        if (session != null)
+        {
+            var initCallMessage = _configuration["AzureVoiceLive:CallInitMessage"]??"Hello";
+            await session.SendTextAsync(initCallMessage).ConfigureAwait(false);
+        }
         await ReceiveMessagesAsync(ProcessVoiceMessageAsync);
     }
 
     /// <summary>
     /// Handles Web client WebSocket connection (expects raw PCM16 audio).
+    /// Supports both incoming calls (ACS) and regular web clients.
+    /// For incoming calls, proceeds with server config if no Config message received.
     /// </summary>
     /// <param name="webSocket">The WebSocket connection.</param>
     public async Task HandleWebWebSocketAsync(WebSocket webSocket)
@@ -101,10 +111,11 @@ public class VoiceMediaHandler
 
         _logger.LogInformation("Initializing WebSocket handler for web client. RawAudio={IsRaw}", _isRawAudio);
 
-        // Wait for initial Config from the client (so client can supply endpoint/apiKey)
+        // Wait briefly for initial Config from the client (so client can supply endpoint/apiKey)
+        // For incoming calls (ACS), this will timeout and use server config - this is expected
         await WaitForInitialConfigAsync();
 
-        // Initialize VoiceLive connection (will use client-provided values if present)
+        // Initialize VoiceLive connection (will use client-provided values if present, or server config)
         await InitializeVoiceLiveConnectionAsync();
 
         // Start receiving messages
@@ -137,7 +148,7 @@ public class VoiceMediaHandler
             {
                 _activeAvatarSessions[_avatarConnectionId] = _avatarSession;
                 _logger.LogDebug("Registered avatar session: {ConnectionId}", _avatarConnectionId);
-                
+
                 // Send the connection ID to the client so it can use it for SDP exchange
                 var connectionInfo = new
                 {
@@ -189,7 +200,7 @@ public class VoiceMediaHandler
                 return null;
             }
         }
-        
+
         _logger.LogWarning("Cannot process avatar offer: avatar session not initialized. " +
             "Ensure WebSocket connection is established before sending SDP offer.");
         return null;
@@ -208,7 +219,7 @@ public class VoiceMediaHandler
         {
             return await session.ConnectAvatarAsync(clientSdp);
         }
-        
+
         return null;
     }
 
@@ -290,7 +301,7 @@ public class VoiceMediaHandler
 
             // Create the avatar session using the factory
             _voiceSession = await _sessionFactory.CreateSessionAsync(sessionConfig).ConfigureAwait(false);
-            
+
             // Also store as avatar session for WebRTC SDP handling
             _avatarSession = _voiceSession as VoiceAvatarSession;
 
@@ -312,8 +323,8 @@ public class VoiceMediaHandler
             {
                 Kind = "SessionEvent",
                 Event = "SessionConnected",
-                Payload = new 
-                { 
+                Payload = new
+                {
                     Message = "Connected to Voice Avatar",
                     IceServers = iceServersPayload
                 }
@@ -330,7 +341,7 @@ public class VoiceMediaHandler
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to initialize Avatar session");
-            
+
             // Send error to client
             var errorMessage = new
             {
@@ -338,7 +349,7 @@ public class VoiceMediaHandler
                 Message = $"Failed to initialize avatar session: {ex.Message}"
             };
             await SendToClientAsync(JsonSerializer.Serialize(errorMessage, _jsonOptions));
-            
+
             throw;
         }
     }
@@ -591,7 +602,7 @@ public class VoiceMediaHandler
                     { "Kind", "SessionEvent" },
                     { "Event", eventType }
                 };
-                
+
                 // Only include Payload if it has a value
                 if (payloadObj != null)
                 {
@@ -650,10 +661,10 @@ public class VoiceMediaHandler
 
     /// <summary>
     /// Wait for an initial Config message from the web client so server can use client-specified
-    /// Voice Live endpoint/apiKey before initializing the session. This will time out after 10s
-    /// and fall back to server configuration.
+    /// Voice Live endpoint/apiKey before initializing the session. This will time out after 3s
+    /// and fall back to server configuration. For incoming calls (ACS), timeout is expected behavior.
     /// </summary>
-    private async Task WaitForInitialConfigAsync(int timeoutMs = 10000)
+    private async Task WaitForInitialConfigAsync(int timeoutMs = 3000)
     {
         if (_clientWebSocket == null) return;
 
@@ -691,7 +702,7 @@ public class VoiceMediaHandler
                             if (config != null)
                             {
                                 _logger.LogInformation("Received initial Config from client");
-                                _clientProvidedModel = config.VoiceModel;   
+                                _clientProvidedModel = config.VoiceModel;
                                 _clientProvidedVoice = config.Voice;
                                 _clientProvidedWelcomeMessage = config.WelcomeMessage;
                                 _clientProvidedModelInstructions = config.VoiceModelInstructions;
@@ -709,7 +720,8 @@ public class VoiceMediaHandler
                                     _clientProvidedApiKey = config.VoiceLiveApiKey;
                                 }
 
-                                // After storing initial config, apply it to the session once connected
+                                // Config received - exit early
+                                _logger.LogDebug("Config message processed successfully");
                                 return;
                             }
                         }
@@ -730,6 +742,12 @@ public class VoiceMediaHandler
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Error while waiting for initial client config");
+        }
+
+        // Timeout or connection closed - this is expected for incoming calls (ACS)
+        if ((DateTime.UtcNow - start).TotalMilliseconds >= timeoutMs)
+        {
+            _logger.LogInformation("Config message timeout after {Timeout}ms - proceeding with server configuration (expected for incoming calls)", timeoutMs);
         }
     }
 
@@ -764,7 +782,7 @@ public class VoiceMediaHandler
         if (result.MessageType == WebSocketMessageType.Text)
         {
             var message = Encoding.UTF8.GetString(buffer, 0, result.Count);
-            try 
+            try
             {
                 var data = JsonSerializer.Deserialize<VoiceStreamData>(message, _jsonOptions);
 
@@ -877,10 +895,10 @@ public class VoiceMediaHandler
             if (avatarConnectMsg?.Sdp == null)
             {
                 _logger.LogWarning("AvatarConnect message missing SDP");
-                await SendToClientAsync(JsonSerializer.Serialize(new 
-                { 
-                    Kind = "Error", 
-                    Message = "AvatarConnect message missing SDP" 
+                await SendToClientAsync(JsonSerializer.Serialize(new
+                {
+                    Kind = "Error",
+                    Message = "AvatarConnect message missing SDP"
                 }, _jsonOptions));
                 return;
             }
@@ -890,10 +908,10 @@ public class VoiceMediaHandler
             if (_avatarSession == null)
             {
                 _logger.LogWarning("Avatar session not initialized");
-                await SendToClientAsync(JsonSerializer.Serialize(new 
-                { 
-                    Kind = "Error", 
-                    Message = "Avatar session not initialized. Please wait for session to be ready." 
+                await SendToClientAsync(JsonSerializer.Serialize(new
+                {
+                    Kind = "Error",
+                    Message = "Avatar session not initialized. Please wait for session to be ready."
                 }, _jsonOptions));
                 return;
             }
@@ -915,20 +933,20 @@ public class VoiceMediaHandler
             else
             {
                 _logger.LogWarning("Avatar service returned empty SDP answer");
-                await SendToClientAsync(JsonSerializer.Serialize(new 
-                { 
-                    Kind = "Error", 
-                    Message = "Avatar service returned empty SDP answer. Avatar feature may not be fully supported." 
+                await SendToClientAsync(JsonSerializer.Serialize(new
+                {
+                    Kind = "Error",
+                    Message = "Avatar service returned empty SDP answer. Avatar feature may not be fully supported."
                 }, _jsonOptions));
             }
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error handling avatar connect message");
-            await SendToClientAsync(JsonSerializer.Serialize(new 
-            { 
-                Kind = "Error", 
-                Message = $"Avatar connect error: {ex.Message}" 
+            await SendToClientAsync(JsonSerializer.Serialize(new
+            {
+                Kind = "Error",
+                Message = $"Avatar connect error: {ex.Message}"
             }, _jsonOptions));
         }
     }
