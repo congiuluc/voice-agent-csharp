@@ -1,0 +1,176 @@
+@page
+@model VoiceAgentCSharp.Pages.Admin.CallMonitoringModel
+@{
+    ViewData["Title"] = "Call Monitoring Dashboard";
+}
+
+<div class="container-fluid mt-4">
+    <div class="row mb-4">
+        <div class="col">
+            <h1>📊 Call Monitoring Dashboard</h1>
+            <p class="text-muted">Real-time and historical call analytics</p>
+        </div>
+        <div class="col-auto">
+            <button class="btn btn-primary" id="refreshBtn" onclick="refreshData()">
+                <i class="bi bi-arrow-clockwise"></i> Refresh
+            </button>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <h6 class="card-subtitle mb-2 text-muted">Active Sessions</h6>
+                    <h2 class="card-title" id="activeSessions">@Model.ActiveSessions</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <h6 class="card-subtitle mb-2 text-muted">Queue Size</h6>
+                    <h2 class="card-title" id="queueSize">@Model.QueueSize</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <h6 class="card-subtitle mb-2 text-muted">Total Models</h6>
+                    <h2 class="card-title" id="pricingModels">@Model.PricingModels</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <h6 class="card-subtitle mb-2 text-muted">Last Updated</h6>
+                    <h6 class="card-title" id="lastUpdate">@DateTime.UtcNow.ToString("HH:mm:ss")</h6>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pricing Configuration -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Pricing Configuration</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Model</th>
+                                <th>Input ($/1K tokens)</th>
+                                <th>Output ($/1K tokens)</th>
+                                <th>Avatar ($/min)</th>
+                                <th>TTS ($/1M chars)</th>
+                                <th>Updated</th>
+                            </tr>
+                        </thead>
+                        <tbody id="pricingTable">
+                            @foreach (var pricing in Model.Pricing)
+                            {
+                                <tr>
+                                    <td><strong>@pricing.ModelName</strong></td>
+                                    <td>$@pricing.InputTokenCost.ToString("F4")</td>
+                                    <td>$@pricing.OutputTokenCost.ToString("F4")</td>
+                                    <td>$@pricing.AvatarCostPerMin.ToString("F2")</td>
+                                    <td>$@pricing.TtsCostPer1MChars.ToString("F2")</td>
+                                    <td>@pricing.UpdatedAt.ToString("yyyy-MM-dd HH:mm")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                    <div class="mt-3">
+                        <button class="btn btn-outline-primary" onclick="reloadPricing()">
+                            <i class="bi bi-arrow-repeat"></i> Reload Pricing from Database
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- External Dashboards -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Azure Portal Dashboard</h5>
+                </div>
+                <div class="card-body">
+                    <p>View historical analytics and KQL queries in Azure Portal</p>
+                    <a href="https://portal.azure.com" target="_blank" class="btn btn-primary">
+                        <i class="bi bi-box-arrow-up-right"></i> Open Azure Portal
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Aspire Dashboard</h5>
+                </div>
+                <div class="card-body">
+                    <p>View OpenTelemetry metrics and traces</p>
+                    <a href="http://localhost:18888" target="_blank" class="btn btn-primary">
+                        <i class="bi bi-box-arrow-up-right"></i> Open Aspire Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Status Messages -->
+    <div id="statusMessage" class="alert alert-info" style="display: none;"></div>
+</div>
+
+@section Scripts {
+    <script>
+        // Auto-refresh every 30 seconds
+        setInterval(function() {
+            refreshData();
+        }, 30000);
+
+        function refreshData() {
+            location.reload();
+        }
+
+        async function reloadPricing() {
+            try {
+                const response = await fetch('/api/admin/pricing/reload', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    showStatus('Pricing reloaded successfully!', 'success');
+                    setTimeout(() => location.reload(), 1000);
+                } else {
+                    showStatus('Failed to reload pricing', 'danger');
+                }
+            } catch (error) {
+                showStatus('Error reloading pricing: ' + error.message, 'danger');
+            }
+        }
+
+        function showStatus(message, type) {
+            const statusDiv = document.getElementById('statusMessage');
+            statusDiv.className = 'alert alert-' + type;
+            statusDiv.textContent = message;
+            statusDiv.style.display = 'block';
+            
+            setTimeout(() => {
+                statusDiv.style.display = 'none';
+            }, 5000);
+        }
+    </script>
+}

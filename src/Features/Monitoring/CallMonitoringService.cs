@@ -317,4 +317,9 @@ public class CallMonitoringService
     /// Gets the Meter for external instrumentation.
     /// </summary>
     public Meter GetMeter() => _meter;
+
+    /// <summary>
+    /// Gets the count of active sessions.
+    /// </summary>
+    public int GetActiveSessionCount() => _activeSessions.Count;
 }

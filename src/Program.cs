@@ -38,7 +38,11 @@ builder.Services.AddRazorPages(options =>
     options.Conventions.AllowAnonymousToPage("/Login");
     options.Conventions.AllowAnonymousToPage("/Logout");
     options.Conventions.AllowAnonymousToPage("/Error");
+    options.Conventions.AuthorizeFolder("/Admin", "Admin");
 });
+
+// Add controllers for Admin API
+builder.Services.AddControllers();
 
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
@@ -179,6 +183,9 @@ app.UseCors();
 
 app.UseAuthentication();
 app.UseAuthorization();
+
+// Map API controllers
+app.MapControllers();
 
 // Enable WebSockets with timeout
 app.UseWebSockets(new WebSocketOptions
