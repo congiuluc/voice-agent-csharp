@@ -110,8 +110,12 @@ public class CosmosDbBatchWriterService : BackgroundService
         {
             _logger.LogError(ex, "Failed to flush call sessions to CosmosDB");
             
-            // Re-enqueue failed items for retry
-            // Note: In production, consider a dead-letter queue or max retry limit
+            // Note: In production, implement a retry mechanism with exponential backoff
+            // or use a dead-letter queue for failed writes. For now, we log the error
+            // and allow the sessions to be lost. Consider adding:
+            // - Retry logic with max attempts
+            // - Dead-letter queue storage
+            // - Alert/notification on persistent failures
         }
         finally
         {

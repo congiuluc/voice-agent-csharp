@@ -5,6 +5,7 @@ using VoiceAgentCSharp.Features.Monitoring;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.Azure.Cosmos;
+using Azure.Identity;
 using Serilog;
 using Serilog.Events;
 using Serilog.Formatting.Compact;
@@ -50,6 +51,8 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
         options.LoginPath = "/Login";
         options.LogoutPath = "/Logout";
     });
+
+builder.Services.AddAuthorization();
 
 // Application Insights telemetry
 // Prefer ConnectionString or the newer configuration keys instead of the deprecated InstrumentationKey property.
@@ -107,8 +110,8 @@ else if (!string.IsNullOrEmpty(cosmosEndpoint))
 {
     var clientId = builder.Configuration["AzureIdentity:UserAssignedClientId"];
     var credential = string.IsNullOrEmpty(clientId)
-        ? new Azure.Identity.DefaultAzureCredential()
-        : new Azure.Identity.DefaultAzureCredential(new Azure.Identity.DefaultAzureCredentialOptions 
+        ? new DefaultAzureCredential()
+        : new DefaultAzureCredential(new DefaultAzureCredentialOptions 
         { 
             ManagedIdentityClientId = clientId 
         });

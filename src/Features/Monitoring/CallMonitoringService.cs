@@ -108,7 +108,7 @@ public class CallMonitoringService
             Model = model,
             CreatedAt = DateTime.UtcNow,
             StartTime = DateTime.UtcNow,
-            Status = "in_progress"
+            Status = SessionStatus.InProgress
         };
 
         _activeSessions[sessionId] = session;

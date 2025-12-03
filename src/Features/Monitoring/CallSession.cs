@@ -3,6 +3,16 @@ using System.Text.Json.Serialization;
 namespace VoiceAgentCSharp.Features.Monitoring;
 
 /// <summary>
+/// Constants for call session status values.
+/// </summary>
+public static class SessionStatus
+{
+    public const string InProgress = "in_progress";
+    public const string Completed = "completed";
+    public const string Error = "error";
+}
+
+/// <summary>
 /// Represents a voice call session for tracking and auditing.
 /// Stored in CosmosDB with partition key /userId and 90-day TTL.
 /// </summary>
@@ -91,7 +101,7 @@ public class CallSession
     /// Session status: completed, error, in_progress.
     /// </summary>
     [JsonPropertyName("status")]
-    public string Status { get; set; } = "in_progress";
+    public string Status { get; set; } = SessionStatus.InProgress;
 
     /// <summary>
     /// Audio flow milestones for tracking.
