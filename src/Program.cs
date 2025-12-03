@@ -1,8 +1,10 @@
 using VoiceAgentCSharp.Features.Shared;
 using VoiceAgentCSharp.Features.VoiceAgent;
 using VoiceAgentCSharp.Features.IncomingCall;
+using VoiceAgentCSharp.Features.Monitoring;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.Azure.Cosmos;
 using Serilog;
 using Serilog.Events;
 using Serilog.Formatting.Compact;
@@ -87,9 +89,59 @@ builder.Services.AddSingleton<IncomingCallHandler>();
 builder.Services.AddSingleton<VoiceLiveService>();
 builder.Services.AddSingleton<FoundryService>();
 
+// Register monitoring services
+// CosmosDB client
+var cosmosConnectionString = builder.Configuration["CosmosDb:ConnectionString"];
+var cosmosEndpoint = builder.Configuration["CosmosDb:Endpoint"];
+var cosmosKey = builder.Configuration["CosmosDb:Key"];
+
+if (!string.IsNullOrEmpty(cosmosConnectionString))
+{
+    builder.Services.AddSingleton<CosmosClient>(new CosmosClient(cosmosConnectionString));
+}
+else if (!string.IsNullOrEmpty(cosmosEndpoint))
+{
+    var clientId = builder.Configuration["AzureIdentity:UserAssignedClientId"];
+    var credential = string.IsNullOrEmpty(clientId)
+        ? new Azure.Identity.DefaultAzureCredential()
+        : new Azure.Identity.DefaultAzureCredential(new Azure.Identity.DefaultAzureCredentialOptions 
+        { 
+            ManagedIdentityClientId = clientId 
+        });
+    
+    builder.Services.AddSingleton<CosmosClient>(new CosmosClient(cosmosEndpoint, credential));
+}
+else
+{
+    // Fallback: create a no-op client for dev scenarios without CosmosDB
+    Log.Warning("CosmosDB not configured - monitoring data will not be persisted");
+    builder.Services.AddSingleton<CosmosClient>(sp => 
+    {
+        throw new InvalidOperationException("CosmosDB is not configured");
+    });
+}
+
+builder.Services.AddSingleton<ICosmosDbService, CosmosDbService>();
+builder.Services.AddSingleton<PricingService>();
+builder.Services.AddSingleton<CosmosDbBatchWriterService>();
+builder.Services.AddHostedService<CosmosDbBatchWriterService>(sp => 
+    sp.GetRequiredService<CosmosDbBatchWriterService>());
+builder.Services.AddSingleton<CallMonitoringService>();
+
 // Note: Serilog configured via builder.Host.UseSerilog(); default providers cleared by Serilog host
 
 var app = builder.Build();
+
+// Initialize pricing service
+try
+{
+    var pricingService = app.Services.GetRequiredService<PricingService>();
+    await pricingService.InitializeAsync();
+}
+catch (Exception ex)
+{
+    Log.Warning(ex, "Failed to initialize pricing service - will use defaults");
+}
 
 // Configure the HTTP request pipeline
 if (!app.Environment.IsDevelopment())
