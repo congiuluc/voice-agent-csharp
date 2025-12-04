@@ -1,5 +1,5 @@
 /**
- * Admin Dashboard - Chart.js Integration
+ * Admin Dashboard - Chart Integration
  * Provides interactive charts for call monitoring and pricing data
  */
 
@@ -78,51 +78,10 @@ function initializeCharts() {
                 ]
             },
             options: {
-                responsive: true,
-                maintainAspectRatio: true,
-                plugins: {
-                    legend: {
-                        display: true,
-                        position: 'top',
-                        labels: {
-                            color: colors.text,
-                            font: {
-                                size: 12
-                            }
-                        }
-                    },
-                    tooltip: {
-                        backgroundColor: colors.background,
-                        titleColor: colors.text,
-                        bodyColor: colors.text,
-                        borderColor: colors.grid,
-                        borderWidth: 1
-                    }
-                },
-                scales: {
-                    x: {
-                        ticks: {
-                            color: colors.text
-                        },
-                        grid: {
-                            color: colors.grid
-                        }
-                    },
-                    y: {
-                        beginAtZero: true,
-                        ticks: {
-                            color: colors.text,
-                            callback: function(value) {
-                                return '$' + value.toFixed(4);
-                            }
-                        },
-                        grid: {
-                            color: colors.grid
-                        }
-                    }
-                }
+                colors: colors
             }
         });
+        pricingChart.render();
     }
 
     // Cost Distribution Chart (Doughnut Chart)
@@ -133,10 +92,10 @@ function initializeCharts() {
         }
 
         // Calculate average costs for distribution
-        const avgInput = inputCosts.reduce((a, b) => a + b, 0) / inputCosts.length;
-        const avgOutput = outputCosts.reduce((a, b) => a + b, 0) / outputCosts.length;
-        const avgAvatar = avatarCosts.reduce((a, b) => a + b, 0) / avatarCosts.length;
-        const avgTts = ttsCosts.reduce((a, b) => a + b, 0) / ttsCosts.length;
+        const avgInput = inputCosts.reduce((a, b) => a + b, 0) / inputCosts.length || 0;
+        const avgOutput = outputCosts.reduce((a, b) => a + b, 0) / outputCosts.length || 0;
+        const avgAvatar = avatarCosts.reduce((a, b) => a + b, 0) / avatarCosts.length || 0;
+        const avgTts = ttsCosts.reduce((a, b) => a + b, 0) / ttsCosts.length || 0;
 
         costDistributionChart = new Chart(distributionCtx, {
             type: 'doughnut',
@@ -155,41 +114,10 @@ function initializeCharts() {
                 }]
             },
             options: {
-                responsive: true,
-                maintainAspectRatio: true,
-                plugins: {
-                    legend: {
-                        display: true,
-                        position: 'bottom',
-                        labels: {
-                            color: colors.text,
-                            padding: 15,
-                            font: {
-                                size: 12
-                            }
-                        }
-                    },
-                    tooltip: {
-                        backgroundColor: colors.background,
-                        titleColor: colors.text,
-                        bodyColor: colors.text,
-                        borderColor: colors.grid,
-                        borderWidth: 1,
-                        callbacks: {
-                            label: function(context) {
-                                let label = context.label || '';
-                                if (label) {
-                                    label += ': ';
-                                }
-                                const value = context.parsed;
-                                label += '$' + value.toFixed(4);
-                                return label;
-                            }
-                        }
-                    }
-                }
+                colors: colors
             }
         });
+        costDistributionChart.render();
     }
 }
 
