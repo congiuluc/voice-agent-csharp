@@ -4,6 +4,8 @@ using VoiceAgentCSharp.Features.IncomingCall;
 using VoiceAgentCSharp.Features.Monitoring;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.ApplicationInsights;
+using Microsoft.ApplicationInsights.Extensibility;
 using Microsoft.Azure.Cosmos;
 using Azure.Identity;
 using Serilog;
@@ -52,7 +54,14 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
         options.LogoutPath = "/Logout";
     });
 
-builder.Services.AddAuthorization();
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("Admin", policy =>
+    {
+        policy.RequireAuthenticatedUser();
+        // Add additional requirements here if needed (e.g., role claims)
+    });
+});
 
 // Application Insights telemetry
 // Prefer ConnectionString or the newer configuration keys instead of the deprecated InstrumentationKey property.
@@ -71,6 +80,13 @@ else if (!string.IsNullOrEmpty(aiKey))
     builder.Services.AddApplicationInsightsTelemetry();
     // Note: we avoid assigning options.InstrumentationKey directly to prevent using the obsolete API.
     // The SDK will pick up the key from configuration when added to the default configuration sources.
+}
+else
+{
+    // Register a no-op TelemetryClient when Application Insights is not configured
+    Log.Warning("Application Insights not configured - telemetry will be disabled");
+    builder.Services.AddSingleton<TelemetryClient>(sp => 
+        new TelemetryClient(new TelemetryConfiguration { DisableTelemetry = true }));
 }
 
 // Configure CORS - restrict to specific origins in production
@@ -120,12 +136,8 @@ else if (!string.IsNullOrEmpty(cosmosEndpoint))
 }
 else
 {
-    // Fallback: create a no-op client for dev scenarios without CosmosDB
+    // Fallback: don't register CosmosClient for dev scenarios without CosmosDB
     Log.Warning("CosmosDB not configured - monitoring data will not be persisted");
-    builder.Services.AddSingleton<CosmosClient>(sp => 
-    {
-        throw new InvalidOperationException("CosmosDB is not configured");
-    });
 }
 
 builder.Services.AddSingleton<ICosmosDbService, CosmosDbService>();

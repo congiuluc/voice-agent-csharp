@@ -33,16 +33,29 @@ public interface ICosmosDbService
 /// </summary>
 public class CosmosDbService : ICosmosDbService
 {
-    private readonly Container _callSessionsContainer;
-    private readonly Container _pricingConfigContainer;
+    private readonly Container? _callSessionsContainer;
+    private readonly Container? _pricingConfigContainer;
     private readonly ILogger<CosmosDbService> _logger;
+    private readonly bool _isConfigured;
 
     public CosmosDbService(
-        CosmosClient cosmosClient,
+        IServiceProvider serviceProvider,
         IConfiguration configuration,
         ILogger<CosmosDbService> logger)
     {
         _logger = logger;
+        
+        // Try to get the CosmosClient, which may not be registered
+        var cosmosClient = serviceProvider.GetService(typeof(CosmosClient)) as CosmosClient;
+        _isConfigured = cosmosClient != null;
+
+        if (cosmosClient == null)
+        {
+            _callSessionsContainer = null;
+            _pricingConfigContainer = null;
+            _logger.LogWarning("CosmosDB client is not configured - data persistence will be disabled");
+            return;
+        }
 
         var databaseName = configuration["CosmosDb:DatabaseName"] ?? "VoiceAgentMonitoring";
         var callSessionsContainerName = configuration["CosmosDb:CallSessionsContainer"] ?? "callSessions";
@@ -54,6 +67,12 @@ public class CosmosDbService : ICosmosDbService
 
     public async Task WriteBatchAsync(IEnumerable<CallSession> sessions, CancellationToken cancellationToken = default)
     {
+        if (!_isConfigured || _callSessionsContainer == null)
+        {
+            _logger.LogDebug("CosmosDB not configured - skipping batch write");
+            return;
+        }
+
         var tasks = sessions.Select(session => 
             _callSessionsContainer.UpsertItemAsync(
                 session, 
@@ -66,6 +85,12 @@ public class CosmosDbService : ICosmosDbService
 
     public async Task<PricingConfig?> GetPricingConfigAsync(string modelName, CancellationToken cancellationToken = default)
     {
+        if (!_isConfigured || _pricingConfigContainer == null)
+        {
+            _logger.LogDebug("CosmosDB not configured - returning null for pricing config");
+            return null;
+        }
+
         try
         {
             var response = await _pricingConfigContainer.ReadItemAsync<PricingConfig>(
@@ -84,6 +109,12 @@ public class CosmosDbService : ICosmosDbService
 
     public async Task<List<PricingConfig>> GetAllPricingConfigsAsync(CancellationToken cancellationToken = default)
     {
+        if (!_isConfigured || _pricingConfigContainer == null)
+        {
+            _logger.LogDebug("CosmosDB not configured - returning empty list for pricing configs");
+            return new List<PricingConfig>();
+        }
+
         var query = _pricingConfigContainer.GetItemQueryIterator<PricingConfig>(
             "SELECT * FROM c");
 
@@ -99,6 +130,12 @@ public class CosmosDbService : ICosmosDbService
 
     public async Task UpsertPricingConfigAsync(PricingConfig config, CancellationToken cancellationToken = default)
     {
+        if (!_isConfigured || _pricingConfigContainer == null)
+        {
+            _logger.LogDebug("CosmosDB not configured - skipping pricing config upsert");
+            return;
+        }
+
         await _pricingConfigContainer.UpsertItemAsync(
             config,
             new PartitionKey(config.ModelName),
