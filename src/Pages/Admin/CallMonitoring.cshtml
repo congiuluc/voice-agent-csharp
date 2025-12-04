@@ -4,78 +4,154 @@
     ViewData["Title"] = "Call Monitoring Dashboard";
 }
 
-<div class="container-fluid mt-4">
-    <div class="row mb-4">
-        <div class="col">
-            <h1>📊 Call Monitoring Dashboard</h1>
-            <p class="text-muted">Real-time and historical call analytics</p>
-        </div>
-        <div class="col-auto">
-            <button class="btn btn-primary" id="refreshBtn" onclick="refreshData()">
-                <i class="bi bi-arrow-clockwise"></i> Refresh
-            </button>
-        </div>
-    </div>
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>@ViewData["Title"]</title>
+    <link rel="icon" type="image/svg+xml" href="~/favicon.svg">
+    <link rel="stylesheet" href="~/theme.css">
+    <link rel="stylesheet" href="~/styles.css">
+    <script src="~/js/simple-chart.js"></script>
+</head>
+<body>
+    <div class="main-container">
+        <!-- Main Title -->
+        <h1><span class="brand-l">Call</span> <span class="brand-ia">Monitoring</span></h1>
 
-    <!-- Summary Cards -->
-    <div class="row mb-4">
-        <div class="col-md-3">
-            <div class="card">
-                <div class="card-body">
-                    <h6 class="card-subtitle mb-2 text-muted">Active Sessions</h6>
-                    <h2 class="card-title" id="activeSessions">@Model.ActiveSessions</h2>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card">
-                <div class="card-body">
-                    <h6 class="card-subtitle mb-2 text-muted">Queue Size</h6>
-                    <h2 class="card-title" id="queueSize">@Model.QueueSize</h2>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card">
-                <div class="card-body">
-                    <h6 class="card-subtitle mb-2 text-muted">Total Models</h6>
-                    <h2 class="card-title" id="pricingModels">@Model.PricingModels</h2>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card">
-                <div class="card-body">
-                    <h6 class="card-subtitle mb-2 text-muted">Last Updated</h6>
-                    <h6 class="card-title" id="lastUpdate">@DateTime.UtcNow.ToString("HH:mm:ss")</h6>
-                </div>
-            </div>
-        </div>
-    </div>
+        <!-- Voice Visualizer Canvas (hidden, for consistency) -->
+        <canvas id="voiceCanvas" style="display: none;"></canvas>
 
-    <!-- Pricing Configuration -->
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header">
-                    <h5>Pricing Configuration</h5>
+        <!-- Hamburger (Left) for mobile/compact menu -->
+        <button id="hamburgerButton" class="hamburger-btn" title="Apri menu" aria-label="Apri menu">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M3 6h18M3 12h18M3 18h18" stroke="currentColor" stroke-linecap="round"/>
+            </svg>
+        </button>
+
+        <!-- Home Button -->
+        <a href="/" class="home-btn" title="Home" aria-label="Vai alla home">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20" xmlns="http://www.w3.org/2000/svg">
+                <path d="M3 11.5L12 4l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1v-8.5z" stroke-linecap="round" stroke-linejoin="round"></path>
+            </svg>
+        </a>
+
+        <!-- Theme toggle button -->
+        <button id="themeToggleButton" title="Attiva/Disattiva tema scuro" aria-label="Cambia tema" class="theme-toggle-btn">
+            <svg id="sunIcon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="5"></circle>
+                <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+            </svg>
+            <svg id="moonIcon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+            </svg>
+        </button>
+
+        <!-- Logout button -->
+        <a href="/Logout" class="logout-btn" title="Logout" aria-label="Logout">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" stroke-linecap="round" stroke-linejoin="round"></path>
+                <polyline points="16 17 21 12 16 7" stroke-linecap="round" stroke-linejoin="round"></polyline>
+                <line x1="21" y1="12" x2="9" y2="12" stroke-linecap="round" stroke-linejoin="round"></line>
+            </svg>
+        </a>
+
+        <!-- Refresh Button -->
+        <button id="refreshButton" class="refresh-btn" title="Aggiorna dati" aria-label="Refresh data" onclick="refreshData()">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+        </button>
+
+        <!-- Left Panel (Slideover) -->
+        <nav id="leftPanel" class="left-panel" aria-hidden="true">
+            <div class="left-panel-header">
+                <h3>Menu</h3>
+                <button id="closeLeftPanel" class="close-left-panel" title="Chiudi menu" aria-label="Chiudi menu">×</button>
+            </div>
+            <div class="left-panel-body" id="leftPanelBody">
+                <!-- Primary controls will be moved here dynamically on small viewports -->
+            </div>
+        </nav>
+
+        <!-- Dashboard Content -->
+        <div class="dashboard-content">
+            <!-- Summary Cards -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon">📊</div>
+                    <div class="stat-info">
+                        <div class="stat-label">Sessioni Attive</div>
+                        <div class="stat-value" id="activeSessions">@Model.ActiveSessions</div>
+                    </div>
                 </div>
-                <div class="card-body">
-                    <table class="table table-striped">
+                <div class="stat-card">
+                    <div class="stat-icon">📋</div>
+                    <div class="stat-info">
+                        <div class="stat-label">Coda</div>
+                        <div class="stat-value" id="queueSize">@Model.QueueSize</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">🤖</div>
+                    <div class="stat-info">
+                        <div class="stat-label">Modelli Totali</div>
+                        <div class="stat-value" id="pricingModels">@Model.PricingModels</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">🕐</div>
+                    <div class="stat-info">
+                        <div class="stat-label">Ultimo Aggiornamento</div>
+                        <div class="stat-value stat-value-small" id="lastUpdate">@DateTime.UtcNow.ToString("HH:mm:ss")</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts Section -->
+            <div class="charts-grid">
+                <div class="chart-card">
+                    <h3>Costi per Modello</h3>
+                    <canvas id="pricingChart"></canvas>
+                </div>
+                <div class="chart-card">
+                    <h3>Distribuzione Costi</h3>
+                    <canvas id="costDistributionChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Pricing Table -->
+            <div class="table-card">
+                <div class="table-header">
+                    <h3>Configurazione Prezzi</h3>
+                    <button class="btn-reload" onclick="reloadPricing()">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        Ricarica dal Database
+                    </button>
+                </div>
+                <div class="table-wrapper">
+                    <table class="pricing-table">
                         <thead>
                             <tr>
-                                <th>Model</th>
+                                <th>Modello</th>
                                 <th>Input ($/1K tokens)</th>
                                 <th>Output ($/1K tokens)</th>
                                 <th>Avatar ($/min)</th>
                                 <th>TTS ($/1M chars)</th>
-                                <th>Updated</th>
+                                <th>Aggiornato</th>
                             </tr>
                         </thead>
                         <tbody id="pricingTable">
                             @foreach (var pricing in Model.Pricing)
                             {
-                                <tr>
+                                <tr data-model="@pricing.ModelName" 
+                                    data-input="@pricing.InputTokenCost" 
+                                    data-output="@pricing.OutputTokenCost"
+                                    data-avatar="@pricing.AvatarCostPerMin"
+                                    data-tts="@pricing.TtsCostPer1MChars">
                                     <td><strong>@pricing.ModelName</strong></td>
                                     <td>$@pricing.InputTokenCost.ToString("F4")</td>
                                     <td>$@pricing.OutputTokenCost.ToString("F4")</td>
@@ -86,91 +162,45 @@
                             }
                         </tbody>
                     </table>
-                    <div class="mt-3">
-                        <button class="btn btn-outline-primary" onclick="reloadPricing()">
-                            <i class="bi bi-arrow-repeat"></i> Reload Pricing from Database
-                        </button>
+                </div>
+            </div>
+
+            <!-- External Dashboards -->
+            <div class="links-grid">
+                <a href="https://portal.azure.com" target="_blank" class="link-card">
+                    <div class="link-icon">☁️</div>
+                    <div class="link-info">
+                        <div class="link-title">Azure Portal</div>
+                        <div class="link-desc">Visualizza analytics storiche e query KQL</div>
                     </div>
-                </div>
+                </a>
+                <a href="http://localhost:18888" target="_blank" class="link-card">
+                    <div class="link-icon">📈</div>
+                    <div class="link-info">
+                        <div class="link-title">Aspire Dashboard</div>
+                        <div class="link-desc">Visualizza metriche e trace OpenTelemetry</div>
+                    </div>
+                </a>
             </div>
         </div>
     </div>
 
-    <!-- External Dashboards -->
-    <div class="row mb-4">
-        <div class="col-md-6">
-            <div class="card">
-                <div class="card-header">
-                    <h5>Azure Portal Dashboard</h5>
-                </div>
-                <div class="card-body">
-                    <p>View historical analytics and KQL queries in Azure Portal</p>
-                    <a href="https://portal.azure.com" target="_blank" class="btn btn-primary">
-                        <i class="bi bi-box-arrow-up-right"></i> Open Azure Portal
-                    </a>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-6">
-            <div class="card">
-                <div class="card-header">
-                    <h5>Aspire Dashboard</h5>
-                </div>
-                <div class="card-body">
-                    <p>View OpenTelemetry metrics and traces</p>
-                    <a href="http://localhost:18888" target="_blank" class="btn btn-primary">
-                        <i class="bi bi-box-arrow-up-right"></i> Open Aspire Dashboard
-                    </a>
-                </div>
-            </div>
+    <!-- Error Boundary -->
+    <div id="errorBoundary" class="error-boundary">
+        <div class="error-content">
+            <h2>⚠️ Errore Applicazione</h2>
+            <p id="errorMessage"></p>
+            <button id="reloadButton" title="Ricarica pagina">Ricarica Pagina</button>
         </div>
     </div>
 
-    <!-- Status Messages -->
-    <div id="statusMessage" class="alert alert-info" style="display: none;"></div>
-</div>
+    <!-- Toast Notification Container -->
+    <div id="toastContainer" class="toast-container"></div>
 
-@section Scripts {
-    <script>
-        // Auto-refresh every 30 seconds
-        setInterval(function() {
-            refreshData();
-        }, 30000);
-
-        function refreshData() {
-            location.reload();
-        }
-
-        async function reloadPricing() {
-            try {
-                const response = await fetch('/api/admin/pricing/reload', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
-                });
-
-                if (response.ok) {
-                    const data = await response.json();
-                    showStatus('Pricing reloaded successfully!', 'success');
-                    setTimeout(() => location.reload(), 1000);
-                } else {
-                    showStatus('Failed to reload pricing', 'danger');
-                }
-            } catch (error) {
-                showStatus('Error reloading pricing: ' + error.message, 'danger');
-            }
-        }
-
-        function showStatus(message, type) {
-            const statusDiv = document.getElementById('statusMessage');
-            statusDiv.className = 'alert alert-' + type;
-            statusDiv.textContent = message;
-            statusDiv.style.display = 'block';
-            
-            setTimeout(() => {
-                statusDiv.style.display = 'none';
-            }, 5000);
-        }
-    </script>
-}
+    <!-- Theme toggle script -->
+    <script type="module" src="~/js/index-theme.js"></script>
+    
+    <!-- Dashboard script -->
+    <script type="module" src="~/js/admin-dashboard.js"></script>
+</body>
+</html>
