@@ -122,5 +122,7 @@ class SimpleChart {
     }
 }
 
-// Export as Chart for compatibility
+// Export as Chart for compatibility with admin-dashboard.js
+// Note: This is a simple chart implementation for this project
+// If you need to use Chart.js in the future, rename this to avoid conflicts
 window.Chart = SimpleChart;
