@@ -8,13 +8,13 @@ namespace VoiceAgentCSharp.Features.Monitoring;
 
 /// <summary>
 /// Service for monitoring call sessions with OpenTelemetry and Application Insights.
-/// Provides real-time telemetry and async CosmosDB persistence.
+/// Provides real-time telemetry and async repository persistence.
 /// </summary>
 public class CallMonitoringService
 {
     private readonly TelemetryClient _telemetryClient;
     private readonly PricingService _pricingService;
-    private readonly CosmosDbBatchWriterService _batchWriter;
+    private readonly BatchWriterService _batchWriter;
     private readonly ILogger<CallMonitoringService> _logger;
 
     // OpenTelemetry instrumentation
@@ -27,7 +27,7 @@ public class CallMonitoringService
     private readonly Histogram<double> _estimatedCost;
     private readonly Histogram<double> _audioFlowDuration;
     private readonly Histogram<double> _callDuration;
-    private readonly Counter<long> _cosmosBatchWrites;
+    private readonly Counter<long> _repositoryBatchWrites;
     private readonly Histogram<double> _avatarDuration;
     private readonly Histogram<double> _pstnCallDuration;
 
@@ -37,7 +37,7 @@ public class CallMonitoringService
     public CallMonitoringService(
         TelemetryClient telemetryClient,
         PricingService pricingService,
-        CosmosDbBatchWriterService batchWriter,
+        BatchWriterService batchWriter,
         ILogger<CallMonitoringService> logger)
     {
         _telemetryClient = telemetryClient;
@@ -74,9 +74,9 @@ public class CallMonitoringService
             unit: "s",
             description: "Total call duration");
 
-        _cosmosBatchWrites = _meter.CreateCounter<long>(
-            "cosmos_batch_writes_total",
-            description: "Number of batch write operations to CosmosDB");
+        _repositoryBatchWrites = _meter.CreateCounter<long>(
+            "repository_batch_writes_total",
+            description: "Number of batch write operations to repository");
 
         _avatarDuration = _meter.CreateHistogram<double>(
             "avatar_duration_seconds",
@@ -177,7 +177,7 @@ public class CallMonitoringService
     /// <summary>
     /// Logs tokens consumed and calculates cost.
     /// </summary>
-    public void LogTokensConsumed(string sessionId, int inputTokens, int outputTokens, string model)
+    public void LogTokensConsumed(string sessionId, int inputTokens, int outputTokens, string model, int cachedTokens = 0)
     {
         if (!_activeSessions.TryGetValue(sessionId, out var session))
         {
@@ -189,11 +189,14 @@ public class CallMonitoringService
         activity?.SetTag("session_id", sessionId);
         activity?.SetTag("input_tokens", inputTokens);
         activity?.SetTag("output_tokens", outputTokens);
+        activity?.SetTag("cached_tokens", cachedTokens);
         activity?.SetTag("model", model);
 
         session.InputTokens += inputTokens;
         session.OutputTokens += outputTokens;
+        session.CachedTokens += cachedTokens;
         session.TotalTokens = session.InputTokens + session.OutputTokens;
+        session.InteractionCount++;
 
         var cost = _pricingService.CalculateTokenCost(model, inputTokens, outputTokens);
         session.EstimatedCost += cost;
@@ -322,4 +325,44 @@ public class CallMonitoringService
     /// Gets the count of active sessions.
     /// </summary>
     public int GetActiveSessionCount() => _activeSessions.Count;
+
+    /// <summary>
+    /// Gets aggregated token metrics across all active sessions.
+    /// </summary>
+    public TokenMetrics GetAggregatedTokenMetrics()
+    {
+        var metrics = new TokenMetrics();
+        
+        foreach (var session in _activeSessions.Values)
+        {
+            metrics.TotalInputTokens += session.InputTokens;
+            metrics.TotalOutputTokens += session.OutputTokens;
+            metrics.TotalCachedTokens += session.CachedTokens;
+            metrics.TotalInteractions += session.InteractionCount;
+            
+            if (!string.IsNullOrEmpty(session.Model) && !metrics.UsedModels.Contains(session.Model))
+            {
+                metrics.UsedModels.Add(session.Model);
+            }
+        }
+        
+        return metrics;
+    }
+
+    /// <summary>
+    /// Gets the list of active sessions with their details.
+    /// </summary>
+    public IEnumerable<CallSession> GetActiveSessions() => _activeSessions.Values;
+}
+
+/// <summary>
+/// Aggregated token metrics for dashboard display.
+/// </summary>
+public class TokenMetrics
+{
+    public long TotalInputTokens { get; set; }
+    public long TotalOutputTokens { get; set; }
+    public long TotalCachedTokens { get; set; }
+    public int TotalInteractions { get; set; }
+    public List<string> UsedModels { get; set; } = new();
 }

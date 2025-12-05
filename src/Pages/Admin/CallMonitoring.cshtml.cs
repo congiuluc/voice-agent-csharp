@@ -8,7 +8,7 @@ namespace VoiceAgentCSharp.Pages.Admin;
 public class CallMonitoringModel : PageModel
 {
     private readonly PricingService _pricingService;
-    private readonly CosmosDbBatchWriterService _batchWriter;
+    private readonly BatchWriterService _batchWriter;
     private readonly CallMonitoringService _monitoringService;
     private readonly ILogger<CallMonitoringModel> _logger;
 
@@ -16,10 +16,17 @@ public class CallMonitoringModel : PageModel
     public int QueueSize { get; set; }
     public int PricingModels { get; set; }
     public List<PricingConfig> Pricing { get; set; } = new();
+    
+    // New token metrics properties
+    public long TotalInputTokens { get; set; }
+    public long TotalOutputTokens { get; set; }
+    public long TotalCachedTokens { get; set; }
+    public int TotalInteractions { get; set; }
+    public List<string> UsedModels { get; set; } = new();
 
     public CallMonitoringModel(
         PricingService pricingService,
-        CosmosDbBatchWriterService batchWriter,
+        BatchWriterService batchWriter,
         CallMonitoringService monitoringService,
         ILogger<CallMonitoringModel> logger)
     {
@@ -41,6 +48,14 @@ public class CallMonitoringModel : PageModel
             var pricingDict = _pricingService.GetAllPricing();
             Pricing = pricingDict.Values.ToList();
             PricingModels = Pricing.Count;
+
+            // Get aggregated token metrics
+            var tokenMetrics = _monitoringService.GetAggregatedTokenMetrics();
+            TotalInputTokens = tokenMetrics.TotalInputTokens;
+            TotalOutputTokens = tokenMetrics.TotalOutputTokens;
+            TotalCachedTokens = tokenMetrics.TotalCachedTokens;
+            TotalInteractions = tokenMetrics.TotalInteractions;
+            UsedModels = tokenMetrics.UsedModels;
 
             _logger.LogInformation("Admin dashboard accessed by {User}", User.Identity?.Name);
         }

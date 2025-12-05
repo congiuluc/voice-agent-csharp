@@ -168,6 +168,95 @@ function showToast(message, type = 'info') {
     }, 5000);
 }
 
+// Format number with animation
+function animateNumber(element, newValue) {
+    if (!element) return;
+    
+    const currentValue = parseInt(element.textContent.replace(/,/g, '')) || 0;
+    const diff = newValue - currentValue;
+    const duration = 500;
+    const steps = 20;
+    const stepValue = diff / steps;
+    const stepDuration = duration / steps;
+    
+    let step = 0;
+    const interval = setInterval(() => {
+        step++;
+        const value = Math.round(currentValue + (stepValue * step));
+        element.textContent = value.toLocaleString();
+        
+        if (step >= steps) {
+            clearInterval(interval);
+            element.textContent = newValue.toLocaleString();
+        }
+    }, stepDuration);
+}
+
+// Fetch and update metrics
+async function fetchMetrics() {
+    try {
+        const response = await fetch('/api/admin/metrics');
+        if (!response.ok) {
+            throw new Error('Failed to fetch metrics');
+        }
+        
+        const data = await response.json();
+        
+        // Update token metrics with animation
+        animateNumber(document.getElementById('inputTokens'), data.inputTokens);
+        animateNumber(document.getElementById('outputTokens'), data.outputTokens);
+        animateNumber(document.getElementById('cachedTokens'), data.cachedTokens);
+        animateNumber(document.getElementById('interactions'), data.interactions);
+        
+        // Update session metrics
+        animateNumber(document.getElementById('activeSessions'), data.activeSessions);
+        animateNumber(document.getElementById('queueSize'), data.queueSize);
+        
+        // Update used models
+        updateUsedModels(data.usedModels);
+        
+        // Update last update time
+        const lastUpdate = document.getElementById('lastUpdate');
+        if (lastUpdate) {
+            const time = new Date(data.timestamp);
+            lastUpdate.textContent = time.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        }
+        
+    } catch (error) {
+        console.error('Error fetching metrics:', error);
+    }
+}
+
+// Update used models display
+function updateUsedModels(models) {
+    const grid = document.getElementById('usedModelsGrid');
+    if (!grid) return;
+    
+    if (!models || models.length === 0) {
+        grid.innerHTML = `
+            <div class="no-models">
+                <svg class="no-models-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="17" y1="11" x2="23" y2="11"/></svg>
+                <span>No active models</span>
+            </div>
+        `;
+        return;
+    }
+    
+    grid.innerHTML = models.map(model => `
+        <div class="model-badge">
+            <div class="model-indicator"></div>
+            <span class="model-name">${escapeHtml(model)}</span>
+        </div>
+    `).join('');
+}
+
+// Escape HTML to prevent XSS
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
 // Handle hamburger menu
 function initializeMenu() {
     const hamburgerButton = document.getElementById('hamburgerButton');
@@ -199,8 +288,16 @@ document.addEventListener('DOMContentLoaded', () => {
     initializeCharts();
     initializeMenu();
 
-    // Auto-refresh every 30 seconds
-    setInterval(refreshData, 30000);
+    // Initial metrics fetch
+    fetchMetrics();
+
+    // Auto-refresh metrics every 5 seconds
+    setInterval(fetchMetrics, 5000);
+
+    // Full page refresh every 60 seconds (for charts)
+    setInterval(() => {
+        initializeCharts();
+    }, 60000);
 
     // Listen for theme changes
     const observer = new MutationObserver((mutations) => {
@@ -220,3 +317,4 @@ document.addEventListener('DOMContentLoaded', () => {
 // Export functions for global use
 window.refreshData = refreshData;
 window.reloadPricing = reloadPricing;
+window.fetchMetrics = fetchMetrics;

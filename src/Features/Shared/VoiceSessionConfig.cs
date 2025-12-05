@@ -24,6 +24,16 @@ public class VoiceSessionConfig
     public string? ApiKey { get; set; }
 
     /// <summary>
+    /// Gets or sets the user ID for tracking and monitoring purposes.
+    /// </summary>
+    public string? UserId { get; set; }
+
+    /// <summary>
+    /// Gets or sets the model ID for tracking and monitoring purposes.
+    /// </summary>
+    public string? ModelId { get; set; }
+
+    /// <summary>
     /// Gets or sets the voice model identifier (e.g., "gpt-4o-mini").
     /// Not used for Agent sessions (agent contains model configuration).
     /// </summary>

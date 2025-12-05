@@ -1,28 +1,29 @@
 using System.Collections.Concurrent;
+using VoiceAgentCSharp.Features.Monitoring.Repositories;
 
 namespace VoiceAgentCSharp.Features.Monitoring;
 
 /// <summary>
 /// Service for calculating costs based on pricing configuration.
-/// Caches pricing in memory for performance.
+/// Uses repository pattern with automatic fallback.
 /// </summary>
 public class PricingService
 {
-    private readonly ICosmosDbService _cosmosDbService;
+    private readonly IPricingRepository _pricingRepository;
     private readonly ILogger<PricingService> _logger;
     private readonly ConcurrentDictionary<string, PricingConfig> _pricingCache = new();
     private DateTime _lastCacheUpdate = DateTime.MinValue;
     private readonly SemaphoreSlim _cacheLock = new(1, 1);
 
-    // Default pricing if CosmosDB is unavailable
+    // Default pricing for fallback
     private static readonly Dictionary<string, PricingConfig> DefaultPricing = new()
     {
         ["gpt-4o"] = new PricingConfig
         {
             Id = "gpt-4o",
             ModelName = "gpt-4o",
-            InputTokenCost = 0.0025m,  // $2.50 per 1M tokens
-            OutputTokenCost = 0.010m,   // $10.00 per 1M tokens
+            InputTokenCost = 0.0025m,
+            OutputTokenCost = 0.010m,
             AvatarCostPerMin = 0.50m,
             TtsCostPer1MChars = 15.00m
         },
@@ -30,8 +31,8 @@ public class PricingService
         {
             Id = "gpt-4o-mini",
             ModelName = "gpt-4o-mini",
-            InputTokenCost = 0.00015m,  // $0.15 per 1M tokens
-            OutputTokenCost = 0.0006m,  // $0.60 per 1M tokens
+            InputTokenCost = 0.00015m,
+            OutputTokenCost = 0.0006m,
             AvatarCostPerMin = 0.50m,
             TtsCostPer1MChars = 15.00m
         },
@@ -39,36 +40,36 @@ public class PricingService
         {
             Id = "gpt-4o-realtime-preview",
             ModelName = "gpt-4o-realtime-preview",
-            InputTokenCost = 0.005m,    // $5.00 per 1M tokens
-            OutputTokenCost = 0.020m,   // $20.00 per 1M tokens
+            InputTokenCost = 0.005m,
+            OutputTokenCost = 0.020m,
             AvatarCostPerMin = 0.50m,
             TtsCostPer1MChars = 15.00m
         }
     };
 
-    public PricingService(ICosmosDbService cosmosDbService, ILogger<PricingService> logger)
+    public PricingService(IPricingRepository pricingRepository, ILogger<PricingService> logger)
     {
-        _cosmosDbService = cosmosDbService;
+        _pricingRepository = pricingRepository;
         _logger = logger;
     }
 
     /// <summary>
-    /// Initializes pricing cache from CosmosDB.
+    /// Initializes pricing cache from repository.
     /// </summary>
     public async Task InitializeAsync(CancellationToken cancellationToken = default)
     {
-        await LoadPricingFromDatabaseAsync(cancellationToken);
+        await LoadPricingFromRepositoryAsync(cancellationToken);
     }
 
     /// <summary>
-    /// Reloads pricing cache from CosmosDB.
+    /// Reloads pricing cache from repository.
     /// </summary>
     public async Task ReloadPricingAsync(CancellationToken cancellationToken = default)
     {
         await _cacheLock.WaitAsync(cancellationToken);
         try
         {
-            await LoadPricingFromDatabaseAsync(cancellationToken);
+            await LoadPricingFromRepositoryAsync(cancellationToken);
             _logger.LogInformation("Pricing cache reloaded successfully");
         }
         finally
@@ -132,13 +133,13 @@ public class PricingService
     }
 
     /// <summary>
-    /// Loads pricing from database into cache.
+    /// Loads pricing from repository into cache.
     /// </summary>
-    private async Task LoadPricingFromDatabaseAsync(CancellationToken cancellationToken)
+    private async Task LoadPricingFromRepositoryAsync(CancellationToken cancellationToken)
     {
         try
         {
-            var configs = await _cosmosDbService.GetAllPricingConfigsAsync(cancellationToken);
+            var configs = await _pricingRepository.GetAllAsync(cancellationToken);
             
             _pricingCache.Clear();
             foreach (var config in configs)
@@ -147,12 +148,12 @@ public class PricingService
             }
 
             _lastCacheUpdate = DateTime.UtcNow;
-            _logger.LogInformation("Loaded {Count} pricing configs from database", configs.Count);
+            _logger.LogInformation("Loaded {Count} pricing configs from repository", configs.Count);
 
-            // If no configs in database, seed with defaults
+            // If no configs in repository, seed with defaults
             if (configs.Count == 0)
             {
-                _logger.LogInformation("No pricing configs in database, using defaults");
+                _logger.LogInformation("No pricing configs in repository, using defaults");
                 foreach (var kvp in DefaultPricing)
                 {
                     _pricingCache[kvp.Key] = kvp.Value;
@@ -161,7 +162,7 @@ public class PricingService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to load pricing from database, using defaults");
+            _logger.LogError(ex, "Failed to load pricing from repository, using defaults");
             foreach (var kvp in DefaultPricing)
             {
                 _pricingCache[kvp.Key] = kvp.Value;

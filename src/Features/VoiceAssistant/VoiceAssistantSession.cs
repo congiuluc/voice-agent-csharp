@@ -231,41 +231,168 @@ public class VoiceAssistantSession : VoiceSessionBase
 
     /// <summary>
     /// Handles individual session update events.
+    /// Emits comprehensive events for UI tracing.
     /// </summary>
     private async Task HandleSessionUpdateAsync(SessionUpdate update, CancellationToken cancellationToken)
     {
+        // Always emit raw event type for tracing
+        var eventTypeName = update.GetType().Name.Replace("SessionUpdate", "");
+        
         try
         {
             switch (update)
             {
                 case SessionUpdateSessionCreated sessionCreated:
                     _logger.LogInformation("Session created: {SessionId}", sessionCreated.Session?.Id);
-                    await base.EmitSessionEventAsync("SessionCreated", new { SessionId = sessionCreated.Session?.Id });
+                    await base.EmitSessionEventAsync("SessionCreated", new { 
+                        SessionId = sessionCreated.Session?.Id,
+                        Model = sessionCreated.Session?.Model,
+                        Voice = sessionCreated.Session?.Voice?.ToString()
+                    });
                     break;
 
-                case SessionUpdateSessionUpdated:
+                case SessionUpdateSessionUpdated sessionUpdated:
                     _logger.LogInformation("Session updated");
-                    await base.EmitSessionEventAsync("SessionUpdated", null);
+                    await base.EmitSessionEventAsync("SessionUpdated", new {
+                        Model = sessionUpdated.Session?.Model,
+                        Voice = sessionUpdated.Session?.Voice?.ToString(),
+                        TurnDetection = sessionUpdated.Session?.TurnDetection?.ToString()
+                    });
                     break;
 
-                case SessionUpdateInputAudioBufferSpeechStarted:
-                    _logger.LogInformation("User started speaking");
+                case SessionUpdateInputAudioBufferSpeechStarted speechStarted:
+                    _logger.LogInformation("User started speaking, ItemId: {ItemId}", speechStarted.ItemId);
                     await base.OnSpeechStartedAsync();
-                    await base.EmitSessionEventAsync("SpeechStarted", null);
+                    await base.EmitSessionEventAsync("SpeechStarted", new { 
+                        ItemId = speechStarted.ItemId
+                    });
                     break;
 
-                case SessionUpdateInputAudioBufferSpeechStopped:
-                    _logger.LogInformation("User stopped speaking");
-                    await base.EmitSessionEventAsync("SpeechStopped", null);
+                case SessionUpdateInputAudioBufferSpeechStopped speechStopped:
+                    _logger.LogInformation("User stopped speaking, ItemId: {ItemId}", speechStopped.ItemId);
+                    await base.EmitSessionEventAsync("SpeechStopped", new { 
+                        ItemId = speechStopped.ItemId
+                    });
+                    break;
+
+                case SessionUpdateInputAudioBufferCommitted bufferCommitted:
+                    _logger.LogDebug("Audio buffer committed, ItemId: {ItemId}", bufferCommitted.ItemId);
+                    await base.EmitSessionEventAsync("AudioBufferCommitted", new { 
+                        ItemId = bufferCommitted.ItemId,
+                        PreviousItemId = bufferCommitted.PreviousItemId
+                    });
+                    break;
+
+                case SessionUpdateInputAudioBufferCleared bufferCleared:
+                    _logger.LogDebug("Audio buffer cleared");
+                    await base.EmitSessionEventAsync("AudioBufferCleared", null);
+                    break;
+
+                case SessionUpdateConversationItemCreated itemCreated:
+                    _logger.LogDebug("Conversation item created: {ItemId}", itemCreated.Item?.Id);
+                    await base.EmitSessionEventAsync("ConversationItemCreated", new { 
+                        ItemId = itemCreated.Item?.Id,
+                        ItemType = itemCreated.Item?.GetType().Name,
+                        PreviousItemId = itemCreated.PreviousItemId
+                    });
                     break;
 
                 case SessionUpdateConversationItemInputAudioTranscriptionCompleted transcriptionCompleted:
                     _logger.LogInformation("User transcription: {Transcript}", transcriptionCompleted.Transcript);
+                    await base.EmitSessionEventAsync("UserTranscription", new { 
+                        ItemId = transcriptionCompleted.ItemId,
+                        ContentIndex = transcriptionCompleted.ContentIndex,
+                        Transcript = transcriptionCompleted.Transcript
+                    });
                     await base.OnUserTranscriptionAsync(transcriptionCompleted.Transcript);
+                    break;
+
+                case SessionUpdateConversationItemInputAudioTranscriptionFailed transcriptionFailed:
+                    _logger.LogWarning("User transcription failed: {Error}", transcriptionFailed.Error?.Message);
+                    await base.EmitSessionEventAsync("UserTranscriptionFailed", new { 
+                        ItemId = transcriptionFailed.ItemId,
+                        Error = transcriptionFailed.Error?.Message
+                    });
+                    break;
+
+                case SessionUpdateResponseCreated responseCreated:
+                    _logger.LogDebug("Response created: {ResponseId}", responseCreated.Response?.Id);
+                    await base.EmitSessionEventAsync("ResponseCreated", new { 
+                        ResponseId = responseCreated.Response?.Id,
+                        Status = responseCreated.Response?.Status?.ToString()
+                    });
+                    break;
+
+                case SessionUpdateResponseOutputItemAdded outputItemAdded:
+                    _logger.LogDebug("Response output item added: {ItemId}", outputItemAdded.Item?.Id);
+                    await base.EmitSessionEventAsync("ResponseOutputItemAdded", new { 
+                        ResponseId = outputItemAdded.ResponseId,
+                        ItemId = outputItemAdded.Item?.Id,
+                        ItemType = outputItemAdded.Item?.GetType().Name
+                    });
+                    break;
+
+                case SessionUpdateResponseOutputItemDone outputItemDone:
+                    _logger.LogDebug("Response output item done: {ItemId}", outputItemDone.Item?.Id);
+                    await base.EmitSessionEventAsync("ResponseOutputItemDone", new { 
+                        ResponseId = outputItemDone.ResponseId,
+                        ItemId = outputItemDone.Item?.Id
+                    });
+                    break;
+
+                case SessionUpdateResponseContentPartAdded contentPartAdded:
+                    _logger.LogDebug("Response content part added");
+                    await base.EmitSessionEventAsync("ResponseContentPartAdded", new { 
+                        ResponseId = contentPartAdded.ResponseId,
+                        ItemId = contentPartAdded.ItemId,
+                        ContentIndex = contentPartAdded.ContentIndex
+                    });
+                    break;
+
+                case SessionUpdateResponseContentPartDone contentPartDone:
+                    _logger.LogDebug("Response content part done");
+                    await base.EmitSessionEventAsync("ResponseContentPartDone", new { 
+                        ResponseId = contentPartDone.ResponseId,
+                        ItemId = contentPartDone.ItemId,
+                        ContentIndex = contentPartDone.ContentIndex
+                    });
+                    break;
+
+                case SessionUpdateResponseTextDelta textDelta:
+                    // Don't log full delta to avoid noise, just emit event
+                    await base.EmitSessionEventAsync("ResponseTextDelta", new { 
+                        ResponseId = textDelta.ResponseId,
+                        ItemId = textDelta.ItemId,
+                        DeltaLength = textDelta.Delta?.Length ?? 0
+                    });
+                    break;
+
+                case SessionUpdateResponseTextDone textDone:
+                    _logger.LogDebug("Response text done");
+                    await base.EmitSessionEventAsync("ResponseTextDone", new { 
+                        ResponseId = textDone.ResponseId,
+                        ItemId = textDone.ItemId,
+                        TextLength = textDone.Text?.Length ?? 0
+                    });
+                    break;
+
+                case SessionUpdateResponseAudioTranscriptDelta transcriptDelta:
+                    // Emit delta for streaming text to transcript
+                    await base.EmitSessionEventAsync("ResponseAudioTranscriptDelta", new { 
+                        ResponseId = transcriptDelta.ResponseId,
+                        ItemId = transcriptDelta.ItemId,
+                        Delta = transcriptDelta.Delta,
+                        DeltaLength = transcriptDelta.Delta?.Length ?? 0
+                    });
                     break;
 
                 case SessionUpdateResponseAudioTranscriptDone transcriptDone:
                     _logger.LogInformation("Assistant transcription: {Transcript}", transcriptDone.Transcript);
+                    await base.EmitSessionEventAsync("ResponseAudioTranscriptDone", new { 
+                        ResponseId = transcriptDone.ResponseId,
+                        ItemId = transcriptDone.ItemId,
+                        Transcript = transcriptDone.Transcript
+                    });
                     await base.OnTranscriptionAsync(transcriptDone.Transcript);
                     break;
 
@@ -273,32 +400,87 @@ public class VoiceAssistantSession : VoiceSessionBase
                     if (audioDelta.Delta != null)
                     {
                         byte[] audioData = audioDelta.Delta.ToArray();
+                        await base.EmitSessionEventAsync("ResponseAudioDelta", new { 
+                            ResponseId = audioDelta.ResponseId,
+                            AudioLength = audioData.Length
+                        });
                         await base.OnAudioDeltaAsync(audioData);
                     }
                     break;
 
-                case SessionUpdateResponseDone:
-                    _logger.LogInformation("Response complete");
-                    await base.EmitSessionEventAsync("ResponseDone", null);
+                case SessionUpdateResponseAudioDone audioDone:
+                    _logger.LogDebug("Response audio done");
+                    await base.EmitSessionEventAsync("ResponseAudioDone", new { 
+                        ResponseId = audioDone.ResponseId,
+                        ItemId = audioDone.ItemId
+                    });
+                    break;
+
+                case SessionUpdateResponseFunctionCallArgumentsDelta funcArgsDelta:
+                    await base.EmitSessionEventAsync("FunctionCallArgumentsDelta", new { 
+                        CallId = funcArgsDelta.CallId,
+                        DeltaLength = funcArgsDelta.Delta?.Length ?? 0
+                    });
                     break;
 
                 case SessionUpdateResponseFunctionCallArgumentsDone functionCallArgs:
+                    _logger.LogInformation("Function call: {Name}", functionCallArgs.Name);
+                    await base.EmitSessionEventAsync("FunctionCallArgumentsDone", new { 
+                        CallId = functionCallArgs.CallId,
+                        Name = functionCallArgs.Name,
+                        Arguments = functionCallArgs.Arguments
+                    });
                     await base.HandleFunctionCallAsync(functionCallArgs);
+                    break;
+
+                case SessionUpdateResponseDone responseDone:
+                    _logger.LogInformation("Response complete: {ResponseId}", responseDone.Response?.Id);
+                    var usage = responseDone.Response?.Usage;
+                    await base.EmitSessionEventAsync("ResponseDone", new { 
+                        ResponseId = responseDone.Response?.Id,
+                        Status = responseDone.Response?.Status?.ToString(),
+                        Usage = usage != null ? new {
+                            InputTokens = usage.InputTokens,
+                            OutputTokens = usage.OutputTokens,
+                            TotalTokens = usage.TotalTokens,
+                            InputTokenDetails = usage.InputTokenDetails != null ? new {
+                                CachedTokens = usage.InputTokenDetails.CachedTokens,
+                                TextTokens = usage.InputTokenDetails.TextTokens,
+                                AudioTokens = usage.InputTokenDetails.AudioTokens
+                            } : null,
+                            OutputTokenDetails = usage.OutputTokenDetails != null ? new {
+                                TextTokens = usage.OutputTokenDetails.TextTokens,
+                                AudioTokens = usage.OutputTokenDetails.AudioTokens
+                            } : null
+                        } : null
+                    });
                     break;
 
                 case SessionUpdateError errorEvent:
                     _logger.LogError("Session error: {ErrorMessage}", errorEvent.Error?.Message);
+                    await base.EmitSessionEventAsync("SessionError", new { 
+                        ErrorType = errorEvent.Error?.Type,
+                        ErrorCode = errorEvent.Error?.Code,
+                        Message = errorEvent.Error?.Message
+                    });
                     await base.OnErrorAsync(errorEvent.Error?.Message ?? "Unknown error");
                     break;
 
                 default:
-                    _logger.LogDebug("Unhandled event: {EventType}", update.GetType().Name);
+                    _logger.LogDebug("Unhandled event: {EventType}", eventTypeName);
+                    await base.EmitSessionEventAsync(eventTypeName, new { 
+                        RawType = update.GetType().FullName
+                    });
                     break;
             }
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error handling session update");
+            _logger.LogError(ex, "Error handling session update: {EventType}", eventTypeName);
+            await base.EmitSessionEventAsync("EventProcessingError", new { 
+                EventType = eventTypeName,
+                Error = ex.Message
+            });
         }
     }
 

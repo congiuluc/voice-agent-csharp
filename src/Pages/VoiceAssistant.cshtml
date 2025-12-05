@@ -71,8 +71,8 @@
         @if (User.IsInRole("Admin"))
         {
             <!-- Admin Dashboard Button -->
-            <a href="/Admin/CallMonitoring" class="admin-btn" title="Admin Dashboard" aria-label="Admin Dashboard" style="position: fixed; top: 20px; right: 120px; background: #2563eb; color: white; border-radius: 8px; padding: 8px 12px; text-decoration: none; font-size: 14px; display: flex; align-items: center; gap: 4px; z-index: 1000;">
-                📊 Admin
+            <a href="/Admin/CallMonitoring" class="admin-btn" title="Admin Dashboard" aria-label="Admin Dashboard" target="_blank">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
             </a>
         }
 
@@ -178,7 +178,8 @@
             <div id="transcriptContent"></div>
             <!-- Monitoring Trace Panel -->
             <div id="monitoringTrace" style="padding: 10px; margin: 10px 0; background: rgba(37, 99, 235, 0.1); border-radius: 8px; font-size: 12px; font-family: monospace; display: none;">
-                📊 <span id="traceInfo">Tokens: 0 | Input: $0.00 | Output: $0.00 | Total: $0.00</span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:4px;"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+                <span id="traceInfo">Tokens: 0 | Input: $0.00 | Output: $0.00 | Total: $0.00</span>
             </div>
             <div class="text-input-row">
                 <textarea id="textInput" placeholder="Scrivi un messaggio..." rows="1"></textarea>

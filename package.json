@@ -1,0 +1,31 @@
+{
+  "name": "voice-agent-csharp",
+  "version": "1.0.0",
+  "description": "[![Open in GitHub Codespaces](https://img.shields.io/badge/Open_in-GitHub_Codespaces-black?logo=github)](https://codespaces.new/congiuluc/voice-agent-csharp)\r [![Open in Dev Containers](https://img.shields.io/badge/Open_in-Dev_Containers-blue?logo=visualstudiocode)](https://vscode.dev/redirect?url=vscode://ms-vscode-remote.remote-containers/cloneInVolume?url=https://github.com/congiuluc/voice-agent-csharp)",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "npx playwright test",
+    "test:ui": "npx playwright test --ui",
+    "test:headed": "npx playwright test --headed",
+    "test:debug": "npx playwright test --debug",
+    "test:report": "npx playwright show-report"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/congiuluc/voice-agent-csharp.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/congiuluc/voice-agent-csharp/issues"
+  },
+  "homepage": "https://github.com/congiuluc/voice-agent-csharp#readme",
+  "devDependencies": {
+    "@playwright/test": "^1.57.0"
+  }
+}

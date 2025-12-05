@@ -10,3 +10,7 @@ appsettings.*.json
 *.log
 wwwroot/lib/
 logs/
+node_modules/
+playwright-report/
+test-results/
+report/

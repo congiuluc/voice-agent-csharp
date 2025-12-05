@@ -1,31 +1,32 @@
 using System.Collections.Concurrent;
+using VoiceAgentCSharp.Features.Monitoring.Repositories;
 
 namespace VoiceAgentCSharp.Features.Monitoring;
 
 /// <summary>
-/// Background service that batches call session writes to CosmosDB.
-/// Flushes hourly and on shutdown to avoid real-time write contention.
+/// Background service that batches call session writes to the repository.
+/// Flushes periodically and on shutdown to avoid real-time write contention.
 /// </summary>
-public class CosmosDbBatchWriterService : BackgroundService
+public class BatchWriterService : BackgroundService
 {
-    private readonly ICosmosDbService _cosmosDbService;
-    private readonly ILogger<CosmosDbBatchWriterService> _logger;
+    private readonly ICallSessionRepository _callSessionRepository;
+    private readonly ILogger<BatchWriterService> _logger;
     private readonly ConcurrentQueue<CallSession> _writeQueue = new();
     private readonly TimeSpan _flushInterval;
     private readonly SemaphoreSlim _flushLock = new(1, 1);
 
-    public CosmosDbBatchWriterService(
-        ICosmosDbService cosmosDbService,
+    public BatchWriterService(
+        ICallSessionRepository callSessionRepository,
         IConfiguration configuration,
-        ILogger<CosmosDbBatchWriterService> logger)
+        ILogger<BatchWriterService> logger)
     {
-        _cosmosDbService = cosmosDbService;
+        _callSessionRepository = callSessionRepository;
         _logger = logger;
 
-        var flushIntervalMinutes = configuration.GetValue("CosmosDbBatchWriter:FlushIntervalMinutes", 60);
+        var flushIntervalMinutes = configuration.GetValue("BatchWriter:FlushIntervalMinutes", 60);
         _flushInterval = TimeSpan.FromMinutes(flushIntervalMinutes);
 
-        _logger.LogInformation("CosmosDB batch writer initialized with {Minutes} minute flush interval", flushIntervalMinutes);
+        _logger.LogInformation("BatchWriterService initialized with {Minutes} minute flush interval", flushIntervalMinutes);
     }
 
     /// <summary>
@@ -45,7 +46,7 @@ public class CosmosDbBatchWriterService : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        _logger.LogInformation("CosmosDB batch writer service started");
+        _logger.LogInformation("BatchWriterService started");
 
         while (!stoppingToken.IsCancellationRequested)
         {
@@ -61,20 +62,20 @@ public class CosmosDbBatchWriterService : BackgroundService
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error in CosmosDB batch writer background task");
+                _logger.LogError(ex, "Error in BatchWriterService background task");
             }
         }
     }
 
     public override async Task StopAsync(CancellationToken cancellationToken)
     {
-        _logger.LogInformation("CosmosDB batch writer service stopping, flushing remaining queue...");
+        _logger.LogInformation("BatchWriterService stopping, flushing remaining queue...");
         await FlushQueueAsync(cancellationToken);
         await base.StopAsync(cancellationToken);
     }
 
     /// <summary>
-    /// Flushes the queue to CosmosDB.
+    /// Flushes the queue to the repository.
     /// </summary>
     private async Task FlushQueueAsync(CancellationToken cancellationToken)
     {
@@ -100,22 +101,14 @@ public class CosmosDbBatchWriterService : BackgroundService
                 return;
             }
 
-            _logger.LogInformation("Flushing {Count} call sessions to CosmosDB", sessionsToWrite.Count);
-
-            await _cosmosDbService.WriteBatchAsync(sessionsToWrite, cancellationToken);
-
-            _logger.LogInformation("Successfully flushed {Count} call sessions to CosmosDB", sessionsToWrite.Count);
+            _logger.LogInformation("Flushing {Count} call sessions to repository", sessionsToWrite.Count);
+            await _callSessionRepository.WriteBatchAsync(sessionsToWrite, cancellationToken);
+            _logger.LogInformation("Successfully flushed {Count} call sessions", sessionsToWrite.Count);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to flush call sessions to CosmosDB");
-            
-            // Note: In production, implement a retry mechanism with exponential backoff
-            // or use a dead-letter queue for failed writes. For now, we log the error
-            // and allow the sessions to be lost. Consider adding:
-            // - Retry logic with max attempts
-            // - Dead-letter queue storage
-            // - Alert/notification on persistent failures
+            _logger.LogError(ex, "Error flushing call sessions to repository");
+            // Items are already dequeued, log the error but don't re-queue to avoid infinite loops
         }
         finally
         {

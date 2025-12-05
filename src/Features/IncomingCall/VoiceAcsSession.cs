@@ -399,9 +399,27 @@ public class VoiceAcsSession : IVoiceSession
                     }
                     break;
 
-                case SessionUpdateResponseDone:
+                case SessionUpdateResponseDone responseDone:
                     _logger.LogInformation("Assistant response complete");
-                    await EmitSessionEventAsync("ResponseDone", null);
+                    var usageData = responseDone.Response?.Usage;
+                    await EmitSessionEventAsync("ResponseDone", new {
+                        ResponseId = responseDone.Response?.Id,
+                        Status = responseDone.Response?.Status?.ToString(),
+                        Usage = usageData != null ? new {
+                            InputTokens = usageData.InputTokens,
+                            OutputTokens = usageData.OutputTokens,
+                            TotalTokens = usageData.TotalTokens,
+                            InputTokenDetails = usageData.InputTokenDetails != null ? new {
+                                CachedTokens = usageData.InputTokenDetails.CachedTokens,
+                                TextTokens = usageData.InputTokenDetails.TextTokens,
+                                AudioTokens = usageData.InputTokenDetails.AudioTokens
+                            } : null,
+                            OutputTokenDetails = usageData.OutputTokenDetails != null ? new {
+                                TextTokens = usageData.OutputTokenDetails.TextTokens,
+                                AudioTokens = usageData.OutputTokenDetails.AudioTokens
+                            } : null
+                        } : null
+                    });
                     break;
 
                 case SessionUpdateResponseFunctionCallArgumentsDone functionCallArgs:

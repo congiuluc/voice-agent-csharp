@@ -92,6 +92,18 @@ public class CallSession
     public int TotalTokens { get; set; }
 
     /// <summary>
+    /// Cached tokens (tokens that were cached and didn't incur cost).
+    /// </summary>
+    [JsonPropertyName("cachedTokens")]
+    public int CachedTokens { get; set; }
+
+    /// <summary>
+    /// Number of user/assistant interaction turns.
+    /// </summary>
+    [JsonPropertyName("interactionCount")]
+    public int InteractionCount { get; set; }
+
+    /// <summary>
     /// Estimated cost in USD.
     /// </summary>
     [JsonPropertyName("estimatedCost")]
