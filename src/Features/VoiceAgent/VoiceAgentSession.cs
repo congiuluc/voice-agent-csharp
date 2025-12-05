@@ -256,17 +256,57 @@ public class VoiceAgentSession : VoiceSessionBase
                     await base.OnTranscriptionAsync(transcriptDone.Transcript);
                     break;
 
+                case SessionUpdateResponseAudioTranscriptDelta transcriptDelta:
+                    // Emit delta for streaming text to transcript
+                    await base.EmitSessionEventAsync("ResponseAudioTranscriptDelta", new { 
+                        ResponseId = transcriptDelta.ResponseId,
+                        ItemId = transcriptDelta.ItemId,
+                        Delta = transcriptDelta.Delta,
+                        DeltaLength = transcriptDelta.Delta?.Length ?? 0
+                    });
+                    break;
+
                 case SessionUpdateResponseAudioDelta audioDelta:
                     if (audioDelta.Delta != null)
                     {
                         byte[] audioData = audioDelta.Delta.ToArray();
+                        await base.EmitSessionEventAsync("ResponseAudioDelta", new { 
+                            ResponseId = audioDelta.ResponseId,
+                            AudioLength = audioData.Length
+                        });
                         await base.OnAudioDeltaAsync(audioData);
                     }
                     break;
 
-                case SessionUpdateResponseDone:
+                case SessionUpdateResponseAudioDone audioDone:
+                    _logger.LogDebug("Agent response audio done");
+                    await base.EmitSessionEventAsync("ResponseAudioDone", new { 
+                        ResponseId = audioDone.ResponseId,
+                        ItemId = audioDone.ItemId
+                    });
+                    break;
+
+                case SessionUpdateResponseDone responseDone:
                     _logger.LogInformation("Agent response complete");
-                    await base.EmitSessionEventAsync("ResponseDone", null);
+                    var usageData = responseDone.Response?.Usage;
+                    await base.EmitSessionEventAsync("ResponseDone", new {
+                        ResponseId = responseDone.Response?.Id,
+                        Status = responseDone.Response?.Status?.ToString(),
+                        Usage = usageData != null ? new {
+                            InputTokens = usageData.InputTokens,
+                            OutputTokens = usageData.OutputTokens,
+                            TotalTokens = usageData.TotalTokens,
+                            InputTokenDetails = usageData.InputTokenDetails != null ? new {
+                                CachedTokens = usageData.InputTokenDetails.CachedTokens,
+                                TextTokens = usageData.InputTokenDetails.TextTokens,
+                                AudioTokens = usageData.InputTokenDetails.AudioTokens
+                            } : null,
+                            OutputTokenDetails = usageData.OutputTokenDetails != null ? new {
+                                TextTokens = usageData.OutputTokenDetails.TextTokens,
+                                AudioTokens = usageData.OutputTokenDetails.AudioTokens
+                            } : null
+                        } : null
+                    });
                     break;
 
                 case SessionUpdateResponseFunctionCallArgumentsDone functionCallArgs:

@@ -397,6 +397,16 @@ public class VoiceLiveAssistant : IAsyncDisposable
                     await EmitSessionEventAsync("ResponseAudioTranscriptDone", new { Transcript = aiTranscript });
                     break;
 
+                case SessionUpdateResponseAudioTranscriptDelta transcriptDelta:
+                    // Emit delta for streaming text to transcript
+                    await EmitSessionEventAsync("ResponseAudioTranscriptDelta", new { 
+                        ResponseId = transcriptDelta.ResponseId,
+                        ItemId = transcriptDelta.ItemId,
+                        Delta = transcriptDelta.Delta,
+                        DeltaLength = transcriptDelta.Delta?.Length ?? 0
+                    });
+                    break;
+
                 case SessionUpdateResponseAudioDelta audioDelta:
                     var delta = audioDelta.Delta;
                     if (OnAudioDelta != null && delta != null)
@@ -404,12 +414,54 @@ public class VoiceLiveAssistant : IAsyncDisposable
                         byte[] audioData = delta.ToArray();
                         await OnAudioDelta(audioData);
                     }
-                    await EmitSessionEventAsync("ResponseAudioDelta", new { Length = delta?.Length ?? 0 });
+                    await EmitSessionEventAsync("ResponseAudioDelta", new { 
+                        ResponseId = audioDelta.ResponseId,
+                        AudioLength = delta?.Length ?? 0 
+                    });
                     break;
 
-                case SessionUpdateResponseDone:
+                case SessionUpdateResponseAudioDone audioDone:
+                    _logger.LogDebug("Response audio done");
+                    await EmitSessionEventAsync("ResponseAudioDone", new { 
+                        ResponseId = audioDone.ResponseId,
+                        ItemId = audioDone.ItemId
+                    });
+                    break;
+
+                // Note: SessionUpdateResponseAudioTimestampDelta may not exist in SDK yet
+                // If available, handle word-level audio timestamps for streaming text
+                // case SessionUpdateResponseAudioTimestampDelta timestampDelta:
+                //     await EmitSessionEventAsync("AudioTimestampDelta", new {
+                //         ResponseId = timestampDelta.ResponseId,
+                //         ItemId = timestampDelta.ItemId,
+                //         AudioOffsetMs = timestampDelta.AudioOffsetMs,
+                //         AudioDurationMs = timestampDelta.AudioDurationMs,
+                //         Text = timestampDelta.Text,
+                //         TimestampType = timestampDelta.TimestampType
+                //     });
+                //     break;
+
+                case SessionUpdateResponseDone responseDone:
                     _logger.LogInformation("Response complete");
-                    await EmitSessionEventAsync("ResponseDone", null);
+                    var usageData = responseDone.Response?.Usage;
+                    await EmitSessionEventAsync("ResponseDone", new {
+                        ResponseId = responseDone.Response?.Id,
+                        Status = responseDone.Response?.Status?.ToString(),
+                        Usage = usageData != null ? new {
+                            InputTokens = usageData.InputTokens,
+                            OutputTokens = usageData.OutputTokens,
+                            TotalTokens = usageData.TotalTokens,
+                            InputTokenDetails = usageData.InputTokenDetails != null ? new {
+                                CachedTokens = usageData.InputTokenDetails.CachedTokens,
+                                TextTokens = usageData.InputTokenDetails.TextTokens,
+                                AudioTokens = usageData.InputTokenDetails.AudioTokens
+                            } : null,
+                            OutputTokenDetails = usageData.OutputTokenDetails != null ? new {
+                                TextTokens = usageData.OutputTokenDetails.TextTokens,
+                                AudioTokens = usageData.OutputTokenDetails.AudioTokens
+                            } : null
+                        } : null
+                    });
                     break;
 
                 case SessionUpdateResponseFunctionCallArgumentsDone functionCallArgs:

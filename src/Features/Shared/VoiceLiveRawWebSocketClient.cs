@@ -190,6 +190,13 @@ public class VoiceLiveSessionConfig
     public TranscriptionConfig InputAudioTranscription { get; set; } = new();
 
     /// <summary>
+    /// Gets or sets whether to enable output audio timestamps.
+    /// When enabled, the API sends response.audio_timestamp.delta events with word-level timing.
+    /// </summary>
+    [JsonPropertyName("output_audio_timestamps")]
+    public bool OutputAudioTimestamps { get; set; } = true;
+
+    /// <summary>
     /// Gets or sets the avatar configuration.
     /// </summary>
     [JsonPropertyName("avatar")]
@@ -304,6 +311,61 @@ public class RtcConfiguration
     public string BundlePolicy { get; set; } = "max-bundle";
 }
 
+/// <summary>
+/// Payload for response.audio_timestamp.delta events.
+/// Contains word-level timing information for streaming text to transcript.
+/// </summary>
+public class AudioTimestampDeltaPayload
+{
+    /// <summary>
+    /// Gets or sets the response ID this timestamp belongs to.
+    /// </summary>
+    [JsonPropertyName("response_id")]
+    public string? ResponseId { get; set; }
+
+    /// <summary>
+    /// Gets or sets the item ID within the response.
+    /// </summary>
+    [JsonPropertyName("item_id")]
+    public string? ItemId { get; set; }
+
+    /// <summary>
+    /// Gets or sets the output index.
+    /// </summary>
+    [JsonPropertyName("output_index")]
+    public int OutputIndex { get; set; }
+
+    /// <summary>
+    /// Gets or sets the content index.
+    /// </summary>
+    [JsonPropertyName("content_index")]
+    public int ContentIndex { get; set; }
+
+    /// <summary>
+    /// Gets or sets the audio offset in milliseconds from the start of the audio.
+    /// </summary>
+    [JsonPropertyName("audio_offset_ms")]
+    public int AudioOffsetMs { get; set; }
+
+    /// <summary>
+    /// Gets or sets the duration of this audio segment in milliseconds.
+    /// </summary>
+    [JsonPropertyName("audio_duration_ms")]
+    public int AudioDurationMs { get; set; }
+
+    /// <summary>
+    /// Gets or sets the text segment (word) for this timestamp.
+    /// </summary>
+    [JsonPropertyName("text")]
+    public string? Text { get; set; }
+
+    /// <summary>
+    /// Gets or sets the timestamp type (currently only "word").
+    /// </summary>
+    [JsonPropertyName("timestamp_type")]
+    public string? TimestampType { get; set; }
+}
+
 #endregion
 
 /// <summary>
@@ -383,6 +445,11 @@ public class VoiceLiveRawWebSocketClient : IAsyncDisposable
     /// Raised when ICE servers are received from session.updated.
     /// </summary>
     public event Func<List<IceServerConfig>, Task>? OnIceServers;
+
+    /// <summary>
+    /// Raised when audio timestamp delta is received (for tracking output audio duration and word-level text streaming).
+    /// </summary>
+    public event Func<AudioTimestampDeltaPayload, Task>? OnAudioTimestampDelta;
 
     #endregion
 
@@ -883,6 +950,26 @@ public class VoiceLiveRawWebSocketClient : IAsyncDisposable
                                 await OnAudioDelta(audioBytes).ConfigureAwait(false);
                             }
                         }
+                    }
+                    break;
+
+                case "response.audio_timestamp.delta":
+                    if (OnAudioTimestampDelta != null)
+                    {
+                        var payload = new AudioTimestampDeltaPayload
+                        {
+                            ResponseId = root.TryGetProperty("response_id", out var respId) ? respId.GetString() : null,
+                            ItemId = root.TryGetProperty("item_id", out var itemId) ? itemId.GetString() : null,
+                            OutputIndex = root.TryGetProperty("output_index", out var outIdx) ? outIdx.GetInt32() : 0,
+                            ContentIndex = root.TryGetProperty("content_index", out var contIdx) ? contIdx.GetInt32() : 0,
+                            AudioOffsetMs = root.TryGetProperty("audio_offset_ms", out var offsetMs) ? offsetMs.GetInt32() : 0,
+                            AudioDurationMs = root.TryGetProperty("audio_duration_ms", out var durationMs) ? durationMs.GetInt32() : 0,
+                            Text = root.TryGetProperty("text", out var textProp) ? textProp.GetString() : null,
+                            TimestampType = root.TryGetProperty("timestamp_type", out var tsType) ? tsType.GetString() : null
+                        };
+                        _logger.LogDebug("Audio timestamp delta: offset={OffsetMs}ms, duration={DurationMs}ms, text='{Text}'",
+                            payload.AudioOffsetMs, payload.AudioDurationMs, payload.Text);
+                        await OnAudioTimestampDelta(payload).ConfigureAwait(false);
                     }
                     break;
 

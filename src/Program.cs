@@ -1,8 +1,12 @@
 using VoiceAgentCSharp.Features.Shared;
 using VoiceAgentCSharp.Features.VoiceAgent;
 using VoiceAgentCSharp.Features.IncomingCall;
+using VoiceAgentCSharp.Features.Monitoring;
+using VoiceAgentCSharp.Features.Monitoring.Repositories;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.ApplicationInsights;
+using Microsoft.ApplicationInsights.Extensibility;
 using Serilog;
 using Serilog.Events;
 using Serilog.Formatting.Compact;
@@ -36,7 +40,11 @@ builder.Services.AddRazorPages(options =>
     options.Conventions.AllowAnonymousToPage("/Login");
     options.Conventions.AllowAnonymousToPage("/Logout");
     options.Conventions.AllowAnonymousToPage("/Error");
+    options.Conventions.AuthorizeFolder("/Admin", "Admin");
 });
+
+// Add controllers for Admin API
+builder.Services.AddControllers();
 
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
@@ -44,6 +52,15 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
         options.LoginPath = "/Login";
         options.LogoutPath = "/Logout";
     });
+
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("Admin", policy =>
+    {
+        policy.RequireAuthenticatedUser();
+        // Add additional requirements here if needed (e.g., role claims)
+    });
+});
 
 // Application Insights telemetry
 // Prefer ConnectionString or the newer configuration keys instead of the deprecated InstrumentationKey property.
@@ -62,6 +79,13 @@ else if (!string.IsNullOrEmpty(aiKey))
     builder.Services.AddApplicationInsightsTelemetry();
     // Note: we avoid assigning options.InstrumentationKey directly to prevent using the obsolete API.
     // The SDK will pick up the key from configuration when added to the default configuration sources.
+}
+else
+{
+    // Register a no-op TelemetryClient when Application Insights is not configured
+    Log.Warning("Application Insights not configured - telemetry will be disabled");
+    builder.Services.AddSingleton<TelemetryClient>(sp => 
+        new TelemetryClient(new TelemetryConfiguration { DisableTelemetry = true }));
 }
 
 // Configure CORS - restrict to specific origins in production
@@ -87,9 +111,29 @@ builder.Services.AddSingleton<IncomingCallHandler>();
 builder.Services.AddSingleton<VoiceLiveService>();
 builder.Services.AddSingleton<FoundryService>();
 
+// Register monitoring services with repository pattern (CosmosDB with InMemory fallback)
+builder.Services.AddMonitoringRepositories(builder.Configuration);
+
+builder.Services.AddSingleton<PricingService>();
+builder.Services.AddSingleton<BatchWriterService>();
+builder.Services.AddHostedService<BatchWriterService>(sp => 
+    sp.GetRequiredService<BatchWriterService>());
+builder.Services.AddSingleton<CallMonitoringService>();
+
 // Note: Serilog configured via builder.Host.UseSerilog(); default providers cleared by Serilog host
 
 var app = builder.Build();
+
+// Initialize pricing service
+try
+{
+    var pricingService = app.Services.GetRequiredService<PricingService>();
+    await pricingService.InitializeAsync();
+}
+catch (Exception ex)
+{
+    Log.Warning(ex, "Failed to initialize pricing service - will use defaults");
+}
 
 // Configure the HTTP request pipeline
 if (!app.Environment.IsDevelopment())
@@ -127,6 +171,9 @@ app.UseCors();
 
 app.UseAuthentication();
 app.UseAuthorization();
+
+// Map API controllers
+app.MapControllers();
 
 // Enable WebSockets with timeout
 app.UseWebSockets(new WebSocketOptions

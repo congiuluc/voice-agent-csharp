@@ -6,6 +6,7 @@
  */
 
 import { showToast, addTranscript, updateStatus, addTraceEntry, showMicMessage } from './ui-utils.js';
+import { consumptionTracker } from './consumption-tracker.js';
 
 /**
  * WebSocketHandler class
@@ -70,6 +71,8 @@ export class WebSocketHandler {
           console.log('WebSocket disconnected');
           this.isConnected = false;
           updateStatus('Disconnesso', 'disconnected');
+          consumptionTracker.handleSessionDisconnected();
+          consumptionTracker.stopDurationTimer();
           this.callbacks.onClose();
         };
         
@@ -94,6 +97,8 @@ export class WebSocketHandler {
    */
   disconnect() {
     if (this.socket) {
+      consumptionTracker.handleSessionDisconnected();
+      consumptionTracker.stopDurationTimer();
       this.socket.close();
       this.socket = null;
       this.isConnected = false;
@@ -240,12 +245,16 @@ export class WebSocketHandler {
 
       const message = JSON.parse(jsonString);
       
+      console.log('[DEBUG] JSON message received:', message);
+      
       // Check for Kind property (supports both PascalCase and camelCase)
       const messageKind = message.Kind || message.kind;
       if (!messageKind) {
         console.warn('Received message without Kind property:', message);
         return;
       }
+      
+      console.log('[DEBUG] Message Kind:', messageKind);
       
       // Route based on message kind
       switch (messageKind) {
@@ -284,7 +293,29 @@ export class WebSocketHandler {
       const text = message.text || message.Text || '';
       const role = message.role || message.Role || 'agent'; // 'user' or 'agent'
       
+      console.log('[DEBUG] handleTranscription called:', { text, role, message });
+      
       if (text) {
+        // Skip agent transcriptions if we already have streaming transcript with similar content
+        // (to avoid duplication when using audio_timestamp.delta streaming)
+        if (role === 'agent') {
+          const streamingElement = document.querySelector('.transcript-item.agent.streaming .transcript-content');
+          if (streamingElement) {
+            // Streaming element exists - skip adding duplicate, it will be finalized by consumption tracker
+            console.log('Skipping agent transcription - streaming element active');
+            this.callbacks.onTranscription(text, role);
+            return;
+          }
+          
+          // Check if there's a recently finalized element with same/similar content
+          const lastAgentItem = document.querySelector('.transcript-item.agent:last-of-type .transcript-content');
+          if (lastAgentItem && lastAgentItem.textContent.trim().startsWith(text.trim().substring(0, 20))) {
+            console.log('Skipping agent transcription - similar content already in transcript');
+            this.callbacks.onTranscription(text, role);
+            return;
+          }
+        }
+        
         // Add to transcript UI
         addTranscript(role, text);
         
@@ -307,36 +338,69 @@ export class WebSocketHandler {
       const eventType = message.event || message.Event || 'unknown';
       const payload = message.payload || message.Payload || null;
 
-      // Add to trace panel
-      addTraceEntry('system', `${eventType}${payload ? ': ' + JSON.stringify(payload) : ''}`);
+      console.log('[DEBUG] SessionEvent received:', { eventType, payload });
 
-      // For certain events, also add to transcript for user visibility
-      // NOTE: These are commented out to avoid duplicates as the server also sends 'Transcription' messages
-      /*
-      if (eventType === 'ResponseAudioTranscriptDone' && payload && payload.Transcript) {
-        addTranscript('agent', payload.Transcript);
-      }
+      // Add to trace panel with structured payload
+      addTraceEntry('event', eventType, payload);
 
-      if (eventType === 'ConversationItemInputAudioTranscriptionCompleted' && payload && payload.Transcript) {
-        addTranscript('user', payload.Transcript);
+      // ===== Consumption Tracking Integration =====
+      
+      // Track session.created event
+      if (eventType === 'SessionCreated' || eventType === 'session.created') {
+        consumptionTracker.handleSessionCreated(payload);
+        consumptionTracker.startDurationTimer();
+        if (payload && payload.SessionId) {
+          updateStatus(`Session: ${payload.SessionId.substring(0, 8)}...`, 'connected');
+        }
       }
-      */
-      if (eventType === 'SessionCreated' && payload && payload.SessionId) {
-         updateStatus(`Session id: ${payload.SessionId}`, 'connected');
+      
+      // Track session.updated event
+      if (eventType === 'SessionUpdated' || eventType === 'session.updated') {
+        consumptionTracker.handleSessionUpdated(payload);
       }
 
       // Handle disconnection events
       if (eventType === 'SessionDisconnected' || eventType === 'SessionClosed' || eventType === 'SessionEnded' || eventType === 'Disconnected') {
+        consumptionTracker.handleSessionDisconnected();
+        consumptionTracker.stopDurationTimer();
         updateStatus('Disconnesso', 'disconnected');
       }
+      
+      // Track response.created event
+      if (eventType === 'ResponseCreated' || eventType === 'response.created') {
+        consumptionTracker.handleResponseCreated(payload);
+        updateStatus('Generazione risposta...', 'connected');
+      }
 
-      // Reset status when assistant finishes speaking
-      if (eventType === 'ResponseDone' || eventType === 'ResponseAudioTranscriptDone') {
+      // Track response.done event with token usage
+      if (eventType === 'ResponseDone' || eventType === 'response.done') {
         updateStatus('Sessione attiva', 'connected');
+        
+        // Update consumption tracker with response done data
+        consumptionTracker.handleResponseDone(payload);
+        
+        // Extract token usage from payload for legacy display
+        // Payload format: { ResponseId, Status, Usage: { InputTokens, OutputTokens, TotalTokens } }
+        if (payload && payload.Usage) {
+          const usage = payload.Usage;
+          const inputTokens = usage.InputTokens || usage.input_tokens || 0;
+          const outputTokens = usage.OutputTokens || usage.output_tokens || 0;
+          const totalTokens = usage.TotalTokens || usage.total_tokens || (inputTokens + outputTokens);
+          
+          console.log(`Token usage - Input: ${inputTokens}, Output: ${outputTokens}, Total: ${totalTokens}`);
+          
+          // Update legacy token display in UI if available
+          this.updateTokenDisplay(inputTokens, outputTokens, totalTokens);
+        }
+      }
+      
+      // Track rate_limits.updated event
+      if (eventType === 'RateLimitsUpdated' || eventType === 'rate_limits.updated') {
+        consumptionTracker.handleRateLimitsUpdated(payload);
       }
          
       // Show user-visible info/error messages under mic for certain events
-      if (eventType === 'SessionError' || eventType === 'Error') {
+      if (eventType === 'SessionError' || eventType === 'Error' || eventType === 'error') {
         const msg = (payload && payload.Message) ? payload.Message : (payload && payload.Error) ? payload.Error : 'Errore di sessione';
         showMicMessage('error', msg, 6000);
       }
@@ -345,6 +409,36 @@ export class WebSocketHandler {
         const msg = (payload && payload.Message) ? payload.Message : (payload && payload.Info) ? payload.Info : 'Informazione';
         showMicMessage('info', msg, 4500);
       }
+
+      // Update status for speech events and track audio duration
+      if (eventType === 'SpeechStarted' || eventType === 'input_audio_buffer.speech_started') {
+        updateStatus('Utente parla...', 'speaking');
+        consumptionTracker.handleInputAudioSpeechStarted(payload);
+      }
+
+      if (eventType === 'SpeechStopped' || eventType === 'input_audio_buffer.speech_stopped') {
+        updateStatus('Elaborazione...', 'connected');
+        consumptionTracker.handleInputAudioSpeechStopped(payload);
+      }
+
+      if (eventType === 'ResponseAudioDelta' || eventType === 'response.audio.delta') {
+        updateStatus('Assistente parla...', 'speaking');
+        consumptionTracker.handleOutputAudioDelta(payload);
+      }
+
+      if (eventType === 'ResponseAudioDone' || eventType === 'response.audio.done') {
+        consumptionTracker.handleOutputAudioDone(payload);
+      }
+
+      if (eventType === 'AudioTimestampDelta' || eventType === 'response.audio_timestamp.delta') {
+        consumptionTracker.handleAudioTimestampDelta(payload);
+      }
+
+      // Handle transcript delta for streaming text (alternative to audio_timestamp.delta)
+      if (eventType === 'ResponseAudioTranscriptDelta' || eventType === 'response.audio_transcript.delta') {
+        consumptionTracker.handleTranscriptDelta(payload);
+      }
+
     } catch (error) {
       console.error('Error handling session event:', error);
     }
@@ -376,6 +470,43 @@ export class WebSocketHandler {
     
     // Call error callback
     this.callbacks.onError(new Error(errorText));
+  }
+  
+  /**
+   * Update token usage display in the UI
+   * @param {number} inputTokens - Number of input tokens
+   * @param {number} outputTokens - Number of output tokens
+   * @param {number} totalTokens - Total tokens used
+   */
+  updateTokenDisplay(inputTokens, outputTokens, totalTokens) {
+    // Update individual token displays if they exist
+    const inputDisplay = document.getElementById('inputTokens');
+    const outputDisplay = document.getElementById('outputTokens');
+    const totalDisplay = document.getElementById('totalTokens');
+    
+    if (inputDisplay) {
+      const currentInput = parseInt(inputDisplay.textContent) || 0;
+      inputDisplay.textContent = currentInput + inputTokens;
+    }
+    
+    if (outputDisplay) {
+      const currentOutput = parseInt(outputDisplay.textContent) || 0;
+      outputDisplay.textContent = currentOutput + outputTokens;
+    }
+    
+    if (totalDisplay) {
+      const currentTotal = parseInt(totalDisplay.textContent) || 0;
+      totalDisplay.textContent = currentTotal + totalTokens;
+    }
+    
+    // Also update compact token counter if it exists
+    const tokenCounter = document.getElementById('tokenCounter');
+    if (tokenCounter) {
+      const currentTotal = parseInt(tokenCounter.dataset.total) || 0;
+      const newTotal = currentTotal + totalTokens;
+      tokenCounter.dataset.total = newTotal;
+      tokenCounter.textContent = `${newTotal.toLocaleString()} tokens`;
+    }
   }
   
   /**

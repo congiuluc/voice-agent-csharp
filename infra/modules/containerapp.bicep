@@ -11,6 +11,8 @@ param modelDeploymentName string
 param acsConnectionStringSecretUri string
 param acsEndpoint string = ''
 param azureVoiceLiveApiKeySecretUri string = ''
+param cosmosDbEndpoint string = ''
+param cosmosDbDatabaseName string = ''
 param logAnalyticsWorkspaceName string
 param mcpServerUrl string = 'http://localhost:5001'
 param foundryAgentId string = ''
@@ -123,6 +125,16 @@ resource containerApp 'Microsoft.App/containerApps@2024-10-02-preview' = {
               // Foundry Agent ID
               name: 'AzureFoundry__AgentId'
               value: foundryAgentId
+            }
+            {
+              // Cosmos DB Endpoint for call monitoring
+              name: 'CosmosDb__Endpoint'
+              value: cosmosDbEndpoint
+            }
+            {
+              // Cosmos DB Database name
+              name: 'CosmosDb__DatabaseName'
+              value: cosmosDbDatabaseName
             }
             {
               name: 'DEBUG_MODE'
