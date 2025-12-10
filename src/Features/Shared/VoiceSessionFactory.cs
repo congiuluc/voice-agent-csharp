@@ -100,15 +100,17 @@ public class VoiceSessionFactory
 
         var httpClient = _httpClientFactory.CreateClient();
         var session = new VoiceAgentSession(client, config, _logger, httpClient);
-        await session.StartAsync().ConfigureAwait(false);
         
         // Track session creation in monitoring
         var sessionId = Guid.NewGuid().ToString();
+        session.SetMonitoring(_monitoringService, sessionId);
         _monitoringService.LogSessionCreated(
             config.UserId ?? "anonymous",
             "VoiceAgent",
             sessionId,
             config.ModelId ?? "gpt-4o-realtime");
+        
+        await session.StartAsync().ConfigureAwait(false);
         
         return session;
     }
@@ -120,15 +122,17 @@ public class VoiceSessionFactory
     {
         var httpClient = _httpClientFactory.CreateClient();
         var session = new VoiceAssistantSession(client, config, _logger, httpClient);
-        await session.StartAsync().ConfigureAwait(false);
         
         // Track session creation in monitoring
         var sessionId = Guid.NewGuid().ToString();
+        session.SetMonitoring(_monitoringService, sessionId);
         _monitoringService.LogSessionCreated(
             config.UserId ?? "anonymous",
             "VoiceAssistant",
             sessionId,
             config.ModelId ?? "gpt-4o-realtime");
+        
+        await session.StartAsync().ConfigureAwait(false);
         
         return session;
     }
@@ -145,15 +149,17 @@ public class VoiceSessionFactory
 
         var httpClient = _httpClientFactory.CreateClient();
         var session = new VoiceAvatarSession(client, config, _logger, config.UseRawWebSocket, httpClient);
-        await session.StartAsync().ConfigureAwait(false);
         
         // Track session creation in monitoring
         var sessionId = Guid.NewGuid().ToString();
+        session.SetMonitoring(_monitoringService, sessionId);
         _monitoringService.LogSessionCreated(
             config.UserId ?? "anonymous",
             "VoiceAvatar",
             sessionId,
             config.ModelId ?? "gpt-4o-realtime");
+        
+        await session.StartAsync().ConfigureAwait(false);
         
         return session;
     }

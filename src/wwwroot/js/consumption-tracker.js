@@ -43,11 +43,6 @@ export class ConsumptionTracker {
     // Audio timestamp tracking for precise output duration
     this.maxOutputAudioEndMs = 0; // Tracks max(audio_offset_ms + audio_duration_ms) for precise duration
     
-    // Streaming transcript tracking
-    this.streamingTranscriptElement = null;
-    this.streamingTranscriptText = '';
-    this.currentStreamingResponseId = null;
-    
     // Detailed token breakdown
     this.inputTokenDetails = {
       cachedTokens: 0,
@@ -433,9 +428,6 @@ export class ConsumptionTracker {
     this.currentResponseId = response.id || response.ResponseId || payload.ResponseId || this.currentResponseId;
     this.currentResponseStatus = response.status || response.Status || payload.Status || 'completed';
     
-    // Finalize streaming transcript
-    this.finalizeStreamingTranscript();
-    
     // Extract usage information
     const usage = response.usage || response.Usage || payload.Usage;
     if (usage) {
@@ -585,17 +577,13 @@ export class ConsumptionTracker {
   /**
    * Handle response.audio_timestamp.delta event
    * Uses precise timestamp information from API for accurate duration tracking
-   * and streams text word-by-word to the transcript panel
    * @param {Object} payload - Audio timestamp delta payload
    */
   handleAudioTimestampDelta(payload) {
     if (!payload) return;
     
-    const responseId = payload.response_id || payload.ResponseId;
     const audioOffsetMs = payload.audio_offset_ms || payload.AudioOffsetMs || 0;
     const audioDurationMs = payload.audio_duration_ms || payload.AudioDurationMs || 0;
-    const text = payload.text || payload.Text || '';
-    const timestampType = payload.timestamp_type || payload.TimestampType;
     
     // Calculate the end time of this audio segment
     const audioEndMs = audioOffsetMs + audioDurationMs;
@@ -607,11 +595,6 @@ export class ConsumptionTracker {
       this.totalOutputAudioDurationMs = this.maxOutputAudioEndMs;
     }
     
-    // Stream text to transcript panel (word-by-word)
-    if (text && timestampType === 'word') {
-      this.streamTextToTranscript(responseId, text);
-    }
-    
     // Update dashboard periodically
     if (audioOffsetMs % 500 < 100) {
       this.updateDashboard();
@@ -621,117 +604,13 @@ export class ConsumptionTracker {
       audioOffsetMs,
       audioDurationMs,
       audioEndMs,
-      maxOutputAudioEndMs: this.maxOutputAudioEndMs,
-      text,
-      timestampType
+      maxOutputAudioEndMs: this.maxOutputAudioEndMs
     });
   }
 
-  /**
-   * Handle response.audio_transcript.delta event
-   * Uses transcript delta for streaming text when audio_timestamp.delta is not available
-   * @param {Object} payload - Transcript delta payload
-   */
-  handleTranscriptDelta(payload) {
-    if (!payload) return;
-    
-    console.log('[DEBUG] handleTranscriptDelta called:', payload);
-    
-    const responseId = payload.response_id || payload.ResponseId;
-    const itemId = payload.item_id || payload.ItemId;
-    const delta = payload.delta || payload.Delta || '';
-    
-    console.log('[DEBUG] Parsed delta:', { responseId, itemId, delta });
-    
-    // Stream delta text to transcript panel
-    if (delta) {
-      this.streamTextToTranscript(responseId, delta, true); // true = is delta (append without space)
-    }
-    
-    this.logEvent('TranscriptDelta', { 
-      responseId,
-      itemId,
-      deltaLength: delta.length
-    });
-  }
+
   
-  /**
-   * Stream text word-by-word to the transcript panel
-   * Creates or updates a streaming transcript element for the current response
-   * @param {string} responseId - The response ID
-   * @param {string} text - The text to append (word or delta)
-   * @param {boolean} isDelta - If true, append without space (for transcript deltas)
-   */
-  streamTextToTranscript(responseId, text, isDelta = false) {
-    const transcriptContent = document.getElementById('transcriptContent');
-    if (!transcriptContent) return;
-    
-    // Check if we need to create a new streaming element for a new response
-    if (responseId !== this.currentStreamingResponseId) {
-      // Finalize previous streaming element if exists
-      if (this.streamingTranscriptElement) {
-        this.streamingTranscriptElement.classList.remove('streaming');
-      }
-      
-      // Create new streaming transcript item
-      this.currentStreamingResponseId = responseId;
-      this.streamingTranscriptText = '';
-      
-      const item = document.createElement('div');
-      item.className = 'transcript-item agent streaming';
-      item.dataset.responseId = responseId;
-      
-      // Create icon element
-      const iconDiv = document.createElement('div');
-      iconDiv.className = 'transcript-icon';
-      iconDiv.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"></rect><circle cx="12" cy="5" r="2"></circle><path d="M12 7v4"></path><line x1="8" y1="16" x2="8" y2="16"></line><line x1="16" y1="16" x2="16" y2="16"></line></svg>`;
-      
-      const content = document.createElement('div');
-      content.className = 'transcript-content streaming-text';
-      
-      item.appendChild(iconDiv);
-      item.appendChild(content);
-      transcriptContent.appendChild(item);
-      
-      this.streamingTranscriptElement = item;
-    }
-    
-    // Append text to streaming text
-    if (isDelta) {
-      // For transcript deltas, append directly (they include their own spacing)
-      this.streamingTranscriptText += text;
-    } else {
-      // For word-level timestamps, add space between words
-      if (this.streamingTranscriptText) {
-        this.streamingTranscriptText += ' ' + text;
-      } else {
-        this.streamingTranscriptText = text;
-      }
-    }
-    
-    // Update the content
-    const contentElement = this.streamingTranscriptElement?.querySelector('.transcript-content');
-    if (contentElement) {
-      contentElement.textContent = this.streamingTranscriptText;
-    }
-    
-    // Auto-scroll to bottom
-    transcriptContent.scrollTop = transcriptContent.scrollHeight;
-  }
-  
-  /**
-   * Finalize streaming transcript when response is done
-   * Called from handleResponseDone
-   */
-  finalizeStreamingTranscript() {
-    if (this.streamingTranscriptElement) {
-      this.streamingTranscriptElement.classList.remove('streaming');
-      this.streamingTranscriptElement = null;
-    }
-    this.streamingTranscriptText = '';
-    this.currentStreamingResponseId = null;
-    this.maxOutputAudioEndMs = 0; // Reset for next response
-  }
+
 
   /**
    * Reset all counters (for new session)
@@ -756,11 +635,6 @@ export class ConsumptionTracker {
     
     // Reset audio timestamp tracking
     this.maxOutputAudioEndMs = 0;
-    
-    // Reset streaming transcript tracking
-    this.streamingTranscriptElement = null;
-    this.streamingTranscriptText = '';
-    this.currentStreamingResponseId = null;
     
     this.updateDashboard();
     this.updateTokenBadge();

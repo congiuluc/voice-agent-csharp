@@ -7,6 +7,7 @@
 
 import { showToast, addTranscript, updateStatus, addTraceEntry, showMicMessage } from './ui-utils.js';
 import { consumptionTracker } from './consumption-tracker.js';
+import { transcriptStreamer } from './transcript-streamer.js';
 
 /**
  * WebSocketHandler class
@@ -294,10 +295,19 @@ export class WebSocketHandler {
       const role = message.role || message.Role || 'agent'; // 'user' or 'agent'
       
       console.log('[DEBUG] handleTranscription called:', { text, role, message });
+      console.log('[DEBUG] Role check - message.role:', message.role, 'message.Role:', message.Role, 'final role:', role);
       
       if (text) {
-        // Skip agent transcriptions if we already have streaming transcript with similar content
-        // (to avoid duplication when using audio_timestamp.delta streaming)
+        // USER MESSAGES: Always add to transcript (no duplication check needed)
+        if (role === 'user') {
+          console.log('[DEBUG] USER transcription - adding to transcript:', text);
+          addTranscript(role, text);
+          this.callbacks.onTranscription(text, role);
+          console.log(`User transcription added: ${text}`);
+          return;
+        }
+        
+        // AGENT MESSAGES: Check for duplicates from streaming
         if (role === 'agent') {
           const streamingElement = document.querySelector('.transcript-item.agent.streaming .transcript-content');
           if (streamingElement) {
@@ -340,8 +350,8 @@ export class WebSocketHandler {
 
       console.log('[DEBUG] SessionEvent received:', { eventType, payload });
 
-      // Add to trace panel with structured payload
-      addTraceEntry('event', eventType, payload);
+      // Add to trace panel
+      addTraceEntry('system', `${eventType}${payload ? ': ' + JSON.stringify(payload) : ''}`);
 
       // ===== Consumption Tracking Integration =====
       
@@ -432,11 +442,17 @@ export class WebSocketHandler {
 
       if (eventType === 'AudioTimestampDelta' || eventType === 'response.audio_timestamp.delta') {
         consumptionTracker.handleAudioTimestampDelta(payload);
+        transcriptStreamer.handleAudioTimestampDelta(payload);
       }
 
       // Handle transcript delta for streaming text (alternative to audio_timestamp.delta)
       if (eventType === 'ResponseAudioTranscriptDelta' || eventType === 'response.audio_transcript.delta') {
-        consumptionTracker.handleTranscriptDelta(payload);
+        transcriptStreamer.handleTranscriptDelta(payload);
+      }
+
+      // Finalize transcript streaming when response is done
+      if (eventType === 'ResponseDone' || eventType === 'response.done') {
+        transcriptStreamer.finalizeStreamingTranscript();
       }
 
     } catch (error) {

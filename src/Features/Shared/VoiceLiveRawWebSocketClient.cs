@@ -672,6 +672,12 @@ public class VoiceLiveRawWebSocketClient : IAsyncDisposable
             ["session"] = config
         };
 
+        // Log the session configuration being sent (including InputAudioTranscription)
+        var sessionJson = JsonSerializer.Serialize(config, _jsonOptions);
+        _logger.LogInformation("Sending session.update - InputAudioTranscription: {HasTranscription}, Full config: {Config}", 
+            config.InputAudioTranscription != null ? $"Model={config.InputAudioTranscription.Model}" : "null",
+            sessionJson);
+
         await SendAsync("session.update", sessionData, cancellationToken).ConfigureAwait(false);
         _logger.LogInformation("Sent session.update with avatar configuration");
     }
@@ -893,7 +899,22 @@ public class VoiceLiveRawWebSocketClient : IAsyncDisposable
                     break;
 
                 case "session.updated":
-                    _logger.LogInformation("Session updated");
+                    _logger.LogInformation("Session updated - checking for input_audio_transcription config");
+                    
+                    // Log if input_audio_transcription is present in the response
+                    if (root.TryGetProperty("session", out var sessionProp))
+                    {
+                        if (sessionProp.TryGetProperty("input_audio_transcription", out var transcriptionProp))
+                        {
+                            var transcriptionJson = transcriptionProp.ToString();
+                            _logger.LogInformation("Session has input_audio_transcription configured: {Config}", transcriptionJson);
+                        }
+                        else
+                        {
+                            _logger.LogWarning("Session updated but NO input_audio_transcription property found in session config!");
+                        }
+                    }
+                    
                     await HandleSessionUpdatedAsync(root).ConfigureAwait(false);
                     if (OnSessionUpdated != null)
                     {
@@ -915,14 +936,19 @@ public class VoiceLiveRawWebSocketClient : IAsyncDisposable
                     break;
 
                 case "conversation.item.input_audio_transcription.completed":
+                    _logger.LogInformation("Received conversation.item.input_audio_transcription.completed event");
                     if (root.TryGetProperty("transcript", out var userTranscript))
                     {
                         var text = userTranscript.GetString() ?? string.Empty;
-                        _logger.LogDebug("User transcription: {Transcript}", text);
+                        _logger.LogInformation("User transcription completed: '{Transcript}' (Length: {Length})", text, text.Length);
                         if (OnUserTranscription != null && !string.IsNullOrEmpty(text))
                         {
                             await OnUserTranscription(text).ConfigureAwait(false);
                         }
+                    }
+                    else
+                    {
+                        _logger.LogWarning("conversation.item.input_audio_transcription.completed event received but no 'transcript' property found");
                     }
                     break;
 

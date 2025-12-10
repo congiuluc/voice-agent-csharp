@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Azure.AI.VoiceLive;
 using Microsoft.Extensions.Logging;
+using VoiceAgentCSharp.Features.Monitoring;
 
 namespace VoiceAgentCSharp.Features.Shared;
 
@@ -20,6 +21,8 @@ public abstract class VoiceSessionBase : IVoiceSession
     protected bool _disposed;
     protected Task? _eventProcessingTask;
     protected CancellationTokenSource? _cancellationTokenSource;
+    protected CallMonitoringService? _monitoringService;
+    protected string? _sessionId;
 
     #endregion
 
@@ -52,6 +55,16 @@ public abstract class VoiceSessionBase : IVoiceSession
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _toolHandler = new VoiceToolHandler(logger, httpClient);
         _cancellationTokenSource = new CancellationTokenSource();
+    }
+
+    /// <summary>
+    /// Sets the monitoring service and session ID for tracking metrics.
+    /// Should be called after session construction.
+    /// </summary>
+    public void SetMonitoring(CallMonitoringService monitoringService, string sessionId)
+    {
+        _monitoringService = monitoringService;
+        _sessionId = sessionId;
     }
 
     #endregion

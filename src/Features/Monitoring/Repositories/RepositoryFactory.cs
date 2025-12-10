@@ -9,11 +9,22 @@ public static class RepositoryFactory
 {
     /// <summary>
     /// Registers monitoring repositories with CosmosDB-to-InMemory fallback.
+    /// In Debug mode, always uses InMemory storage for easier development/testing.
+    /// In Release mode, uses CosmosDB if configured, otherwise falls back to InMemory.
     /// </summary>
     public static IServiceCollection AddMonitoringRepositories(
         this IServiceCollection services,
         IConfiguration configuration)
     {
+#if DEBUG
+        // Debug mode: Always use in-memory storage for easier development
+        services.AddSingleton<IPricingRepository, InMemoryPricingRepository>();
+        services.AddSingleton<ICallSessionRepository, InMemoryCallSessionRepository>();
+        
+        var logger = services.BuildServiceProvider().GetService<ILogger<InMemoryPricingRepository>>();
+        logger?.LogInformation("DEBUG MODE: Using in-memory storage for monitoring data");
+#else
+        // Release mode: Use CosmosDB if configured, otherwise InMemory
         var cosmosConnectionString = configuration["CosmosDb:ConnectionString"];
         var cosmosEndpoint = configuration["CosmosDb:Endpoint"];
 
@@ -59,6 +70,7 @@ public static class RepositoryFactory
             services.AddSingleton<IPricingRepository, InMemoryPricingRepository>();
             services.AddSingleton<ICallSessionRepository, InMemoryCallSessionRepository>();
         }
+#endif
 
         return services;
     }
