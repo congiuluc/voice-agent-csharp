@@ -96,6 +96,10 @@ public class VoiceLiveAssistant : IAsyncDisposable
                 
                 // For Foundry Agent sessions, generate access token and start session with agent parameters
                 await StartFoundryAgentSessionAsync(cancellationToken).ConfigureAwait(false);
+                _logger.LogInformation("Foundry Agent VoiceLive session started successfully");
+
+                
+
             }
             else
             {
@@ -105,7 +109,7 @@ public class VoiceLiveAssistant : IAsyncDisposable
                 _session = await _client.StartSessionAsync(_model, cancellationToken).ConfigureAwait(false);
                 _logger.LogInformation("VoiceLive session started successfully");
                 
-                // Send initial session configuration
+                _logger.LogInformation("Sending initial session configuration");
                 await UpdateSessionAsync(_model, _voice, _welcomeMessage, _modelInstructions).ConfigureAwait(false);
             }
 
@@ -167,7 +171,7 @@ public class VoiceLiveAssistant : IAsyncDisposable
             // Start session with options (SDK should handle Foundry Agent routing internally)
             // The VoiceLiveClient endpoint should already be configured for the Foundry Agent service
             _session = await _client.StartSessionAsync(sessionOptions, cancellationToken).ConfigureAwait(false);
-            
+       
             _logger.LogInformation("Foundry Agent VoiceLive session started successfully");
         }
         catch (Exception ex)

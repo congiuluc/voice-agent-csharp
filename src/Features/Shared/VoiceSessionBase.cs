@@ -193,10 +193,24 @@ public abstract class VoiceSessionBase : IVoiceSession
 
     /// <summary>
     /// Emits session events to subscribers.
+    /// Filters out events that should not be sent to the UI client.
     /// Common implementation for all session types.
     /// </summary>
     protected async Task EmitSessionEventAsync(string eventType, object? payload)
     {
+        // Filter out events that should not be sent to the UI client
+        var eventsToFilter = new[] 
+        { 
+            "ResponseAudioDelta",           // Audio delta events are too frequent and not useful for tracing
+            "ResponseAudioTranscriptDelta"  // Transcript delta events are too frequent, final transcript is sent in ResponseAudioTranscriptDone
+        };
+
+        if (eventsToFilter.Contains(eventType))
+        {
+            _logger.LogDebug("Filtering event {EventType} from UI client", eventType);
+            return;
+        }
+
         try
         {
             if (OnSessionEvent != null)
