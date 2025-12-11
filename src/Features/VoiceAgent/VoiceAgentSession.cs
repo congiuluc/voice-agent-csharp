@@ -377,24 +377,10 @@ public class VoiceAgentSession : VoiceSessionBase
                     await base.OnTranscriptionAsync(transcriptDone.Transcript);
                     break;
 
-                case SessionUpdateResponseAudioTranscriptDelta transcriptDelta:
-                    // Emit delta for streaming text to transcript
-                    await base.EmitSessionEventAsync("ResponseAudioTranscriptDelta", new { 
-                        ResponseId = transcriptDelta.ResponseId,
-                        ItemId = transcriptDelta.ItemId,
-                        Delta = transcriptDelta.Delta,
-                        DeltaLength = transcriptDelta.Delta?.Length ?? 0
-                    });
-                    break;
-
                 case SessionUpdateResponseAudioDelta audioDelta:
                     if (audioDelta.Delta != null)
                     {
                         byte[] audioData = audioDelta.Delta.ToArray();
-                        await base.EmitSessionEventAsync("ResponseAudioDelta", new { 
-                            ResponseId = audioDelta.ResponseId,
-                            AudioLength = audioData.Length
-                        });
                         await base.OnAudioDeltaAsync(audioData);
                     }
                     break;
