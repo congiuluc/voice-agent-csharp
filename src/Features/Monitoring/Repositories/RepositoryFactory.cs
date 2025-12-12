@@ -20,6 +20,8 @@ public static class RepositoryFactory
         // Debug mode: Always use in-memory storage for easier development
         services.AddSingleton<IPricingRepository, InMemoryPricingRepository>();
         services.AddSingleton<ICallSessionRepository, InMemoryCallSessionRepository>();
+        services.AddSingleton<ICostSnapshotRepository, InMemoryCostSnapshotRepository>();
+        services.AddSingleton<ITokenSnapshotRepository, InMemoryTokenSnapshotRepository>();
         
         var logger = services.BuildServiceProvider().GetService<ILogger<InMemoryPricingRepository>>();
         logger?.LogInformation("DEBUG MODE: Using in-memory storage for monitoring data");
@@ -55,20 +57,28 @@ public static class RepositoryFactory
             // Register CosmosDB repositories as primary
             services.AddSingleton<CosmosPricingRepository>();
             services.AddSingleton<CosmosCallSessionRepository>();
+            services.AddSingleton<CosmosCostSnapshotRepository>();
+            services.AddSingleton<CosmosTokenSnapshotRepository>();
 
             // Register InMemory repositories as fallback
             services.AddSingleton<InMemoryPricingRepository>();
             services.AddSingleton<InMemoryCallSessionRepository>();
+            services.AddSingleton<InMemoryCostSnapshotRepository>();
+            services.AddSingleton<InMemoryTokenSnapshotRepository>();
 
             // Register wrapper repositories that handle fallback
             services.AddSingleton<IPricingRepository, FallbackPricingRepository>();
             services.AddSingleton<ICallSessionRepository, FallbackCallSessionRepository>();
+            services.AddSingleton<ICostSnapshotRepository, FallbackCostSnapshotRepository>();
+            services.AddSingleton<ITokenSnapshotRepository, FallbackTokenSnapshotRepository>();
         }
         else
         {
             // No CosmosDB configured - use InMemory only
             services.AddSingleton<IPricingRepository, InMemoryPricingRepository>();
             services.AddSingleton<ICallSessionRepository, InMemoryCallSessionRepository>();
+            services.AddSingleton<ICostSnapshotRepository, InMemoryCostSnapshotRepository>();
+            services.AddSingleton<ITokenSnapshotRepository, InMemoryTokenSnapshotRepository>();
         }
 #endif
 
@@ -286,6 +296,176 @@ public class FallbackCallSessionRepository : ICallSessionRepository
             else if (!_useInMemoryFallback && !isCosmosAvailable)
             {
                 _logger.LogWarning("CosmosDB is unavailable for call sessions - switching to in-memory fallback");
+                _useInMemoryFallback = true;
+            }
+
+            _lastAvailabilityCheck = DateTime.UtcNow;
+        }
+        finally
+        {
+            _checkLock.Release();
+        }
+    }
+}
+
+/// <summary>
+/// Cost snapshot repository with automatic fallback from CosmosDB to InMemory.
+/// </summary>
+public class FallbackCostSnapshotRepository : ICostSnapshotRepository
+{
+    private readonly CosmosCostSnapshotRepository _cosmosRepository;
+    private readonly InMemoryCostSnapshotRepository _inMemoryRepository;
+    private readonly ILogger<FallbackCostSnapshotRepository> _logger;
+    private bool _useInMemoryFallback;
+    private DateTime _lastAvailabilityCheck = DateTime.MinValue;
+    private readonly TimeSpan _availabilityCheckInterval = TimeSpan.FromMinutes(5);
+    private readonly SemaphoreSlim _checkLock = new(1, 1);
+
+    public FallbackCostSnapshotRepository(
+        CosmosCostSnapshotRepository cosmosRepository,
+        InMemoryCostSnapshotRepository inMemoryRepository,
+        ILogger<FallbackCostSnapshotRepository> logger)
+    {
+        _cosmosRepository = cosmosRepository;
+        _inMemoryRepository = inMemoryRepository;
+        _logger = logger;
+    }
+
+    public async Task<bool> IsAvailableAsync(CancellationToken cancellationToken = default)
+    {
+        await CheckAndUpdateAvailabilityAsync(cancellationToken);
+        return true; // Always available due to fallback
+    }
+
+    public async Task<CostSnapshot?> GetAsync(CancellationToken cancellationToken = default)
+    {
+        var repository = await GetActiveRepositoryAsync(cancellationToken);
+        return await repository.GetAsync(cancellationToken);
+    }
+
+    public async Task<CostSnapshot> UpsertAsync(CostSnapshot snapshot, CancellationToken cancellationToken = default)
+    {
+        var repository = await GetActiveRepositoryAsync(cancellationToken);
+        await repository.UpsertAsync(snapshot, cancellationToken);
+
+        // Also store in-memory when using CosmosDB for quick access
+        if (!_useInMemoryFallback)
+        {
+            await _inMemoryRepository.UpsertAsync(snapshot, cancellationToken);
+        }
+
+        return snapshot;
+    }
+
+    private async Task<ICostSnapshotRepository> GetActiveRepositoryAsync(CancellationToken cancellationToken)
+    {
+        await CheckAndUpdateAvailabilityAsync(cancellationToken);
+        return _useInMemoryFallback ? _inMemoryRepository : _cosmosRepository;
+    }
+
+    private async Task CheckAndUpdateAvailabilityAsync(CancellationToken cancellationToken)
+    {
+        if (DateTime.UtcNow - _lastAvailabilityCheck < _availabilityCheckInterval)
+            return;
+
+        await _checkLock.WaitAsync(cancellationToken);
+        try
+        {
+            var isCosmosAvailable = await _cosmosRepository.IsAvailableAsync(cancellationToken);
+
+            if (_useInMemoryFallback && isCosmosAvailable)
+            {
+                _logger.LogInformation("CosmosDB is now available for cost snapshot - switching from in-memory fallback");
+                _useInMemoryFallback = false;
+            }
+            else if (!_useInMemoryFallback && !isCosmosAvailable)
+            {
+                _logger.LogWarning("CosmosDB is unavailable for cost snapshot - switching to in-memory fallback");
+                _useInMemoryFallback = true;
+            }
+
+            _lastAvailabilityCheck = DateTime.UtcNow;
+        }
+        finally
+        {
+            _checkLock.Release();
+        }
+    }
+}
+
+/// <summary>
+/// Fallback implementation for token snapshots with automatic CosmosDB availability checking.
+/// Switches between CosmosDB and in-memory storage based on availability.
+/// </summary>
+internal class FallbackTokenSnapshotRepository : ITokenSnapshotRepository
+{
+    private readonly CosmosTokenSnapshotRepository _cosmosRepository;
+    private readonly InMemoryTokenSnapshotRepository _inMemoryRepository;
+    private readonly ILogger<FallbackTokenSnapshotRepository> _logger;
+
+    private bool _useInMemoryFallback = false;
+    private DateTime _lastAvailabilityCheck = DateTime.MinValue;
+    private readonly TimeSpan _availabilityCheckInterval = TimeSpan.FromMinutes(5);
+    private readonly SemaphoreSlim _checkLock = new(1, 1);
+
+    public FallbackTokenSnapshotRepository(
+        CosmosTokenSnapshotRepository cosmosRepository,
+        InMemoryTokenSnapshotRepository inMemoryRepository,
+        ILogger<FallbackTokenSnapshotRepository> logger)
+    {
+        _cosmosRepository = cosmosRepository;
+        _inMemoryRepository = inMemoryRepository;
+        _logger = logger;
+    }
+
+    public async Task<bool> IsAvailableAsync(CancellationToken cancellationToken = default)
+    {
+        var repository = await GetActiveRepositoryAsync(cancellationToken);
+        return await repository.IsAvailableAsync(cancellationToken);
+    }
+
+    public async Task<TokenSnapshot?> GetAsync(CancellationToken cancellationToken = default)
+    {
+        var repository = await GetActiveRepositoryAsync(cancellationToken);
+        return await repository.GetAsync(cancellationToken);
+    }
+
+    public async Task UpsertAsync(TokenSnapshot snapshot, CancellationToken cancellationToken = default)
+    {
+        var repository = await GetActiveRepositoryAsync(cancellationToken);
+        await repository.UpsertAsync(snapshot, cancellationToken);
+
+        // Also store in-memory when using CosmosDB for quick access
+        if (!_useInMemoryFallback)
+        {
+            await _inMemoryRepository.UpsertAsync(snapshot, cancellationToken);
+        }
+    }
+
+    private async Task<ITokenSnapshotRepository> GetActiveRepositoryAsync(CancellationToken cancellationToken)
+    {
+        await CheckAndUpdateAvailabilityAsync(cancellationToken);
+        return _useInMemoryFallback ? _inMemoryRepository : _cosmosRepository;
+    }
+
+    private async Task CheckAndUpdateAvailabilityAsync(CancellationToken cancellationToken)
+    {
+        if (DateTime.UtcNow - _lastAvailabilityCheck < _availabilityCheckInterval)
+            return;
+
+        await _checkLock.WaitAsync(cancellationToken);
+        try
+        {
+            var isCosmosAvailable = await _cosmosRepository.IsAvailableAsync(cancellationToken);
+
+            if (_useInMemoryFallback && isCosmosAvailable)
+            {
+                _logger.LogInformation("CosmosDB is now available for token snapshot - switching from in-memory fallback");
+                _useInMemoryFallback = false;
+            }
+            else if (!_useInMemoryFallback && !isCosmosAvailable)
+            {
+                _logger.LogWarning("CosmosDB is unavailable for token snapshot - switching to in-memory fallback");
                 _useInMemoryFallback = true;
             }
 

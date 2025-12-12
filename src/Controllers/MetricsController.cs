@@ -39,9 +39,43 @@ public class MetricsController : ControllerBase
         try
         {
             var tokenMetrics = _monitoringService.GetAggregatedTokenMetrics();
-            var activeSessions = _monitoringService.GetActiveSessionCount();
+            var activeSessions = _monitoringService.GetActiveSessions()
+                .Select(s => new
+                {
+                    sessionId = s.SessionId,
+                    userId = s.UserId,
+                    callType = s.CallType,
+                    model = s.Model,
+                    inputTokens = s.InputTokens,
+                    outputTokens = s.OutputTokens,
+                    cachedTokens = s.CachedTokens,
+                    totalTokens = s.TotalTokens,
+                    interactionCount = s.InteractionCount,
+                    estimatedCost = s.EstimatedCost,
+                    startTime = s.StartTime,
+                    durationSeconds = s.StartTime.HasValue 
+                        ? (DateTime.UtcNow - s.StartTime.Value).TotalSeconds 
+                        : 0
+                })
+                .ToList();
+            
             var queueSize = _batchWriter.GetQueueSize();
             var pricingModels = _pricingService.GetAllPricing().Count;
+            var totalCost = _monitoringService.GetTotalCost();
+
+            // Build token consumption by model breakdown
+            var tokenByModel = tokenMetrics.TokenConsumptionByModel
+                .Select(kvp => new
+                {
+                    model = kvp.Key,
+                    inputTokens = kvp.Value.InputTokens,
+                    outputTokens = kvp.Value.OutputTokens,
+                    cachedTokens = kvp.Value.CachedTokens,
+                    totalTokens = kvp.Value.TotalTokens,
+                    sessionCount = kvp.Value.SessionCount
+                })
+                .OrderByDescending(m => m.totalTokens)
+                .ToList();
 
             return Ok(new
             {
@@ -52,8 +86,15 @@ public class MetricsController : ControllerBase
                 interactions = tokenMetrics.TotalInteractions,
                 usedModels = tokenMetrics.UsedModels,
                 
+                // Token consumption by model (active and completed sessions)
+                tokenConsumptionByModel = tokenByModel,
+                
+                // Cost metrics
+                totalEstimatedCost = totalCost,
+                
                 // Session metrics
-                activeSessions,
+                activeSessionCount = activeSessions.Count(),
+                activeSessions = activeSessions,
                 queueSize,
                 pricingModels,
                 

@@ -64,7 +64,7 @@ public class CosmosCallSessionRepository : ICallSessionRepository
             var tasks = sessions.Select(session =>
                 _container.UpsertItemAsync(
                     session,
-                    new PartitionKey(session.UserId),
+                    new PartitionKey(session.Type),
                     cancellationToken: cancellationToken));
 
             await Task.WhenAll(tasks);
@@ -87,10 +87,10 @@ public class CosmosCallSessionRepository : ICallSessionRepository
 
         try
         {
+            // Cross-partition query since we now partition by /type instead of /userId
             var query = _container.GetItemQueryIterator<CallSession>(
                 new QueryDefinition("SELECT * FROM c WHERE c.sessionId = @sessionId")
-                    .WithParameter("@sessionId", sessionId),
-                requestOptions: new QueryRequestOptions { PartitionKey = new PartitionKey(userId) });
+                    .WithParameter("@sessionId", sessionId));
 
             if (query.HasMoreResults)
             {
@@ -117,10 +117,11 @@ public class CosmosCallSessionRepository : ICallSessionRepository
 
         try
         {
+            // Cross-partition query filtered by userId since partition key is now /type
             var query = _container.GetItemQueryIterator<CallSession>(
-                new QueryDefinition("SELECT TOP @limit * FROM c ORDER BY c.createdAt DESC")
-                    .WithParameter("@limit", limit),
-                requestOptions: new QueryRequestOptions { PartitionKey = new PartitionKey(userId) });
+                new QueryDefinition("SELECT TOP @limit * FROM c WHERE c.userId = @userId ORDER BY c.createdAt DESC")
+                    .WithParameter("@limit", limit)
+                    .WithParameter("@userId", userId));
 
             var results = new List<CallSession>();
             while (query.HasMoreResults)

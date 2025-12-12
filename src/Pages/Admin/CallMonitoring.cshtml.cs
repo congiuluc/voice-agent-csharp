@@ -12,8 +12,10 @@ public class CallMonitoringModel : PageModel
     private readonly CallMonitoringService _monitoringService;
     private readonly ILogger<CallMonitoringModel> _logger;
 
-    public int ActiveSessions { get; set; }
-    public int QueueSize { get; set; }
+    public int ActiveSessions { get; set; } = 0;
+    public int CompletedSessions { get; set; } = 0;
+    public int TotalSessions { get; set; } = 0;
+    public int QueueSize { get; set; } = 0;
     public int PricingModels { get; set; }
     public List<PricingConfig> Pricing { get; set; } = new();
     
@@ -23,6 +25,7 @@ public class CallMonitoringModel : PageModel
     public long TotalCachedTokens { get; set; }
     public int TotalInteractions { get; set; }
     public List<string> UsedModels { get; set; } = new();
+    public decimal TotalEstimatedCost { get; set; }
 
     public CallMonitoringModel(
         PricingService pricingService,
@@ -42,6 +45,8 @@ public class CallMonitoringModel : PageModel
         {
             // Get current metrics
             ActiveSessions = _monitoringService.GetActiveSessionCount();
+            CompletedSessions = _monitoringService.GetCompletedSessionCount();
+            TotalSessions = _monitoringService.GetTotalSessionCount();
             QueueSize = _batchWriter.GetQueueSize();
             
             // Get pricing info
@@ -57,11 +62,22 @@ public class CallMonitoringModel : PageModel
             TotalInteractions = tokenMetrics.TotalInteractions;
             UsedModels = tokenMetrics.UsedModels;
 
-            _logger.LogInformation("Admin dashboard accessed by {User}", User.Identity?.Name);
+            // Get total estimated cost (active + completed sessions)
+            TotalEstimatedCost = _monitoringService.GetTotalCost();
+
+            _logger.LogInformation(
+                "Admin dashboard loaded: ActiveSessions={ActiveSessions}, CompletedSessions={CompletedSessions}, TotalSessions={TotalSessions}, Cost=${Cost:F4}",
+                ActiveSessions, CompletedSessions, TotalSessions, TotalEstimatedCost);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error loading dashboard data");
+            // Ensure values default to 0 if there's an error
+            ActiveSessions = 0;
+            CompletedSessions = 0;
+            TotalSessions = 0;
+            QueueSize = 0;
+            PricingModels = 0;
         }
     }
 }

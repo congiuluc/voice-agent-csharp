@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Diagnostics.Metrics;
 using Microsoft.ApplicationInsights;
 using Microsoft.ApplicationInsights.DataContracts;
+using VoiceAgentCSharp.Features.Monitoring.Repositories;
 
 namespace VoiceAgentCSharp.Features.Monitoring;
 
@@ -15,6 +16,8 @@ public class CallMonitoringService
     private readonly TelemetryClient _telemetryClient;
     private readonly PricingService _pricingService;
     private readonly BatchWriterService _batchWriter;
+    private readonly ICostSnapshotRepository _costSnapshotRepository;
+    private readonly ITokenSnapshotRepository _tokenSnapshotRepository;
     private readonly ILogger<CallMonitoringService> _logger;
 
     // OpenTelemetry instrumentation
@@ -33,16 +36,35 @@ public class CallMonitoringService
 
     // In-memory session tracking
     private readonly ConcurrentDictionary<string, CallSession> _activeSessions = new();
+    
+    // Track total costs from completed sessions for persistence
+    private decimal _completedSessionsTotalCost = 0;
+    private int _completedSessionsCount = 0;
+
+    // Track total tokens from completed sessions for persistence
+    private long _completedSessionsTotalInputTokens = 0;
+    private long _completedSessionsTotalOutputTokens = 0;
+    private long _completedSessionsTotalCachedTokens = 0;
+
+    // Track total interactions from completed sessions
+    private int _completedInteractions = 0;
+
+    // Track models used by any session (active or completed)
+    private readonly ConcurrentDictionary<string, byte> _usedModels = new();
 
     public CallMonitoringService(
         TelemetryClient telemetryClient,
         PricingService pricingService,
         BatchWriterService batchWriter,
+        ICostSnapshotRepository costSnapshotRepository,
+        ITokenSnapshotRepository tokenSnapshotRepository,
         ILogger<CallMonitoringService> logger)
     {
         _telemetryClient = telemetryClient;
         _pricingService = pricingService;
         _batchWriter = batchWriter;
+        _costSnapshotRepository = costSnapshotRepository;
+        _tokenSnapshotRepository = tokenSnapshotRepository;
         _logger = logger;
 
         // Initialize OpenTelemetry
@@ -90,6 +112,56 @@ public class CallMonitoringService
     }
 
     /// <summary>
+    /// Initializes the service by loading persisted cost totals from the database.
+    /// Call this during application startup.
+    /// </summary>
+    public async Task InitializeAsync(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var costSnapshot = await _costSnapshotRepository.GetAsync(cancellationToken);
+            if (costSnapshot != null)
+            {
+                _completedSessionsTotalCost = costSnapshot.TotalCost;
+                _completedSessionsCount = costSnapshot.TotalSessionsCompleted;
+                _logger.LogInformation("Loaded persisted cost snapshot: Total: ${Cost:F4}, Sessions: {Count}", 
+                    _completedSessionsTotalCost, _completedSessionsCount);
+            }
+            else
+            {
+                _logger.LogInformation("No persisted cost snapshot found, starting with zero");
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error loading cost snapshot at startup");
+            // Continue even if loading fails - use in-memory only
+        }
+
+        try
+        {
+            var tokenSnapshot = await _tokenSnapshotRepository.GetAsync(cancellationToken);
+            if (tokenSnapshot != null)
+            {
+                _completedSessionsTotalInputTokens = tokenSnapshot.TotalInputTokens;
+                _completedSessionsTotalOutputTokens = tokenSnapshot.TotalOutputTokens;
+                _completedSessionsTotalCachedTokens = tokenSnapshot.TotalCachedTokens;
+                _logger.LogInformation("Loaded persisted token snapshot: Input: {InputTokens}, Output: {OutputTokens}, Cached: {CachedTokens}", 
+                    _completedSessionsTotalInputTokens, _completedSessionsTotalOutputTokens, _completedSessionsTotalCachedTokens);
+            }
+            else
+            {
+                _logger.LogInformation("No persisted token snapshot found, starting with zero");
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error loading token snapshot at startup");
+            // Continue even if loading fails - use in-memory only
+        }
+    }
+
+    /// <summary>
     /// Logs session creation and starts tracking.
     /// </summary>
     public void LogSessionCreated(string userId, string callType, string sessionId, string model)
@@ -112,6 +184,7 @@ public class CallMonitoringService
         };
 
         _activeSessions[sessionId] = session;
+        TrackModelUsage(model);
 
         // Emit OpenTelemetry metric
         _callSessionsCounter.Add(1, 
@@ -198,6 +271,8 @@ public class CallMonitoringService
         session.TotalTokens = session.InputTokens + session.OutputTokens;
         session.InteractionCount++;
 
+        TrackModelUsage(model);
+
         var cost = _pricingService.CalculateTokenCost(model, inputTokens, outputTokens);
         session.EstimatedCost += cost;
 
@@ -228,8 +303,62 @@ public class CallMonitoringService
         costMetric.Properties["model"] = model;
         _telemetryClient.TrackMetric(costMetric);
 
-        _logger.LogInformation("Tokens consumed - Session: {SessionId}, Input: {InputTokens}, Output: {OutputTokens}, Cost: ${Cost:F4}",
-            sessionId, inputTokens, outputTokens, cost);
+        _logger.LogInformation("Tokens consumed - Session: {SessionId}, Input: {InputTokens}, Output: {OutputTokens}, Cost: ${Cost:F4}, Total Cost: ${TotalCost:F4}",
+            sessionId, inputTokens, outputTokens, cost, session.EstimatedCost);
+
+        // Optionally persist active session snapshot for real-time cost tracking
+        // This ensures costs are tracked even if session is still ongoing
+        PersistActiveSessionSnapshot(session);
+    }
+
+    /// <summary>
+    /// Creates a snapshot of active session costs for intermediate persistence.
+    /// This ensures costs are tracked in CosmosDB even if session hasn't completed yet.
+    /// Only persists snapshots at 30-second intervals to avoid excessive writes.
+    /// </summary>
+    private void PersistActiveSessionSnapshot(CallSession session)
+    {
+        try
+        {
+            // Only persist snapshot if 30+ seconds have passed since last snapshot
+            var now = DateTime.UtcNow;
+            if (session.LastSnapshotTime.HasValue && 
+                (now - session.LastSnapshotTime.Value).TotalSeconds < 30)
+            {
+                return; // Skip snapshot, too soon
+            }
+
+            session.LastSnapshotTime = now;
+
+            // Create a shallow copy with snapshot timestamp
+            var snapshot = new CallSession
+            {
+                Id = $"{session.SessionId}-cost-{now:yyyyMMddHHmmss}",
+                SessionId = session.SessionId,
+                UserId = session.UserId,
+                CallType = session.CallType,
+                Model = session.Model,
+                InputTokens = session.InputTokens,
+                OutputTokens = session.OutputTokens,
+                CachedTokens = session.CachedTokens,
+                TotalTokens = session.TotalTokens,
+                InteractionCount = session.InteractionCount,
+                EstimatedCost = session.EstimatedCost,
+                Status = "in-progress",
+                CreatedAt = session.CreatedAt,
+                StartTime = session.StartTime,
+                EndTime = now,
+                LastSnapshotTime = now
+            };
+
+            _batchWriter.EnqueueSession(snapshot);
+            _logger.LogInformation("Persisted cost snapshot for session {SessionId}: Input={InputTokens}, Output={OutputTokens}, Cost=${Cost:F4}", 
+                session.SessionId, session.InputTokens, session.OutputTokens, session.EstimatedCost);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to persist session snapshot for {SessionId}", session.SessionId);
+        }
     }
 
     /// <summary>
@@ -295,6 +424,15 @@ public class CallMonitoringService
         // Enqueue for batch write to CosmosDB
         _batchWriter.EnqueueSession(session);
 
+        // Add completed session cost to persistent total
+        AddCompletedSessionCost(session.EstimatedCost);
+
+        // Add completed session tokens to persistent total
+        AddCompletedSessionTokens(session.InputTokens, session.OutputTokens, session.CachedTokens);
+
+        _completedInteractions += session.InteractionCount;
+        TrackModelUsage(session.Model);
+
         _logger.LogInformation("Session completed: {SessionId}, Status: {Status}, Duration: {Duration}s, Cost: ${Cost:F4}",
             sessionId, status, session.DurationSeconds, session.EstimatedCost);
     }
@@ -327,12 +465,26 @@ public class CallMonitoringService
     public int GetActiveSessionCount() => _activeSessions.Count;
 
     /// <summary>
-    /// Gets aggregated token metrics across all active sessions.
+    /// Gets the count of completed sessions (persisted).
+    /// </summary>
+    public int GetCompletedSessionCount() => _completedSessionsCount;
+
+    /// <summary>
+    /// Gets the total count of sessions (active + completed).
+    /// </summary>
+    public int GetTotalSessionCount() => _activeSessions.Count + _completedSessionsCount;
+
+    /// <summary>
+    /// Gets aggregated token metrics across all active and completed sessions.
+    /// Includes token consumption breakdown by model.
     /// </summary>
     public TokenMetrics GetAggregatedTokenMetrics()
     {
         var metrics = new TokenMetrics();
+        var modelConsumption = new Dictionary<string, ModelTokenConsumption>();
+        var modelSessionCounts = new Dictionary<string, int>();
         
+        // Process active sessions
         foreach (var session in _activeSessions.Values)
         {
             metrics.TotalInputTokens += session.InputTokens;
@@ -340,11 +492,61 @@ public class CallMonitoringService
             metrics.TotalCachedTokens += session.CachedTokens;
             metrics.TotalInteractions += session.InteractionCount;
             
-            if (!string.IsNullOrEmpty(session.Model) && !metrics.UsedModels.Contains(session.Model))
+            if (!string.IsNullOrEmpty(session.Model))
             {
-                metrics.UsedModels.Add(session.Model);
+                if (!metrics.UsedModels.Contains(session.Model))
+                {
+                    metrics.UsedModels.Add(session.Model);
+                }
+                
+                // Track consumption by model
+                if (!modelConsumption.ContainsKey(session.Model))
+                {
+                    modelConsumption[session.Model] = new ModelTokenConsumption();
+                    modelSessionCounts[session.Model] = 0;
+                }
+                
+                modelConsumption[session.Model].InputTokens += session.InputTokens;
+                modelConsumption[session.Model].OutputTokens += session.OutputTokens;
+                modelConsumption[session.Model].CachedTokens += session.CachedTokens;
+                modelSessionCounts[session.Model]++;
             }
         }
+
+        metrics.TotalInputTokens += _completedSessionsTotalInputTokens;
+        metrics.TotalOutputTokens += _completedSessionsTotalOutputTokens;
+        metrics.TotalCachedTokens += _completedSessionsTotalCachedTokens;
+        metrics.TotalInteractions += _completedInteractions;
+
+        // Add models from _usedModels
+        foreach (var model in _usedModels.Keys)
+        {
+            if (!string.IsNullOrEmpty(model))
+            {
+                if (!metrics.UsedModels.Contains(model))
+                {
+                    metrics.UsedModels.Add(model);
+                }
+                
+                // Initialize if not already present (for completed-only models)
+                if (!modelConsumption.ContainsKey(model))
+                {
+                    modelConsumption[model] = new ModelTokenConsumption();
+                    modelSessionCounts[model] = 0;
+                }
+            }
+        }
+        
+        // Populate session count for each model
+        foreach (var modelName in modelConsumption.Keys)
+        {
+            if (modelSessionCounts.TryGetValue(modelName, out var count))
+            {
+                modelConsumption[modelName].SessionCount = count;
+            }
+        }
+        
+        metrics.TokenConsumptionByModel = modelConsumption;
         
         return metrics;
     }
@@ -353,6 +555,155 @@ public class CallMonitoringService
     /// Gets the list of active sessions with their details.
     /// </summary>
     public IEnumerable<CallSession> GetActiveSessions() => _activeSessions.Values;
+
+    /// <summary>
+    /// Gets the total estimated cost from active sessions.
+    /// </summary>
+    public decimal GetActiveTotalCost() => _activeSessions.Values.Sum(s => s.EstimatedCost);
+
+    /// <summary>
+    /// Gets the total estimated cost (active + completed sessions).
+    /// </summary>
+    public decimal GetTotalCost() => GetActiveTotalCost() + _completedSessionsTotalCost;
+
+    /// <summary>
+    /// Adds cost from a completed session to the persistent total and saves to database.
+    /// Call this when a session is being archived/completed.
+    /// </summary>
+    public async Task AddCompletedSessionCostAsync(decimal cost, CancellationToken cancellationToken = default)
+    {
+        _completedSessionsTotalCost += cost;
+        _completedSessionsCount++;
+        
+        // Create snapshot for persistence
+        var snapshot = new CostSnapshot
+        {
+            TotalCost = _completedSessionsTotalCost,
+            TotalSessionsCompleted = _completedSessionsCount,
+            LastUpdated = DateTime.UtcNow
+        };
+
+        // Save to database (fire and forget with error logging)
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await _costSnapshotRepository.UpsertAsync(snapshot, cancellationToken);
+                _logger.LogInformation("Cost snapshot persisted: Total: ${Cost:F4}, Sessions: {Count}", 
+                    _completedSessionsTotalCost, _completedSessionsCount);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error persisting cost snapshot");
+            }
+        }, cancellationToken);
+    }
+
+    /// <summary>
+    /// Adds cost from a completed session to the persistent total (synchronous version for backward compatibility).
+    /// Call this when a session is being archived/completed.
+    /// </summary>
+    public void AddCompletedSessionCost(decimal cost)
+    {
+        _completedSessionsTotalCost += cost;
+        _completedSessionsCount++;
+        _logger.LogInformation("Completed session cost added: ${Cost:F4}, Total completed cost: ${Total:F4}", 
+            cost, _completedSessionsTotalCost);
+    }
+
+    /// <summary>
+    /// Adds tokens from a completed session to the persistent total and saves to database.
+    /// Call this when a session is being archived/completed.
+    /// </summary>
+    public async Task AddCompletedSessionTokensAsync(long inputTokens, long outputTokens, long cachedTokens = 0, CancellationToken cancellationToken = default)
+    {
+        _completedSessionsTotalInputTokens += inputTokens;
+        _completedSessionsTotalOutputTokens += outputTokens;
+        _completedSessionsTotalCachedTokens += cachedTokens;
+        
+        // Create snapshot for persistence
+        var snapshot = new TokenSnapshot
+        {
+            TotalInputTokens = _completedSessionsTotalInputTokens,
+            TotalOutputTokens = _completedSessionsTotalOutputTokens,
+            TotalCachedTokens = _completedSessionsTotalCachedTokens,
+            TotalSessionsCompleted = _completedSessionsCount,
+            LastUpdated = DateTime.UtcNow
+        };
+
+        // Save to database (fire and forget with error logging)
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await _tokenSnapshotRepository.UpsertAsync(snapshot, cancellationToken);
+                _logger.LogInformation("Token snapshot persisted: Input: {InputTokens}, Output: {OutputTokens}, Cached: {CachedTokens}", 
+                    _completedSessionsTotalInputTokens, _completedSessionsTotalOutputTokens, _completedSessionsTotalCachedTokens);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error persisting token snapshot");
+            }
+        }, cancellationToken);
+    }
+
+    /// <summary>
+    /// Adds tokens from a completed session to the persistent total (synchronous version for backward compatibility).
+    /// Call this when a session is being archived/completed.
+    /// </summary>
+    public void AddCompletedSessionTokens(long inputTokens, long outputTokens, long cachedTokens = 0)
+    {
+        _completedSessionsTotalInputTokens += inputTokens;
+        _completedSessionsTotalOutputTokens += outputTokens;
+        _completedSessionsTotalCachedTokens += cachedTokens;
+        _logger.LogInformation("Completed session tokens added: Input: {InputTokens}, Output: {OutputTokens}, Cached: {CachedTokens}", 
+            inputTokens, outputTokens, cachedTokens);
+    }
+
+    /// <summary>
+    /// Gets the total tokens (input + output) from active sessions.
+    /// </summary>
+    public long GetActiveTotalTokens()
+    {
+        long total = 0;
+        foreach (var session in _activeSessions.Values)
+        {
+            total += session.InputTokens + session.OutputTokens;
+        }
+        return total;
+    }
+
+    /// <summary>
+    /// Gets the total tokens (input + output) from completed sessions.
+    /// </summary>
+    public long GetCompletedTotalTokens() => _completedSessionsTotalInputTokens + _completedSessionsTotalOutputTokens;
+
+    /// <summary>
+    /// Gets the aggregated token statistics (active + completed).
+    /// </summary>
+    public (long inputTokens, long outputTokens, long cachedTokens, long totalTokens) GetAggregatedTokenStats()
+    {
+        long activeInputTokens = 0;
+        long activeOutputTokens = 0;
+        
+        foreach (var session in _activeSessions.Values)
+        {
+            activeInputTokens += session.InputTokens;
+            activeOutputTokens += session.OutputTokens;
+        }
+
+        var totalInputTokens = activeInputTokens + _completedSessionsTotalInputTokens;
+        var totalOutputTokens = activeOutputTokens + _completedSessionsTotalOutputTokens;
+        var totalTokens = totalInputTokens + totalOutputTokens;
+
+        return (totalInputTokens, totalOutputTokens, _completedSessionsTotalCachedTokens, totalTokens);
+    }
+
+    private void TrackModelUsage(string? model)
+    {
+        if (string.IsNullOrWhiteSpace(model)) return;
+        _usedModels.TryAdd(model, 0);
+    }
 }
 
 /// <summary>
@@ -365,4 +716,22 @@ public class TokenMetrics
     public long TotalCachedTokens { get; set; }
     public int TotalInteractions { get; set; }
     public List<string> UsedModels { get; set; } = new();
+    
+    /// <summary>
+    /// Token consumption breakdown by model (includes both active and completed sessions).
+    /// Key: Model name, Value: Token consumption data for that model
+    /// </summary>
+    public Dictionary<string, ModelTokenConsumption> TokenConsumptionByModel { get; set; } = new();
+}
+
+/// <summary>
+/// Token consumption data for a specific model.
+/// </summary>
+public class ModelTokenConsumption
+{
+    public long InputTokens { get; set; }
+    public long OutputTokens { get; set; }
+    public long CachedTokens { get; set; }
+    public long TotalTokens => InputTokens + OutputTokens;
+    public int SessionCount { get; set; }
 }

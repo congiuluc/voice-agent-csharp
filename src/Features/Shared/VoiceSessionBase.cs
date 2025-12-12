@@ -398,6 +398,13 @@ public abstract class VoiceSessionBase : IVoiceSession
         // Dispose cancellation token source
         _cancellationTokenSource?.Dispose();
 
+        // Log session completion to monitoring service for persistence to CosmosDB
+        if (!string.IsNullOrEmpty(_sessionId) && _monitoringService != null)
+        {
+            _monitoringService.LogSessionCompleted(_sessionId, "completed");
+            _logger.LogInformation("Session {SessionId} completed and enqueued for persistence", _sessionId);
+        }
+
         _disposed = true;
         _logger.LogInformation("{SessionType} session disposed", SessionType);
     }

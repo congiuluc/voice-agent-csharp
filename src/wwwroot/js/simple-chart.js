@@ -71,6 +71,63 @@ class SimpleChart {
         });
     }
 
+    drawStackedBarChart() {
+        const { labels, datasets } = this.config.data;
+        const { colors } = this.config.options;
+        const padding = 40;
+        const width = this.width / 2 - padding * 2;
+        const height = this.height / 2 - padding * 2;
+        
+        this.clear();
+        
+        // Find max stack value
+        let maxStackValue = 0;
+        labels.forEach((_, i) => {
+            const stackTotal = datasets.reduce((sum, dataset) => sum + (dataset.data[i] || 0), 0);
+            maxStackValue = Math.max(maxStackValue, stackTotal);
+        });
+        
+        // Draw stacked bars
+        const barWidth = width / (labels.length * 1.5);
+        const gap = barWidth * 0.3;
+        
+        labels.forEach((label, i) => {
+            let currentHeight = 0;
+            
+            datasets.forEach((dataset) => {
+                const value = dataset.data[i] || 0;
+                const segmentHeight = (value / maxStackValue) * height * 0.8;
+                const x = padding + i * (barWidth + gap);
+                const y = padding + height - currentHeight - segmentHeight;
+                
+                // Draw stacked segment
+                this.ctx.fillStyle = dataset.backgroundColor;
+                this.ctx.fillRect(x, y, barWidth - gap, segmentHeight);
+                
+                currentHeight += segmentHeight;
+            });
+            
+            // Draw label
+            this.ctx.fillStyle = colors.text;
+            this.ctx.font = '10px sans-serif';
+            this.ctx.textAlign = 'center';
+            const labelX = padding + i * (barWidth + gap) + barWidth / 2;
+            this.ctx.fillText(label, labelX, padding + height + 20);
+        });
+        
+        // Draw legend
+        let legendY = 10;
+        datasets.forEach((dataset, i) => {
+            this.ctx.fillStyle = dataset.backgroundColor;
+            this.ctx.fillRect(padding, legendY, 10, 10);
+            this.ctx.fillStyle = colors.text;
+            this.ctx.font = '10px sans-serif';
+            this.ctx.textAlign = 'left';
+            this.ctx.fillText(dataset.label, padding + 15, legendY + 9);
+            legendY += 15;
+        });
+    }
+
     drawDoughnutChart() {
         const { labels, datasets } = this.config.data;
         const { colors } = this.config.options;
@@ -116,6 +173,8 @@ class SimpleChart {
     render() {
         if (this.config.type === 'bar') {
             this.drawBarChart();
+        } else if (this.config.type === 'stackedBar') {
+            this.drawStackedBarChart();
         } else if (this.config.type === 'doughnut') {
             this.drawDoughnutChart();
         }

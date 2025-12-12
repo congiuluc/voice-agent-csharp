@@ -3286,6 +3286,79 @@ body.light-mode .icon-btn:hover {
   color: var(--theme-text-primary);
 }
 
+/* Token Consumption per Model Table Styles */
+.token-consumption-table {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--theme-border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.token-consumption-table .table-header {
+  display: grid;
+  grid-template-columns: 150px 120px 120px 120px 120px 80px;
+  background: var(--theme-accent-dark);
+  border-bottom: 2px solid var(--theme-accent);
+  font-weight: 600;
+  padding: 0;
+  margin: 0;
+}
+
+.token-consumption-table .table-header .column {
+  padding: 12px 15px;
+  color: var(--theme-text-primary);
+  border-right: 1px solid var(--theme-border);
+}
+
+.token-consumption-table .table-header .column:last-child {
+  border-right: none;
+}
+
+.token-consumption-table .table-row {
+  display: grid;
+  grid-template-columns: 150px 120px 120px 120px 120px 80px;
+  border-bottom: 1px solid var(--theme-border);
+  transition: background var(--transition-fast) ease;
+}
+
+.token-consumption-table .table-row:hover {
+  background: var(--theme-glass-bg-hover);
+}
+
+.token-consumption-table .column {
+  padding: 12px 15px;
+  color: var(--theme-text-secondary);
+  border-right: 1px solid var(--theme-border);
+  display: flex;
+  align-items: center;
+}
+
+.token-consumption-table .column:last-child {
+  border-right: none;
+}
+
+.token-consumption-table .model-col {
+  font-weight: 600;
+  color: var(--theme-text-primary);
+}
+
+.token-consumption-table .tokens-col {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.token-consumption-table .sessions-col {
+  text-align: center;
+}
+
+.no-data-message {
+  padding: 30px;
+  text-align: center;
+  color: var(--theme-text-secondary);
+}
+
 /* Links grid */
 .links-grid {
   display: grid;
@@ -3441,6 +3514,17 @@ body.light-mode .icon-btn:hover {
   .pricing-table th,
   .pricing-table td {
     padding: 8px 10px;
+  }
+
+  /* Token consumption table responsive */
+  .token-consumption-table .table-header,
+  .token-consumption-table .table-row {
+    grid-template-columns: 120px 100px 100px 100px 100px 60px;
+  }
+
+  .token-consumption-table .column {
+    padding: 8px 10px;
+    font-size: 0.85em;
   }
 }
 
@@ -3859,6 +3943,163 @@ body.light-mode .icon-btn:hover {
   font-family: 'Consolas', 'Monaco', monospace;
 }
 
+/* Token Consumption per Model Section */
+.token-consumption-per-model-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.model-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.05), rgba(59, 130, 246, 0.05));
+  border: 1px solid rgba(34, 197, 94, 0.2);
+  border-radius: 8px;
+  transition: background-color var(--transition-normal);
+}
+
+.model-row:hover {
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.1), rgba(59, 130, 246, 0.1));
+  border-color: rgba(34, 197, 94, 0.4);
+}
+
+/* Costs per Model Section */
+.costs-per-model-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.model-cost-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  background: linear-gradient(135deg, rgba(249, 158, 11, 0.05), rgba(239, 68, 68, 0.05));
+  border: 1px solid rgba(249, 158, 11, 0.2);
+  border-radius: 8px;
+  transition: background-color var(--transition-normal);
+}
+
+.model-cost-row:hover {
+  background: linear-gradient(135deg, rgba(249, 158, 11, 0.1), rgba(239, 68, 68, 0.1));
+  border-color: rgba(249, 158, 11, 0.4);
+}
+
+.model-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.95em;
+}
+
+.model-header strong {
+  color: #e2e8f0;
+  font-weight: 600;
+}
+
+.model-total {
+  font-size: 0.8em;
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+/* Stacked Bar Chart */
+.stacked-bar-chart {
+  width: 100%;
+  margin: 4px 0;
+}
+
+.bar-container {
+  display: flex;
+  width: 100%;
+  height: 28px;
+  border-radius: 6px;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.bar-segment {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  transition: flex var(--transition-fast);
+  min-width: 20px;
+}
+
+.bar-segment.input-segment {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: white;
+}
+
+.bar-segment.output-segment {
+  background: linear-gradient(135deg, #3b82f6, #1e40af);
+  color: white;
+}
+
+.bar-segment.cached-segment {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: white;
+}
+
+.bar-segment:hover {
+  filter: brightness(1.2);
+  z-index: 10;
+}
+
+.segment-label {
+  font-size: 0.7em;
+  font-weight: 600;
+  white-space: nowrap;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+  letter-spacing: 0.5px;
+}
+
+/* Model Details (Legend) */
+.model-details {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  font-size: 0.8em;
+}
+
+.detail-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #94a3b8;
+}
+
+.detail-color {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  display: inline-block;
+}
+
+.input-color {
+  background: linear-gradient(135deg, #10b981, #059669);
+}
+
+.output-color {
+  background: linear-gradient(135deg, #3b82f6, #1e40af);
+}
+
+.cached-color {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+}
+
+.detail-item strong {
+  color: #e2e8f0;
+  font-weight: 600;
+}
+
 /* Light mode for consumption dashboard - uses theme variables now */
 body.light-mode .consumption-dashboard {
   background: var(--theme-transcript-bg);
@@ -3925,6 +4166,60 @@ body.light-mode .audio-item.output {
 
 body.light-mode .audio-item.total {
   background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(139, 92, 246, 0.1));
+}
+
+body.light-mode .model-row {
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.08), rgba(59, 130, 246, 0.08));
+  border-color: rgba(34, 197, 94, 0.3);
+}
+
+body.light-mode .model-row:hover {
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.15), rgba(59, 130, 246, 0.15));
+  border-color: rgba(34, 197, 94, 0.5);
+}
+
+body.light-mode .model-header strong {
+  color: var(--theme-transcript-text);
+}
+
+body.light-mode .model-header span {
+  color: var(--theme-transcript-btn-text);
+}
+
+body.light-mode .model-cost-row {
+  background: linear-gradient(135deg, rgba(249, 158, 11, 0.08), rgba(239, 68, 68, 0.08));
+  border-color: rgba(249, 158, 11, 0.3);
+}
+
+body.light-mode .model-cost-row:hover {
+  background: linear-gradient(135deg, rgba(249, 158, 11, 0.15), rgba(239, 68, 68, 0.15));
+  border-color: rgba(249, 158, 11, 0.5);
+}
+
+body.light-mode .model-cost-row:hover {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.15), rgba(59, 130, 246, 0.15));
+  border-color: rgba(139, 92, 246, 0.5);
+}
+
+body.light-mode .model-name strong {
+  color: var(--theme-transcript-text);
+}
+
+body.light-mode .model-total {
+  color: var(--theme-transcript-btn-text);
+}
+
+body.light-mode .bar-container {
+  background: rgba(0, 0, 0, 0.08);
+  border-color: rgba(0, 0, 0, 0.15);
+}
+
+body.light-mode .detail-item {
+  color: var(--theme-transcript-btn-text);
+}
+
+body.light-mode .detail-item strong {
+  color: var(--theme-transcript-text);
 }
 
 body.light-mode .dashboard-toggle-btn {

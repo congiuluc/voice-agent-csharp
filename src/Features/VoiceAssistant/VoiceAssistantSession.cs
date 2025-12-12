@@ -454,6 +454,18 @@ public class VoiceAssistantSession : VoiceSessionBase
                             } : null
                         } : null
                     });
+                    
+                    // Log tokens to monitoring service
+                    if (usage != null && _sessionId != null && _monitoringService != null && !string.IsNullOrEmpty(_config.Model))
+                    {
+                        var cachedTokens = usage.InputTokenDetails?.CachedTokens ?? 0;
+                        _monitoringService.LogTokensConsumed(
+                            _sessionId,
+                            usage.InputTokens,
+                            usage.OutputTokens,
+                            _config.Model,
+                            cachedTokens);
+                    }
                     break;
 
                 case SessionUpdateError errorEvent:

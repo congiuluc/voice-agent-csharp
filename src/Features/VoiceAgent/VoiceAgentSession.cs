@@ -431,6 +431,19 @@ public class VoiceAgentSession : VoiceSessionBase
                             } : null
                         } : null
                     });
+                    
+                    // Log tokens to monitoring service
+                    if (usage != null && _sessionId != null && _monitoringService != null)
+                    {
+                        var cachedTokens = usage.InputTokenDetails?.CachedTokens ?? 0;
+                        var model = _config.FoundryAgentId ?? "unknown";
+                        _monitoringService.LogTokensConsumed(
+                            _sessionId,
+                            usage.InputTokens,
+                            usage.OutputTokens,
+                            model,
+                            cachedTokens);
+                    }
                     break;
 
                 case SessionUpdateError errorEvent:

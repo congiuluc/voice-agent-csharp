@@ -31,8 +31,14 @@ public class CallSession
     public string SessionId { get; set; } = string.Empty;
 
     /// <summary>
+    /// Document type for CosmosDB partitioning.
+    /// Always "CallSession" for consistent partition key strategy.
+    /// </summary>
+    [JsonPropertyName("type")]
+    public string Type { get; set; } = "CallSession";
+
+    /// <summary>
     /// User identifier or phone number for PSTN calls.
-    /// Partition key.
     /// </summary>
     [JsonPropertyName("userId")]
     public string UserId { get; set; } = string.Empty;
@@ -120,6 +126,13 @@ public class CallSession
     /// </summary>
     [JsonPropertyName("audioMilestones")]
     public Dictionary<string, DateTime> AudioMilestones { get; set; } = new();
+
+    /// <summary>
+    /// Timestamp of last cost snapshot persisted to CosmosDB.
+    /// Used to avoid excessive snapshots during long-running sessions.
+    /// </summary>
+    [JsonPropertyName("lastSnapshotTime")]
+    public DateTime? LastSnapshotTime { get; set; }
 
     /// <summary>
     /// Error message if status is error.

@@ -135,6 +135,17 @@ catch (Exception ex)
     Log.Warning(ex, "Failed to initialize pricing service - will use defaults");
 }
 
+// Initialize call monitoring service to load persisted cost data
+try
+{
+    var monitoringService = app.Services.GetRequiredService<CallMonitoringService>();
+    await monitoringService.InitializeAsync();
+}
+catch (Exception ex)
+{
+    Log.Warning(ex, "Failed to initialize call monitoring service - will use defaults");
+}
+
 // Configure the HTTP request pipeline
 if (!app.Environment.IsDevelopment())
 {

@@ -58,6 +58,20 @@ export class ConsumptionTracker {
     // Rate limits
     this.rateLimits = [];
     
+    // Model-based token tracking for cost analysis
+    this.modelTokenUsage = {}; // { modelName: { input: 0, output: 0, cached: 0 } }
+    this.modelCosts = {}; // { modelName: { input: 0, output: 0, cached: 0, total: 0 } }
+    
+    // Model pricing configuration (in USD per 1M tokens)
+    this.modelPrices = {
+      'gpt-4o': { input: 2.50, output: 10.00, cached: 1.25 },
+      'gpt-4o-mini': { input: 0.15, output: 0.60, cached: 0.075 },
+      'gpt-4-turbo': { input: 10.00, output: 30.00, cached: 5.00 },
+      'gpt-4': { input: 30.00, output: 60.00, cached: 15.00 },
+      'gpt-3.5-turbo': { input: 0.50, output: 1.50, cached: 0.25 },
+      'default': { input: 1.00, output: 2.00, cached: 0.50 }
+    };
+    
     // UI elements cache
     this.dashboardElement = null;
     
@@ -226,6 +240,20 @@ export class ConsumptionTracker {
           <div class="rate-limits-grid" id="dashRateLimits">
           </div>
         </div>
+        
+        <!-- Token Consumption per Model Section -->
+        <div class="consumption-section" id="tokenConsumptionPerModelSection">
+          <h4>${ConsumptionTracker.ICONS.tokens} Token Consumption per Model</h4>
+          <div class="token-consumption-per-model-container" id="dashTokenConsumptionPerModel">
+          </div>
+        </div>
+        
+        <!-- Costs per Model Section -->
+        <div class="consumption-section" id="costsPerModelSection">
+          <h4>💰 Costs per Model</h4>
+          <div class="costs-per-model-container" id="dashCostsPerModel">
+          </div>
+        </div>
       </div>
     `;
   }
@@ -320,9 +348,7 @@ export class ConsumptionTracker {
     this.inputAudioSamplingRate = session.input_audio_sampling_rate || session.InputAudioSamplingRate || this.getDefaultSampleRate(this.inputAudioFormat);
     this.outputAudioSamplingRate = this.getOutputSampleRate(this.outputAudioFormat);
     
-    // Reset counters for new session
-    this.resetCounters();
-    
+    // Keep dashboard totals cumulative even across sessions
     this.updateDashboard();
     this.logEvent('SessionCreated', { 
       sessionId: this.sessionId, 
@@ -428,6 +454,11 @@ export class ConsumptionTracker {
     this.currentResponseId = response.id || response.ResponseId || payload.ResponseId || this.currentResponseId;
     this.currentResponseStatus = response.status || response.Status || payload.Status || 'completed';
     
+    // Ensure we have a model name - try to extract from response if not already set
+    if (!this.sessionModel) {
+      this.sessionModel = response.model || response.Model || payload.model || payload.Model || 'unknown';
+    }
+    
     // Extract usage information
     const usage = response.usage || response.Usage || payload.Usage;
     if (usage) {
@@ -439,6 +470,39 @@ export class ConsumptionTracker {
       this.totalInputTokens += inputTokens;
       this.totalOutputTokens += outputTokens;
       this.totalTokens += totalTokens;
+      
+      // Track tokens per model
+      if (this.sessionModel && this.sessionModel !== 'unknown') {
+        if (!this.modelTokenUsage[this.sessionModel]) {
+          this.modelTokenUsage[this.sessionModel] = {
+            input: 0,
+            output: 0,
+            cached: 0
+          };
+        }
+        
+        // Extract cached tokens separately
+        const inputDetails = usage.input_token_details || usage.InputTokenDetails || {};
+        const cachedTokens = inputDetails.cached_tokens || inputDetails.CachedTokens || 0;
+        
+        // Calculate actual input tokens (not including cached)
+        const actualInputTokens = inputTokens - cachedTokens;
+        
+        // Add to model usage
+        this.modelTokenUsage[this.sessionModel].input += actualInputTokens;
+        this.modelTokenUsage[this.sessionModel].output += outputTokens;
+        this.modelTokenUsage[this.sessionModel].cached += cachedTokens;
+        
+        // Calculate costs per model
+        this.calculateModelCosts();
+        
+        this.logEvent('ModelTokensTracked', {
+          model: this.sessionModel,
+          input: actualInputTokens,
+          output: outputTokens,
+          cached: cachedTokens
+        });
+      }
       
       // Detailed breakdown
       const inputDetails = usage.input_token_details || usage.InputTokenDetails;
@@ -625,6 +689,8 @@ export class ConsumptionTracker {
     this.inputTokenDetails = { cachedTokens: 0, textTokens: 0, audioTokens: 0 };
     this.outputTokenDetails = { textTokens: 0, audioTokens: 0 };
     this.rateLimits = [];
+    this.modelTokenUsage = {};
+    this.modelCosts = {};
     
     // Reset audio duration tracking
     this.totalInputAudioDurationMs = 0;
@@ -673,6 +739,39 @@ export class ConsumptionTracker {
     this.updateElement('dashTotalAudioDuration', this.formatDuration(this.totalInputAudioDurationMs + this.totalOutputAudioDurationMs));
     this.updateElement('dashAudioFormat', this.outputAudioFormat || 'pcm16');
     this.updateElement('dashSampleRate', this.formatSampleRate(this.outputAudioSamplingRate));
+    
+    // Update token consumption and costs per model
+    this.updateTokenConsumptionPerModelUI();
+    this.updateCostsPerModelUI();
+  }
+  
+  /**
+   * Calculate costs for each model based on token usage
+   */
+  calculateModelCosts() {
+    for (const modelName in this.modelTokenUsage) {
+      const usage = this.modelTokenUsage[modelName];
+      const pricing = this.modelPrices[modelName] || this.modelPrices['default'];
+      
+      // Convert tokens to millions for pricing calculation
+      const inputCost = (usage.input / 1_000_000) * pricing.input;
+      const outputCost = (usage.output / 1_000_000) * pricing.output;
+      const cachedCost = (usage.cached / 1_000_000) * pricing.cached;
+      
+      this.modelCosts[modelName] = {
+        input: inputCost,
+        output: outputCost,
+        cached: cachedCost,
+        total: inputCost + outputCost + cachedCost
+      };
+      
+      this.logEvent('CalculatedModelCosts', {
+        model: modelName,
+        tokens: usage,
+        pricing: pricing,
+        costs: this.modelCosts[modelName]
+      });
+    }
   }
   
   /**
@@ -737,6 +836,170 @@ export class ConsumptionTracker {
     const max = limit.limit || limit.Limit || 1;
     const remaining = limit.remaining || limit.Remaining || 0;
     return ((max - remaining) / max) * 100;
+  }
+  
+  /**
+   * Update token consumption per model UI with stacked bar charts
+   */
+  updateTokenConsumptionPerModelUI() {
+    const container = document.getElementById('dashTokenConsumptionPerModel');
+    const section = document.getElementById('tokenConsumptionPerModelSection');
+    
+    if (!container || !section) return;
+    
+    const models = Object.keys(this.modelTokenUsage);
+    this.logEvent('UpdateTokenConsumptionUI', { modelsCount: models.length, models: models });
+    
+    if (models.length === 0) {
+      section.style.display = 'none';
+      return;
+    }
+    
+    section.style.display = 'block';
+    
+    // Build HTML for each model with stacked bar chart
+    container.innerHTML = models.map(model => {
+      const usage = this.modelTokenUsage[model];
+      return this.createTokenConsumptionRow(model, usage);
+    }).join('');
+  }
+  
+  /**
+   * Create a token consumption row with stacked bar chart
+   */
+  createTokenConsumptionRow(model, usage) {
+    const totalTokens = usage.input + usage.output + usage.cached;
+    
+    if (totalTokens === 0) {
+      return '';
+    }
+    
+    const inputPercent = (usage.input / totalTokens) * 100;
+    const outputPercent = (usage.output / totalTokens) * 100;
+    const cachedPercent = (usage.cached / totalTokens) * 100;
+    
+    return `
+      <div class="model-row">
+        <div class="model-header">
+          <strong>${this.escapeHtml(model)}</strong>
+          <span class="model-total">${this.formatNumber(totalTokens)} tokens</span>
+        </div>
+        <div class="stacked-bar-chart">
+          <div class="bar-container">
+            ${inputPercent > 0 ? `
+              <div class="bar-segment input-segment" style="width: ${inputPercent}%; flex: ${inputPercent};" title="Input: ${this.formatNumber(usage.input)} tokens (${inputPercent.toFixed(1)}%)">
+                <span class="segment-label">${inputPercent > 8 ? `Input ${inputPercent.toFixed(0)}%` : ''}</span>
+              </div>
+            ` : ''}
+            ${outputPercent > 0 ? `
+              <div class="bar-segment output-segment" style="width: ${outputPercent}%; flex: ${outputPercent};" title="Output: ${this.formatNumber(usage.output)} tokens (${outputPercent.toFixed(1)}%)">
+                <span class="segment-label">${outputPercent > 8 ? `Output ${outputPercent.toFixed(0)}%` : ''}</span>
+              </div>
+            ` : ''}
+            ${cachedPercent > 0 ? `
+              <div class="bar-segment cached-segment" style="width: ${cachedPercent}%; flex: ${cachedPercent};" title="Cached: ${this.formatNumber(usage.cached)} tokens (${cachedPercent.toFixed(1)}%)">
+                <span class="segment-label">${cachedPercent > 8 ? `Cached ${cachedPercent.toFixed(0)}%` : ''}</span>
+              </div>
+            ` : ''}
+          </div>
+        </div>
+        <div class="model-details">
+          <span class="detail-item input-detail"><span class="detail-color input-color"></span>Input: ${this.formatNumber(usage.input)}</span>
+          <span class="detail-item output-detail"><span class="detail-color output-color"></span>Output: ${this.formatNumber(usage.output)}</span>
+          <span class="detail-item cached-detail"><span class="detail-color cached-color"></span>Cached: ${this.formatNumber(usage.cached)}</span>
+        </div>
+      </div>
+    `;
+  }
+  
+  /**
+   * Update costs per model UI with stacked bar charts
+   */
+  updateCostsPerModelUI() {
+    const container = document.getElementById('dashCostsPerModel');
+    const section = document.getElementById('costsPerModelSection');
+    
+    if (!container || !section) return;
+    
+    const models = Object.keys(this.modelCosts);
+    this.logEvent('UpdateCostsPerModelUI', { modelsCount: models.length, models: models, costs: this.modelCosts });
+    
+    if (models.length === 0) {
+      section.style.display = 'none';
+      return;
+    }
+
+    
+    section.style.display = 'block';
+    
+    // Build HTML for each model with stacked bar chart
+    container.innerHTML = models.map(model => {
+      const costs = this.modelCosts[model];
+      return this.createModelCostRow(model, costs);
+    }).join('');
+  }
+  
+  /**
+   * Create a model cost row with stacked bar chart
+   */
+  createModelCostRow(model, costs) {
+    const totalCost = costs.total;
+    
+    if (totalCost === 0) {
+      return '';
+    }
+    
+    const inputPercent = (costs.input / totalCost) * 100;
+    const outputPercent = (costs.output / totalCost) * 100;
+    const cachedPercent = (costs.cached / totalCost) * 100;
+    
+    return `
+      <div class="model-cost-row">
+        <div class="model-header">
+          <strong>${this.escapeHtml(model)}</strong>
+          <span class="model-total">$${totalCost.toFixed(4)}</span>
+        </div>
+        <div class="stacked-bar-chart">
+          <div class="bar-container">
+            ${inputPercent > 0 ? `
+              <div class="bar-segment input-segment" style="width: ${inputPercent}%; flex: ${inputPercent};" title="Input: $${costs.input.toFixed(4)} (${inputPercent.toFixed(1)}%)">
+                <span class="segment-label">${inputPercent > 8 ? `Input ${inputPercent.toFixed(0)}%` : ''}</span>
+              </div>
+            ` : ''}
+            ${outputPercent > 0 ? `
+              <div class="bar-segment output-segment" style="width: ${outputPercent}%; flex: ${outputPercent};" title="Output: $${costs.output.toFixed(4)} (${outputPercent.toFixed(1)}%)">
+                <span class="segment-label">${outputPercent > 8 ? `Output ${outputPercent.toFixed(0)}%` : ''}</span>
+              </div>
+            ` : ''}
+            ${cachedPercent > 0 ? `
+              <div class="bar-segment cached-segment" style="width: ${cachedPercent}%; flex: ${cachedPercent};" title="Cached: $${costs.cached.toFixed(4)} (${cachedPercent.toFixed(1)}%)">
+                <span class="segment-label">${cachedPercent > 8 ? `Cached ${cachedPercent.toFixed(0)}%` : ''}</span>
+              </div>
+            ` : ''}
+          </div>
+        </div>
+        <div class="model-details">
+          <span class="detail-item input-detail"><span class="detail-color input-color"></span>Input: $${costs.input.toFixed(4)}</span>
+          <span class="detail-item output-detail"><span class="detail-color output-color"></span>Output: $${costs.output.toFixed(4)}</span>
+          <span class="detail-item cached-detail"><span class="detail-color cached-color"></span>Cached: $${costs.cached.toFixed(4)}</span>
+        </div>
+      </div>
+    `;
+  }
+  
+  /**
+   * Escape HTML special characters
+   */
+  escapeHtml(text) {
+    if (!text) return '';
+    const map = {
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#039;'
+    };
+    return text.replace(/[&<>"']/g, m => map[m]);
   }
   
   /**
@@ -834,7 +1097,9 @@ export class ConsumptionTracker {
       totalOutputTokens: this.totalOutputTokens,
       totalTokens: this.totalTokens,
       inputTokenDetails: { ...this.inputTokenDetails },
-      outputTokenDetails: { ...this.outputTokenDetails }
+      outputTokenDetails: { ...this.outputTokenDetails },
+      modelTokenUsage: { ...this.modelTokenUsage },
+      modelCosts: { ...this.modelCosts }
     };
   }
   
@@ -903,6 +1168,8 @@ export class ConsumptionTracker {
           outputFormat: this.outputAudioFormat,
           sampleRate: this.outputAudioSamplingRate
         },
+        modelUsage: { ...this.modelTokenUsage },
+        modelCosts: { ...this.modelCosts },
         savedAt: new Date().toISOString()
       };
       
@@ -1032,6 +1299,36 @@ export class ConsumptionTracker {
     }
   }
   
+  /**
+   * Debug method to populate test data and render graphs
+   */
+  debugShowGraphs() {
+    // Populate test data
+    this.modelTokenUsage = {
+      'gpt-4o': { input: 5000, output: 2000, cached: 1000 },
+      'gpt-4o-mini': { input: 3000, output: 1500, cached: 500 },
+      'gpt-4-turbo': { input: 2000, output: 1000, cached: 200 }
+    };
+    
+    // Calculate costs
+    this.calculateModelCosts();
+    
+    // Update both UIs
+    this.updateTokenConsumptionPerModelUI();
+    this.updateCostsPerModelUI();
+    
+    // Show sections
+    const tokenSection = document.getElementById('tokenConsumptionPerModelSection');
+    const costSection = document.getElementById('costsPerModelSection');
+    if (tokenSection) tokenSection.style.display = 'block';
+    if (costSection) costSection.style.display = 'block';
+    
+    console.log('[ConsumptionTracker] Debug graphs shown with test data', {
+      modelTokenUsage: this.modelTokenUsage,
+      modelCosts: this.modelCosts
+    });
+  }
+
   /**
    * Auto-save on session disconnect
    */

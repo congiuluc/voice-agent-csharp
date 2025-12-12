@@ -52,7 +52,7 @@ resource callSessionsContainer 'Microsoft.DocumentDB/databaseAccounts/sqlDatabas
       id: 'callSessions'
       partitionKey: {
         paths: [
-          '/userId'
+          '/type'
         ]
         kind: 'Hash'
       }
@@ -70,7 +70,7 @@ resource callSessionsContainer 'Microsoft.DocumentDB/databaseAccounts/sqlDatabas
           }
         ]
       }
-      defaultTtl: 7776000  // 90 days in seconds
+      // No TTL for call sessions - permanent storage (same as cost/token snapshots)
     }
   }
 }
@@ -102,6 +102,68 @@ resource pricingConfigContainer 'Microsoft.DocumentDB/databaseAccounts/sqlDataba
         ]
       }
       // No TTL for pricing config
+    }
+  }
+}
+
+resource costSnapshotsContainer 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases/containers@2024-05-15' = {
+  parent: database
+  name: 'costSnapshots'
+  properties: {
+    resource: {
+      id: 'costSnapshots'
+      partitionKey: {
+        paths: [
+          '/type'
+        ]
+        kind: 'Hash'
+      }
+      indexingPolicy: {
+        indexingMode: 'consistent'
+        automatic: true
+        includedPaths: [
+          {
+            path: '/*'
+          }
+        ]
+        excludedPaths: [
+          {
+            path: '/"_etag"/?'
+          }
+        ]
+      }
+      // No TTL for cost snapshots - permanent storage
+    }
+  }
+}
+
+resource tokenSnapshotsContainer 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases/containers@2024-05-15' = {
+  parent: database
+  name: 'tokenSnapshots'
+  properties: {
+    resource: {
+      id: 'tokenSnapshots'
+      partitionKey: {
+        paths: [
+          '/type'
+        ]
+        kind: 'Hash'
+      }
+      indexingPolicy: {
+        indexingMode: 'consistent'
+        automatic: true
+        includedPaths: [
+          {
+            path: '/*'
+          }
+        ]
+        excludedPaths: [
+          {
+            path: '/"_etag"/?'
+          }
+        ]
+      }
+      // No TTL for token snapshots - permanent storage
     }
   }
 }

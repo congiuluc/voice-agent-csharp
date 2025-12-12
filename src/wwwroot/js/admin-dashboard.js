@@ -33,91 +33,224 @@ function getChartColors() {
 function initializeCharts() {
     const colors = getChartColors();
     
-    // Get pricing data from table
-    const pricingRows = document.querySelectorAll('#pricingTable tr[data-model]');
-    const models = [];
-    const inputCosts = [];
-    const outputCosts = [];
-    const avatarCosts = [];
-    const ttsCosts = [];
+    // Fetch current metrics from API to get actual consumption data
+    fetchMetricsForCharts();
+}
 
-    pricingRows.forEach(row => {
-        models.push(row.dataset.model);
-        inputCosts.push(parseFloat(row.dataset.input));
-        outputCosts.push(parseFloat(row.dataset.output));
-        avatarCosts.push(parseFloat(row.dataset.avatar));
-        ttsCosts.push(parseFloat(row.dataset.tts));
-    });
+// Fetch metrics and update charts
+async function fetchMetricsForCharts() {
+    try {
+        const response = await fetch('/api/admin/metrics');
+        const data = await response.json();
+        
+        if (!data) return;
 
-    // Pricing Chart (Bar Chart)
-    const pricingCtx = document.getElementById('pricingChart');
-    if (pricingCtx) {
+        // Use tokenConsumptionByModel for complete breakdown (active + completed sessions)
+        const modelData = {};
+        
+        if (data.tokenConsumptionByModel && Array.isArray(data.tokenConsumptionByModel)) {
+            data.tokenConsumptionByModel.forEach(model => {
+                if (!model.model) return;
+                
+                modelData[model.model] = {
+                    inputTokens: model.inputTokens || 0,
+                    outputTokens: model.outputTokens || 0,
+                    cachedTokens: model.cachedTokens || 0,
+                    totalTokens: model.totalTokens || 0,
+                    sessionCount: model.sessionCount || 0
+                };
+            });
+        }
+        
+        updateTokenConsumptionCharts(modelData);
+    } catch (error) {
+        console.error('Error fetching metrics for charts:', error);
+    }
+}
+
+// Update token consumption charts
+function updateTokenConsumptionCharts(modelData) {
+    const colors = getChartColors();
+    
+    const models = Object.keys(modelData);
+    const inputTokens = models.map(m => modelData[m].inputTokens);
+    const outputTokens = models.map(m => modelData[m].outputTokens);
+    const cachedTokens = models.map(m => modelData[m].cachedTokens);
+    const costs = models.map(m => modelData[m].estimatedCost);
+
+    // Token Consumption Chart (Stacked Bar)
+    const tokenCtx = document.getElementById('pricingChart');
+    if (tokenCtx) {
         if (pricingChart) {
             pricingChart.destroy();
         }
 
-        pricingChart = new Chart(pricingCtx, {
+        pricingChart = new Chart(tokenCtx, {
             type: 'bar',
             data: {
-                labels: models,
+                labels: models.length > 0 ? models : ['No Data'],
                 datasets: [
                     {
-                        label: 'Input ($/1K tokens)',
-                        data: inputCosts,
+                        label: 'Input Tokens',
+                        data: inputTokens,
                         backgroundColor: colors.primary,
                         borderColor: colors.primary,
-                        borderWidth: 1
+                        borderWidth: 0,
+                        stack: 'tokenStack'
                     },
                     {
-                        label: 'Output ($/1K tokens)',
-                        data: outputCosts,
+                        label: 'Output Tokens',
+                        data: outputTokens,
                         backgroundColor: colors.secondary,
                         borderColor: colors.secondary,
-                        borderWidth: 1
+                        borderWidth: 0,
+                        stack: 'tokenStack'
+                    },
+                    {
+                        label: 'Cached Tokens',
+                        data: cachedTokens,
+                        backgroundColor: colors.success,
+                        borderColor: colors.success,
+                        borderWidth: 0,
+                        stack: 'tokenStack'
                     }
                 ]
             },
             options: {
-                colors: colors
+                indexAxis: 'x',
+                responsive: true,
+                maintainAspectRatio: true,
+                animation: false,
+                scales: {
+                    x: {
+                        stacked: true,
+                        ticks: { color: colors.text },
+                        grid: { color: colors.grid }
+                    },
+                    y: {
+                        stacked: true,
+                        ticks: { color: colors.text },
+                        grid: { color: colors.grid },
+                        title: { display: true, text: 'Tokens', color: colors.text }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: true,
+                        labels: { color: colors.text }
+                    },
+                    tooltip: {
+                        backgroundColor: colors.background,
+                        titleColor: colors.text,
+                        bodyColor: colors.text
+                    }
+                }
             }
         });
-        pricingChart.render();
     }
 
-    // Cost Distribution Chart (Doughnut Chart)
-    const distributionCtx = document.getElementById('costDistributionChart');
-    if (distributionCtx) {
+    // Cost Distribution Chart (Stacked Bar)
+    const costCtx = document.getElementById('costDistributionChart');
+    if (costCtx) {
         if (costDistributionChart) {
             costDistributionChart.destroy();
         }
 
-        // Calculate average costs for distribution
-        const avgInput = inputCosts.reduce((a, b) => a + b, 0) / inputCosts.length || 0;
-        const avgOutput = outputCosts.reduce((a, b) => a + b, 0) / outputCosts.length || 0;
-        const avgAvatar = avatarCosts.reduce((a, b) => a + b, 0) / avatarCosts.length || 0;
-        const avgTts = ttsCosts.reduce((a, b) => a + b, 0) / ttsCosts.length || 0;
+        // Calculate cost breakdown per model based on token type
+        const pricingTable = document.querySelectorAll('#pricingTable tr[data-model]');
+        const modelPricing = {};
+        pricingTable.forEach(row => {
+            modelPricing[row.dataset.model] = {
+                input: parseFloat(row.dataset.input),
+                output: parseFloat(row.dataset.output)
+            };
+        });
 
-        costDistributionChart = new Chart(distributionCtx, {
-            type: 'doughnut',
+        const inputCosts = models.map(m => {
+            const pricing = modelPricing[m] || { input: 0 };
+            return (modelData[m].inputTokens * pricing.input) / 1000;
+        });
+
+        const outputCosts = models.map(m => {
+            const pricing = modelPricing[m] || { output: 0 };
+            return (modelData[m].outputTokens * pricing.output) / 1000;
+        });
+
+        const cachedCosts = models.map(m => {
+            // Cached tokens typically have reduced cost (usually 90% discount)
+            const pricing = modelPricing[m] || { input: 0 };
+            return (modelData[m].cachedTokens * pricing.input * 0.1) / 1000;
+        });
+
+        costDistributionChart = new Chart(costCtx, {
+            type: 'bar',
             data: {
-                labels: ['Input Tokens', 'Output Tokens', 'Avatar', 'TTS'],
-                datasets: [{
-                    data: [avgInput, avgOutput, avgAvatar, avgTts],
-                    backgroundColor: [
-                        colors.primary,
-                        colors.secondary,
-                        colors.success,
-                        colors.warning
-                    ],
-                    borderColor: colors.background,
-                    borderWidth: 2
-                }]
+                labels: models.length > 0 ? models : ['No Data'],
+                datasets: [
+                    {
+                        label: 'Input Cost ($)',
+                        data: inputCosts,
+                        backgroundColor: colors.primary,
+                        borderColor: colors.primary,
+                        borderWidth: 0,
+                        stack: 'costStack'
+                    },
+                    {
+                        label: 'Output Cost ($)',
+                        data: outputCosts,
+                        backgroundColor: colors.secondary,
+                        borderColor: colors.secondary,
+                        borderWidth: 0,
+                        stack: 'costStack'
+                    },
+                    {
+                        label: 'Cached Cost ($)',
+                        data: cachedCosts,
+                        backgroundColor: colors.success,
+                        borderColor: colors.success,
+                        borderWidth: 0,
+                        stack: 'costStack'
+                    }
+                ]
             },
             options: {
-                colors: colors
+                indexAxis: 'x',
+                responsive: true,
+                maintainAspectRatio: true,
+                animation: false,
+                scales: {
+                    x: {
+                        stacked: true,
+                        ticks: { color: colors.text },
+                        grid: { color: colors.grid }
+                    },
+                    y: {
+                        stacked: true,
+                        ticks: { color: colors.text },
+                        grid: { color: colors.grid },
+                        title: { display: true, text: 'Cost ($)', color: colors.text }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: true,
+                        labels: { color: colors.text }
+                    },
+                    tooltip: {
+                        backgroundColor: colors.background,
+                        titleColor: colors.text,
+                        bodyColor: colors.text,
+                        callbacks: {
+                            label: function(context) {
+                                const label = context.dataset.label || '';
+                                const value = context.raw || 0;
+                                return label + ': $' + value.toFixed(4);
+                            }
+                        }
+                    }
+                }
             }
         });
-        costDistributionChart.render();
     }
 }
 
@@ -208,12 +341,36 @@ async function fetchMetrics() {
         animateNumber(document.getElementById('cachedTokens'), data.cachedTokens);
         animateNumber(document.getElementById('interactions'), data.interactions);
         
+        // Update cost metrics
+        const totalCostElement = document.getElementById('totalCost');
+        if (totalCostElement) {
+            const costValue = data.totalEstimatedCost || 0;
+            const formattedCost = costValue.toLocaleString('it-IT', { 
+                style: 'currency', 
+                currency: 'EUR',
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
+            totalCostElement.textContent = formattedCost;
+        }
+        
         // Update session metrics
-        animateNumber(document.getElementById('activeSessions'), data.activeSessions);
+        const activeSessionsElement = document.getElementById('activeSessions');
+        if (activeSessionsElement) {
+            animateNumber(activeSessionsElement, data.activeSessionCount);
+            // Hide the element after animation (500ms)
+            setTimeout(() => {
+                activeSessionsElement.style.opacity = '0';
+                activeSessionsElement.style.transition = 'opacity 0.3s ease-out';
+            }, 500);
+        }
         animateNumber(document.getElementById('queueSize'), data.queueSize);
         
         // Update used models
         updateUsedModels(data.usedModels);
+        
+        // Update token consumption breakdown per model
+        updateTokenConsumptionByModelUI(data.tokenConsumptionByModel);
         
         // Update last update time
         const lastUpdate = document.getElementById('lastUpdate');
@@ -248,6 +405,47 @@ function updateUsedModels(models) {
             <span class="model-name">${escapeHtml(model)}</span>
         </div>
     `).join('');
+}
+
+// Update token consumption breakdown per model (active + completed sessions)
+function updateTokenConsumptionByModelUI(tokenConsumptionByModel) {
+    const container = document.getElementById('tokenConsumptionByModelContainer');
+    if (!container) return;
+    
+    if (!tokenConsumptionByModel || tokenConsumptionByModel.length === 0) {
+        container.innerHTML = `
+            <div class="no-data-message">
+                <p>Nessun consumo di token registrato</p>
+            </div>
+        `;
+        return;
+    }
+    
+    // Sort by total tokens descending
+    const sortedModels = tokenConsumptionByModel.sort((a, b) => b.totalTokens - a.totalTokens);
+    
+    container.innerHTML = `
+        <div class="token-consumption-table">
+            <div class="table-header">
+                <div class="column model-col">Modello</div>
+                <div class="column tokens-col">Token Input</div>
+                <div class="column tokens-col">Token Output</div>
+                <div class="column tokens-col">Token Cache</div>
+                <div class="column tokens-col">Totale</div>
+                <div class="column sessions-col">Sessioni</div>
+            </div>
+            ${sortedModels.map(model => `
+                <div class="table-row">
+                    <div class="column model-col"><strong>${escapeHtml(model.model)}</strong></div>
+                    <div class="column tokens-col">${(model.inputTokens).toLocaleString('it-IT')}</div>
+                    <div class="column tokens-col">${(model.outputTokens).toLocaleString('it-IT')}</div>
+                    <div class="column tokens-col">${(model.cachedTokens).toLocaleString('it-IT')}</div>
+                    <div class="column tokens-col"><strong>${(model.totalTokens).toLocaleString('it-IT')}</strong></div>
+                    <div class="column sessions-col">${model.sessionCount}</div>
+                </div>
+            `).join('')}
+        </div>
+    `;
 }
 
 // Escape HTML to prevent XSS
@@ -291,13 +489,11 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initial metrics fetch
     fetchMetrics();
 
-    // Auto-refresh metrics every 5 seconds
-    setInterval(fetchMetrics, 5000);
-
-    // Full page refresh every 60 seconds (for charts)
+    // Auto-refresh metrics and charts every 5 seconds
     setInterval(() => {
+        fetchMetrics();
         initializeCharts();
-    }, 60000);
+    }, 5000);
 
     // Listen for theme changes
     const observer = new MutationObserver((mutations) => {
