@@ -216,6 +216,23 @@ public class VoiceAvatarSession : VoiceSessionBase
                 .ConfigureAwait(false);
         };
 
+        _rawWebSocketClient.OnAudioTimestampDelta += async (payload) =>
+        {
+            _logger.LogDebug("Audio timestamp delta received: offset={OffsetMs}ms, duration={DurationMs}ms, text='{Text}'",
+                payload.AudioOffsetMs, payload.AudioDurationMs, payload.Text);
+            await EmitSessionEventAsync("AudioTimestampDelta", new
+            {
+                ResponseId = payload.ResponseId,
+                ItemId = payload.ItemId,
+                OutputIndex = payload.OutputIndex,
+                ContentIndex = payload.ContentIndex,
+                AudioOffsetMs = payload.AudioOffsetMs,
+                AudioDurationMs = payload.AudioDurationMs,
+                Text = payload.Text,
+                TimestampType = payload.TimestampType
+            }).ConfigureAwait(false);
+        };
+
         // Build avatar session configuration
         var sessionConfig = BuildAvatarSessionConfig();
 
@@ -332,6 +349,7 @@ public class VoiceAvatarSession : VoiceSessionBase
             {
                 Model = "whisper-1"
             },
+            OutputAudioTimestamps = true, // Enable word-level audio timestamps for streaming text
             Avatar = avatarConfig,
             Animation = new AnimationConfig
             {
@@ -840,13 +858,43 @@ public class VoiceAvatarSession : VoiceSessionBase
                     {
                         byte[] audioData = audioDelta.Delta.ToArray();
                         _logger.LogDebug("Avatar audio delta: {Bytes} bytes", audioData.Length);
+                        await base.EmitSessionEventAsync("ResponseAudioDelta", new { 
+                            ResponseId = audioDelta.ResponseId,
+                            AudioLength = audioData.Length
+                        });
                         await base.OnAudioDeltaAsync(audioData);
                     }
                     break;
 
-                case SessionUpdateResponseDone:
+                case SessionUpdateResponseAudioDone audioDone:
+                    _logger.LogDebug("Avatar response audio done");
+                    await base.EmitSessionEventAsync("ResponseAudioDone", new { 
+                        ResponseId = audioDone.ResponseId,
+                        ItemId = audioDone.ItemId
+                    });
+                    break;
+
+                case SessionUpdateResponseDone responseDone:
                     _logger.LogInformation("Avatar response complete");
-                    await base.EmitSessionEventAsync("ResponseDone", null);
+                    var usageData = responseDone.Response?.Usage;
+                    await base.EmitSessionEventAsync("ResponseDone", new {
+                        ResponseId = responseDone.Response?.Id,
+                        Status = responseDone.Response?.Status?.ToString(),
+                        Usage = usageData != null ? new {
+                            InputTokens = usageData.InputTokens,
+                            OutputTokens = usageData.OutputTokens,
+                            TotalTokens = usageData.TotalTokens,
+                            InputTokenDetails = usageData.InputTokenDetails != null ? new {
+                                CachedTokens = usageData.InputTokenDetails.CachedTokens,
+                                TextTokens = usageData.InputTokenDetails.TextTokens,
+                                AudioTokens = usageData.InputTokenDetails.AudioTokens
+                            } : null,
+                            OutputTokenDetails = usageData.OutputTokenDetails != null ? new {
+                                TextTokens = usageData.OutputTokenDetails.TextTokens,
+                                AudioTokens = usageData.OutputTokenDetails.AudioTokens
+                            } : null
+                        } : null
+                    });
                     break;
 
                 case SessionUpdateResponseFunctionCallArgumentsDone functionCallArgs:

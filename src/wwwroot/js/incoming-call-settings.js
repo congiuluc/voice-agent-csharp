@@ -176,7 +176,7 @@ function saveSettings() {
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(toPersist));
     
-    showStatusMessage('success', '✓ Impostazioni salvate con successo');
+    showStatusMessage('success', 'Impostazioni salvate con successo');
     console.log('✓ Incoming call settings saved', settings);
 
     // Auto-close modal after 2 seconds on success
@@ -209,7 +209,7 @@ function resetSettings() {
   document.getElementById('callTimeoutInput').value = DEFAULT_INCOMING_CALL_SETTINGS.callTimeout;
 
   localStorage.removeItem(STORAGE_KEY);
-  showStatusMessage('info', '✓ Impostazioni ripristinate ai valori predefiniti');
+  showStatusMessage('info', 'Impostazioni ripristinate ai valori predefiniti');
   console.log('✓ Incoming call settings reset to defaults');
 }
 
@@ -233,7 +233,7 @@ async function testConfiguration() {
 
   try {
     testButton.disabled = true;
-    testButton.textContent = '⏳ Test in corso...';
+    testButton.textContent = 'Test in corso...';
     showStatusMessage('info', 'Test della configurazione ACS in corso...');
 
     // Simulate a test call to the server
@@ -253,17 +253,17 @@ async function testConfiguration() {
 
     if (response.ok) {
       const result = await response.json();
-      showStatusMessage('success', `✓ Configurazione corretta. ${result.message || 'Pronto per ricevere chiamate.'}`);
+      showStatusMessage('success', `Configurazione corretta. ${result.message || 'Pronto per ricevere chiamate.'}`);
     } else {
       const error = await response.json();
-      showStatusMessage('error', `✗ Errore: ${error.message || 'Configurazione non valida'}`);
+      showStatusMessage('error', `Errore: ${error.message || 'Configurazione non valida'}`);
     }
   } catch (error) {
     console.error('Error testing configuration:', error);
-    showStatusMessage('error', `✗ Errore di connessione: ${error.message}`);
+    showStatusMessage('error', `Errore di connessione: ${error.message}`);
   } finally {
     testButton.disabled = false;
-    testButton.textContent = '📞 Testa Configurazione';
+    testButton.textContent = 'Testa Configurazione';
   }
 }
 

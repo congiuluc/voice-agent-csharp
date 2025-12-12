@@ -9,6 +9,7 @@ import { VOICE_MODELS, ITALIAN_VOICES, getVoiceName } from './config.js';
 import { VoiceVisualizer } from './voice-visualizer.js';
 import { AudioHandler } from './audio-handler.js';
 import { WebSocketHandler } from './websocket-handler.js';
+import { consumptionTracker } from './consumption-tracker.js';
 import {
   showToast,
   addTranscript,
@@ -435,7 +436,7 @@ class VoiceAgentApp {
       try {
         const ok = await this.testEndpoint(url, 6000);
         if (ok) {
-          this.showEndpointFeedback('Endpoint raggiungibile ✅', 'success');
+          this.showEndpointFeedback('Endpoint raggiungibile', 'success');
           this.conditionalShowToast('Endpoint raggiungibile', 'success');
         } else {
           this.showEndpointFeedback('Endpoint non raggiungibile (timeout o risposta non valida)', 'error');

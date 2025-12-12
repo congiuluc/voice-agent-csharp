@@ -1,11 +1,19 @@
 /**
  * UI Utilities Module
  * 
- * Provides utility functions for UI interactions including toast notifications,
- * transcript management, voice name extraction, validation, and settings persistence.
+ * Core UI utilities for toast notifications, status updates, modals,
+ * settings persistence, voice validation, and markdown rendering.
+ * 
+ * NOTE: Transcript and Trace management have been moved to dedicated modules:
+ * - transcript-manager.js for transcript panel
+ * - trace-manager.js for trace/debug panel
  */
 
 import { getVoiceName, validateCompatibility, DEFAULT_SETTINGS } from './config.js';
+
+// Re-export transcript and trace functions from their dedicated modules
+export { addTranscript, clearTranscripts, toggleTranscriptPanel } from './transcript-manager.js';
+export { addTraceEntry, clearTraceEntries, toggleTracePanel } from './trace-manager.js';
 
 /**
  * Show a modern toast notification
@@ -96,49 +104,12 @@ export function showToast(message, type = 'info', duration = 4000, title = null)
 }
 
 /**
- * Add a transcript message to the conversation panel
- * @param {string} role - Message role: 'user', 'agent', or 'system'
- * @param {string} text - Message text content
+ * Show a small floating message centered under the microphone button
+ * @param {string} type - Message type: 'info' or 'error'
+ * @param {string} text - Message text
+ * @param {number} timeout - Auto-dismiss timeout in ms (default: 4000)
+ * @returns {HTMLElement} - The message element
  */
-export function addTranscript(role, text) {
-  const transcriptContent = document.getElementById('transcriptContent');
-  if (!transcriptContent) return;
-
-  // Only show user and assistant/agent messages in the transcript panel
-  if (!role || role === 'system') return;
-
-  // Normalize role naming: keep 'agent' and 'user'
-  const normalizedRole = role === 'agent' ? 'agent' : role;
-
-  // Build transcript item using .transcript-item markup for better styling
-  const item = document.createElement('div');
-  item.className = `transcript-item ${normalizedRole}`;
-
-  // Create icon element
-  const iconDiv = document.createElement('div');
-  iconDiv.className = 'transcript-icon';
-  
-  if (normalizedRole === 'user') {
-    iconDiv.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>`;
-  } else {
-    iconDiv.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"></rect><circle cx="12" cy="5" r="2"></circle><path d="M12 7v4"></path><line x1="8" y1="16" x2="8" y2="16"></line><line x1="16" y1="16" x2="16" y2="16"></line></svg>`;
-  }
-
-  const content = document.createElement('div');
-  content.className = 'transcript-content';
-  content.innerHTML = markdownToHtml(text);
-
-  item.appendChild(iconDiv);
-  item.appendChild(content);
-
-  transcriptContent.appendChild(item);
-
-  // Auto-scroll to bottom
-  transcriptContent.scrollTop = transcriptContent.scrollHeight;
-}
-
-// Show a small floating message centered under the microphone button.
-// type: 'info' | 'error'
 export function showMicMessage(type, text, timeout = 4000) {
   let wrapper = document.querySelector('.mic-message-container');
   if (!wrapper) {
@@ -173,16 +144,6 @@ export function showMicMessage(type, text, timeout = 4000) {
 }
 
 /**
- * Clear all transcript messages
- */
-export function clearTranscripts() {
-  const transcriptContent = document.getElementById('transcriptContent');
-  if (transcriptContent) {
-    transcriptContent.innerHTML = '';
-  }
-}
-
-/**
  * Escape HTML to prevent XSS attacks
  * @param {string} text - Text to escape
  * @returns {string} - Escaped text
@@ -199,7 +160,7 @@ function escapeHtml(text) {
  * @param {string} text - Markdown text
  * @returns {string} - HTML formatted text
  */
-function markdownToHtml(text) {
+export function markdownToHtml(text) {
   if (!text) return '';
   
   // First escape HTML to prevent XSS
@@ -336,16 +297,6 @@ export function updateStatus(text, statusClass = 'disconnected') {
 }
 
 /**
- * Toggle visibility of transcript panel
- */
-export function toggleTranscriptPanel() {
-  const transcriptBox = document.getElementById('transcriptBox');
-  if (transcriptBox) {
-    transcriptBox.classList.toggle('visible');
-  }
-}
-
-/**
  * Show settings modal
  */
 export function showSettingsModal() {
@@ -414,86 +365,6 @@ export function autoResizeTextarea(textarea) {
   textarea.style.height = textarea.scrollHeight + 'px';
 }
 
-/**
- * Add a trace entry to the trace panel
- * @param {string} role - Entry role: 'user', 'assistant', 'system'
- * @param {string} message - Message text
- */
-export function addTraceEntry(role = 'system', message = '') {
-  const traceContent = document.getElementById('traceContent');
-  if (!traceContent) return;
-  
-  // Create timestamp
-  const now = new Date();
-  const timestamp = now.toLocaleTimeString('it-IT', { 
-    hour: '2-digit', 
-    minute: '2-digit', 
-    second: '2-digit' 
-  });
-  
-  // Create trace entry element
-  const entry = document.createElement('div');
-  entry.className = `trace-entry ${role}`;
-  
-  // Create timestamp span
-  const timeSpan = document.createElement('span');
-  timeSpan.className = 'trace-timestamp';
-  timeSpan.textContent = `[${timestamp}]`;
-  
-  // Create message span
-  const msgSpan = document.createElement('span');
-  msgSpan.textContent = message;
-  
-  entry.appendChild(timeSpan);
-  entry.appendChild(msgSpan);
-  
-  // Add to trace content
-  traceContent.appendChild(entry);
-  
-  // Update badge counter
-  const badge = document.querySelector('.trace-badge');
-  if (badge) {
-    const currentCount = parseInt(badge.textContent) || 0;
-    badge.textContent = currentCount + 1;
-  }
-  
-  // Auto-scroll to bottom
-  traceContent.scrollTop = traceContent.scrollHeight;
-}
-
-/**
- * Clear all trace entries
- */
-export function clearTraceEntries() {
-  const traceContent = document.getElementById('traceContent');
-  if (traceContent) {
-    traceContent.innerHTML = '';
-  }
-  
-  // Reset badge counter
-  const badge = document.querySelector('.trace-badge');
-  if (badge) {
-    badge.textContent = '0';
-  }
-}
-
-/**
- * Toggle trace panel visibility
- */
-export function toggleTracePanel() {
-  const tracePanel = document.getElementById('tracePanel');
-  if (!tracePanel) return;
-  
-  const isVisible = tracePanel.classList.toggle('visible');
-  
-  // Reset badge counter when opening the panel
-  if (isVisible) {
-    const badge = document.querySelector('.trace-badge');
-    if (badge) {
-      badge.textContent = '0';
-    }
-  }
-}
 
 // Scroll hint utilities: add classes when panels are scrollable to show visual hints
 function updateScrollHintsFor(element) {

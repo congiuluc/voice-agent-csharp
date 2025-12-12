@@ -3,6 +3,7 @@ using Azure.AI.VoiceLive;
 using Azure.Communication.CallAutomation;
 using Azure.Core;
 using Azure.Identity;
+using VoiceAgentCSharp.Features.Monitoring;
 using VoiceAgentCSharp.Features.VoiceAgent;
 using VoiceAgentCSharp.Features.VoiceAssistant;
 using VoiceAgentCSharp.Features.VoiceAvatar;
@@ -19,6 +20,7 @@ public class VoiceSessionFactory
     private readonly ILogger<VoiceSessionFactory> _logger;
     private readonly IConfiguration _configuration;
     private readonly IHttpClientFactory _httpClientFactory;
+    private readonly CallMonitoringService _monitoringService;
 
     /// <summary>
     /// Initializes a new instance of the VoiceSessionFactory class.
@@ -26,14 +28,17 @@ public class VoiceSessionFactory
     /// <param name="logger">The logger instance.</param>
     /// <param name="configuration">The configuration instance.</param>
     /// <param name="httpClientFactory">The HTTP client factory for tool execution.</param>
+    /// <param name="monitoringService">The call monitoring service for telemetry.</param>
     public VoiceSessionFactory(
         ILogger<VoiceSessionFactory> logger,
         IConfiguration configuration,
-        IHttpClientFactory httpClientFactory)
+        IHttpClientFactory httpClientFactory,
+        CallMonitoringService monitoringService)
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
         _httpClientFactory = httpClientFactory ?? throw new ArgumentNullException(nameof(httpClientFactory));
+        _monitoringService = monitoringService ?? throw new ArgumentNullException(nameof(monitoringService));
     }
 
     /// <summary>
@@ -95,7 +100,18 @@ public class VoiceSessionFactory
 
         var httpClient = _httpClientFactory.CreateClient();
         var session = new VoiceAgentSession(client, config, _logger, httpClient);
+        
+        // Track session creation in monitoring
+        var sessionId = Guid.NewGuid().ToString();
+        session.SetMonitoring(_monitoringService, sessionId);
+        _monitoringService.LogSessionCreated(
+            config.UserId ?? "anonymous",
+            "VoiceAgent",
+            sessionId,
+            config.ModelId ?? "gpt-4o-realtime");
+        
         await session.StartAsync().ConfigureAwait(false);
+        
         return session;
     }
 
@@ -106,7 +122,18 @@ public class VoiceSessionFactory
     {
         var httpClient = _httpClientFactory.CreateClient();
         var session = new VoiceAssistantSession(client, config, _logger, httpClient);
+        
+        // Track session creation in monitoring
+        var sessionId = Guid.NewGuid().ToString();
+        session.SetMonitoring(_monitoringService, sessionId);
+        _monitoringService.LogSessionCreated(
+            config.UserId ?? "anonymous",
+            "VoiceAssistant",
+            sessionId,
+            config.ModelId ?? "gpt-4o-realtime");
+        
         await session.StartAsync().ConfigureAwait(false);
+        
         return session;
     }
 
@@ -122,7 +149,18 @@ public class VoiceSessionFactory
 
         var httpClient = _httpClientFactory.CreateClient();
         var session = new VoiceAvatarSession(client, config, _logger, config.UseRawWebSocket, httpClient);
+        
+        // Track session creation in monitoring
+        var sessionId = Guid.NewGuid().ToString();
+        session.SetMonitoring(_monitoringService, sessionId);
+        _monitoringService.LogSessionCreated(
+            config.UserId ?? "anonymous",
+            "VoiceAvatar",
+            sessionId,
+            config.ModelId ?? "gpt-4o-realtime");
+        
         await session.StartAsync().ConfigureAwait(false);
+        
         return session;
     }
 
