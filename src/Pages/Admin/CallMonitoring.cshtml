@@ -227,7 +227,14 @@
                     <div class="stat-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg></div>
                     <div class="stat-info">
                         <div class="stat-label">Costo Totale</div>
-                        <div class="stat-value" id="totalCost">$@Model.TotalEstimatedCost.ToString("F4")</div>
+                        <div class="stat-value" id="totalCost">$@Model.TotalEstimatedCost.ToString("F4", System.Globalization.CultureInfo.InvariantCulture)</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg></div>
+                    <div class="stat-info">
+                        <div class="stat-label">Queue Size</div>
+                        <div class="stat-value" id="queueSize">0</div>
                     </div>
                 </div>
                 <div class="stat-card">
@@ -290,17 +297,17 @@
                         <tbody id="pricingTable">
                             @foreach (var pricing in Model.Pricing)
                             {
-                                <tr data-model="@pricing.ModelName" 
-                                    data-input="@pricing.InputTokenCost" 
-                                    data-output="@pricing.OutputTokenCost"
-                                    data-avatar="@pricing.AvatarCostPerMin"
-                                    data-tts="@pricing.TtsCostPer1MChars"
-                                    data-cached="@pricing.CachedInputTokenCost">
+                                <tr data-model="@pricing.ModelName"
+                                    data-input="@pricing.InputTokenCost.ToString("F4", System.Globalization.CultureInfo.InvariantCulture)"
+                                    data-output="@pricing.OutputTokenCost.ToString("F4", System.Globalization.CultureInfo.InvariantCulture)"
+                                    data-avatar="@pricing.AvatarCostPerMin.ToString("F2", System.Globalization.CultureInfo.InvariantCulture)"
+                                    data-tts="@pricing.TtsCostPer1MChars.ToString("F2", System.Globalization.CultureInfo.InvariantCulture)"
+                                    data-cached="@(pricing.CachedInputTokenCost != 0 ? pricing.CachedInputTokenCost.ToString("F4", System.Globalization.CultureInfo.InvariantCulture) : String.Empty)">
                                     <td><strong>@pricing.ModelName</strong></td>
-                                    <td>$@pricing.InputTokenCost.ToString("F4")</td>
-                                    <td>$@pricing.OutputTokenCost.ToString("F4")</td>
-                                    <td>$@pricing.AvatarCostPerMin.ToString("F2")</td>
-                                    <td>$@pricing.TtsCostPer1MChars.ToString("F2")</td>
+                                    <td>$@pricing.InputTokenCost.ToString("F4", System.Globalization.CultureInfo.InvariantCulture)</td>
+                                    <td>$@pricing.OutputTokenCost.ToString("F4", System.Globalization.CultureInfo.InvariantCulture)</td>
+                                    <td>$@pricing.AvatarCostPerMin.ToString("F2", System.Globalization.CultureInfo.InvariantCulture)</td>
+                                    <td>$@pricing.TtsCostPer1MChars.ToString("F2", System.Globalization.CultureInfo.InvariantCulture)</td>
                                     <td>@pricing.UpdatedAt.ToString("yyyy-MM-dd HH:mm")</td>
                                 </tr>
                             }

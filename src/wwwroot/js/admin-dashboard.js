@@ -35,6 +35,16 @@ function initializeCharts() {
     
     // Fetch current metrics from API to get actual consumption data
     fetchMetricsForCharts();
+    // Observe theme changes and re-render charts when theme changes
+    const observer = new MutationObserver((mutations) => {
+        for (const m of mutations) {
+            if (m.attributeName === 'data-theme' || m.attributeName === 'class') {
+                // Re-fetch colors and redraw charts
+                updateTokenConsumptionCharts(_latestModelData || {});
+            }
+        }
+    });
+    observer.observe(document.documentElement, { attributes: true });
 }
 
 // Fetch metrics and update charts
@@ -62,6 +72,8 @@ async function fetchMetricsForCharts() {
             });
         }
         
+        // store latest raw modelData for redraws
+        window._latestModelData = modelData;
         updateTokenConsumptionCharts(modelData);
     } catch (error) {
         console.error('Error fetching metrics for charts:', error);
@@ -71,12 +83,13 @@ async function fetchMetricsForCharts() {
 // Update token consumption charts
 function updateTokenConsumptionCharts(modelData) {
     const colors = getChartColors();
-    
-    const models = Object.keys(modelData);
+
+    // Preserve original keys (could be agent ids) but map to friendly labels for display
+    const modelKeys = Object.keys(modelData);
+    const models = modelKeys.map(k => mapAgentOrModelKeyToLabel(k));
     const inputTokens = models.map(m => modelData[m].inputTokens);
     const outputTokens = models.map(m => modelData[m].outputTokens);
     const cachedTokens = models.map(m => modelData[m].cachedTokens);
-    const costs = models.map(m => modelData[m].estimatedCost);
 
     // Token Consumption Chart (Stacked Bar)
     const tokenCtx = document.getElementById('pricingChart');
@@ -88,6 +101,7 @@ function updateTokenConsumptionCharts(modelData) {
         pricingChart = new Chart(tokenCtx, {
             type: 'bar',
             data: {
+                // labels shown to users
                 labels: models.length > 0 ? models : ['No Data'],
                 datasets: [
                     {
@@ -119,12 +133,41 @@ function updateTokenConsumptionCharts(modelData) {
             options: {
                 indexAxis: 'x',
                 responsive: true,
-                maintainAspectRatio: true,
+                // allow chart to grow vertically so long labels have room
+                maintainAspectRatio: false,
                 animation: false,
+                layout: {
+                    padding: {
+                        top: 8,
+                        right: 8,
+                        bottom: 48,
+                        left: 8
+                    }
+                },
                 scales: {
                     x: {
                         stacked: true,
-                        ticks: { color: colors.text },
+                        ticks: {
+                            color: colors.text,
+                            autoSkip: false,
+                            maxRotation: 45,
+                            minRotation: 30,
+                            // shorten long labels and insert line breaks for readability
+                            callback: function(value, index, values) {
+                                const label = this.getLabelForValue(value) || this.getLabelForValue(index) || '';
+                                // split on non-alphanumeric separators or at 20 chars
+                                if (label.length <= 20) return label;
+                                // try to split into two lines at a separator
+                                const parts = label.split(/[_\-\.\s]+/);
+                                if (parts.length > 1) {
+                                    // join into two roughly equal halves
+                                    const half = Math.ceil(parts.length / 2);
+                                    return parts.slice(0, half).join(' ') + '\n' + parts.slice(half).join(' ');
+                                }
+                                // fallback: hard wrap at ~20 chars
+                                return label.substring(0, 20) + '\n' + label.substring(20);
+                            }
+                        },
                         grid: { color: colors.grid }
                     },
                     y: {
@@ -167,24 +210,23 @@ function updateTokenConsumptionCharts(modelData) {
             };
         });
 
-        const inputCosts = models.map(m => {
-            const pricing = modelPricing[m] || { input: 0 };
-            return (modelData[m].inputTokens * pricing.input) / 1000;
+        // When model keys are agent ids, we need to map back to original key for numeric lookups
+        const inputCosts = modelKeys.map(k => {
+            const pricing = modelPricing[k] || modelPricing[mapAgentOrModelKeyToLabel(k)] || { input: 0 };
+            return (modelData[k].inputTokens * pricing.input) / 1000;
         });
 
-        const outputCosts = models.map(m => {
-            const pricing = modelPricing[m] || { output: 0 };
-            return (modelData[m].outputTokens * pricing.output) / 1000;
+        const outputCosts = modelKeys.map(k => {
+            const pricing = modelPricing[k] || modelPricing[mapAgentOrModelKeyToLabel(k)] || { output: 0 };
+            return (modelData[k].outputTokens * pricing.output) / 1000;
         });
 
-        const cachedCosts = models.map(m => {
-            const pricing = modelPricing[m] || { input: 0, cached: null };
+        const cachedCosts = modelKeys.map(k => {
+            const pricing = modelPricing[k] || modelPricing[mapAgentOrModelKeyToLabel(k)] || { input: 0, cached: null };
             if (pricing.cached !== null && !isNaN(pricing.cached)) {
-                // pricing.cached is per-1K tokens (server stores per-1K units)
-                return (modelData[m].cachedTokens * pricing.cached) / 1000;
+                return (modelData[k].cachedTokens * pricing.cached) / 1000;
             }
-            // Fallback: use 10% of input token cost
-            return (modelData[m].cachedTokens * pricing.input * 0.1) / 1000;
+            return (modelData[k].cachedTokens * pricing.input * 0.1) / 1000;
         });
 
         costDistributionChart = new Chart(costCtx, {
@@ -221,12 +263,35 @@ function updateTokenConsumptionCharts(modelData) {
             options: {
                 indexAxis: 'x',
                 responsive: true,
-                maintainAspectRatio: true,
+                maintainAspectRatio: false,
                 animation: false,
+                layout: {
+                    padding: {
+                        top: 8,
+                        right: 8,
+                        bottom: 56,
+                        left: 8
+                    }
+                },
                 scales: {
                     x: {
                         stacked: true,
-                        ticks: { color: colors.text },
+                        ticks: {
+                            color: colors.text,
+                            autoSkip: false,
+                            maxRotation: 45,
+                            minRotation: 30,
+                            callback: function(value, index, values) {
+                                const label = this.getLabelForValue(value) || this.getLabelForValue(index) || '';
+                                if (label.length <= 20) return label;
+                                const parts = label.split(/[_\-\.\s]+/);
+                                if (parts.length > 1) {
+                                    const half = Math.ceil(parts.length / 2);
+                                    return parts.slice(0, half).join(' ') + '\n' + parts.slice(half).join(' ');
+                                }
+                                return label.substring(0, 20) + '\n' + label.substring(20);
+                            }
+                        },
                         grid: { color: colors.grid }
                     },
                     y: {
@@ -257,6 +322,37 @@ function updateTokenConsumptionCharts(modelData) {
             }
         });
     }
+}
+
+/**
+ * Map an incoming model key (could be an agent id) to a friendly label.
+ * Strategy:
+ * - If the key matches a data-model in the pricing table, use that human name.
+ * - If the key looks like an agent id (contains underscores or is long), try to shorten it.
+ */
+function mapAgentOrModelKeyToLabel(key) {
+    if (!key) return '';
+    // Try find pricing table row that matches data-model attribute
+    const row = document.querySelector(`#pricingTable tr[data-model='${CSS.escape(key)}']`);
+    if (row) {
+        // Use the display name cell if present
+        const display = row.querySelector('.model-name');
+        if (display && display.textContent.trim().length > 0) return display.textContent.trim();
+        // fallback to dataset model
+        return row.dataset.model;
+    }
+
+    // If key contains a recognizable model id like 'gpt-' keep as-is
+    if (/gpt[-_\d\.a-z]/i.test(key) || key.toLowerCase().includes('phi') || key.toLowerCase().includes('realtime')) {
+        return key;
+    }
+
+    // If it's long (agent id), shorten to friendly preview e.g. first 8 + ellipsis
+    if (key.length > 16) {
+        return key.substring(0, 8) + '...' + key.substring(key.length - 4);
+    }
+
+    return key;
 }
 
 // Refresh data
@@ -305,6 +401,114 @@ function showToast(message, type = 'info') {
         setTimeout(() => toast.remove(), 300);
     }, 5000);
 }
+
+// --- Pricing edit modal and unit selector ---
+function openPricingEditModal(row) {
+    // Create modal if not present
+    let modal = document.getElementById('pricingEditModal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'pricingEditModal';
+        modal.className = 'pricing-modal';
+        modal.innerHTML = `
+            <div class="modal-content">
+                <h3>Modifica Prezzo - <span id="modalModelName"></span></h3>
+                <div class="modal-row"><label>Input ($):</label><input id="modalInput" type="number" step="0.0001"></div>
+                <div class="modal-row"><label>Output ($):</label><input id="modalOutput" type="number" step="0.0001"></div>
+                <div class="modal-row"><label>Cached ($):</label><input id="modalCached" type="number" step="0.0001"></div>
+                <div class="modal-row"><label>Avatar ($/min):</label><input id="modalAvatar" type="number" step="0.01"></div>
+                <div class="modal-row"><label>TTS ($/1M chars):</label><input id="modalTts" type="number" step="0.01"></div>
+                <div class="modal-row"><label>Units:</label>
+                    <select id="modalUnits"><option value="per1k">Per 1K tokens</option><option value="per1m">Per 1M tokens</option></select>
+                </div>
+                <div class="modal-actions">
+                    <button id="modalSave">Save</button>
+                    <button id="modalCancel">Cancel</button>
+                </div>
+                <div id="modalError" class="modal-error" style="display:none;color:var(--color-danger);"></div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+    }
+
+    const modelName = row.dataset.model;
+    document.getElementById('modalModelName').textContent = modelName;
+    document.getElementById('modalInput').value = row.dataset.input || '0';
+    document.getElementById('modalOutput').value = row.dataset.output || '0';
+    document.getElementById('modalCached').value = row.dataset.cached || '';
+    document.getElementById('modalAvatar').value = row.dataset.avatar || '0';
+    document.getElementById('modalTts').value = row.dataset.tts || '0';
+    // Default units are per-1k (server uses per-1k)
+    document.getElementById('modalUnits').value = 'per1k';
+
+    // Hook actions
+    document.getElementById('modalSave').onclick = async () => {
+        const input = parseFloat(document.getElementById('modalInput').value) || 0;
+        const output = parseFloat(document.getElementById('modalOutput').value) || 0;
+        const cached = parseFloat(document.getElementById('modalCached').value) || 0;
+        const avatar = parseFloat(document.getElementById('modalAvatar').value) || 0;
+        const tts = parseFloat(document.getElementById('modalTts').value) || 0;
+        const units = document.getElementById('modalUnits').value;
+
+        // Validation: ensure non-negative
+        if (input < 0 || output < 0 || cached < 0) {
+            showModalError('Values must be non-negative');
+            return;
+        }
+
+        // Build DTO — server expects per-1k values; if admin chose per-1M, set isPerMillion=true
+        const dto = {
+            modelName: modelName,
+            inputTokenCost: input,
+            outputTokenCost: output,
+            cachedInputTokenCost: cached,
+            avatarCostPerMin: avatar,
+            ttsCostPer1MChars: tts,
+            isPerMillion: units === 'per1m'
+        };
+
+        try {
+            const resp = await fetch('/api/admin/pricing/upsert', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(dto)
+            });
+
+            if (!resp.ok) {
+                const err = await resp.json();
+                showModalError(err?.error || 'Failed to save');
+                return;
+            }
+
+            // Success — reload pricing table
+            location.reload();
+        } catch (e) {
+            showModalError(e.message || 'Failed to save');
+        }
+    };
+
+    document.getElementById('modalCancel').onclick = () => {
+        modal.remove();
+    };
+
+    modal.style.display = 'block';
+}
+
+function showModalError(msg) {
+    const el = document.getElementById('modalError');
+    if (el) { el.textContent = msg; el.style.display = 'block'; }
+}
+
+// Attach click handlers to pricing rows to open modal
+function attachPricingRowHandlers() {
+    document.querySelectorAll('#pricingTable tr[data-model]').forEach(row => {
+        row.style.cursor = 'pointer';
+        row.addEventListener('click', () => openPricingEditModal(row));
+    });
+}
+
+// Call attach on DOM ready
+document.addEventListener('DOMContentLoaded', () => attachPricingRowHandlers());
 
 // Format number with animation
 function animateNumber(element, newValue) {

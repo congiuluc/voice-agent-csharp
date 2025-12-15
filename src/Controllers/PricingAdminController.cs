@@ -74,6 +74,48 @@ public class PricingAdminController : ControllerBase
     }
 
     /// <summary>
+    /// Upsert a pricing configuration (Admin-only). Accepts modelName, inputTokenCost, outputTokenCost, cachedInputTokenCost, avatarCostPerMin, ttsCostPer1MChars, isPerMillion
+    /// </summary>
+    [HttpPost("upsert")]
+    public async Task<IActionResult> UpsertPricing([FromBody] PricingConfigDto dto, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var config = new PricingConfig
+            {
+                Id = dto.modelName,
+                ModelName = dto.modelName,
+                InputTokenCost = dto.inputTokenCost,
+                OutputTokenCost = dto.outputTokenCost,
+                CachedInputTokenCost = dto.cachedInputTokenCost,
+                AvatarCostPerMin = dto.avatarCostPerMin,
+                TtsCostPer1MChars = dto.ttsCostPer1MChars,
+                IsPerMillion = dto.isPerMillion,
+                UpdatedAt = DateTime.UtcNow
+            };
+
+            await _pricingService.UpsertAsync(config, cancellationToken);
+            return Ok(new { message = "Upserted" });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to upsert pricing");
+            return StatusCode(500, new { error = "Failed to upsert pricing" });
+        }
+    }
+
+    public class PricingConfigDto
+    {
+        public string modelName { get; set; } = string.Empty;
+        public decimal inputTokenCost { get; set; }
+        public decimal outputTokenCost { get; set; }
+        public decimal cachedInputTokenCost { get; set; }
+        public decimal avatarCostPerMin { get; set; }
+        public decimal ttsCostPer1MChars { get; set; }
+        public bool isPerMillion { get; set; }
+    }
+
+    /// <summary>
     /// Lists current pricing configuration.
     /// </summary>
     /// <returns>Pricing configurations</returns>
@@ -104,6 +146,44 @@ public class PricingAdminController : ControllerBase
         {
             _logger.LogError(ex, "Failed to list pricing configuration");
             return StatusCode(500, new { error = "Failed to list pricing configuration" });
+        }
+    }
+
+    /// <summary>
+    /// Dry-run migration: analyze repository pricing entries and suggest normalizations
+    /// (detect likely per-1M values and return a plan). Admin-only.
+    /// </summary>
+    [HttpGet("migration/plan")]
+    public async Task<IActionResult> GetMigrationPlan(CancellationToken cancellationToken)
+    {
+        try
+        {
+            var plan = await _pricingService.GetNormalizationPlanAsync(cancellationToken);
+            return Ok(plan);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to generate migration plan");
+            return StatusCode(500, new { error = "Failed to generate migration plan" });
+        }
+    }
+
+    /// <summary>
+    /// Apply migration: normalize detected per-1M entries into per-1k and persist changes.
+    /// Admin-only.
+    /// </summary>
+    [HttpPost("migration/apply")]
+    public async Task<IActionResult> ApplyMigration(CancellationToken cancellationToken)
+    {
+        try
+        {
+            var result = await _pricingService.ApplyNormalizationPlanAsync(cancellationToken);
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to apply migration");
+            return StatusCode(500, new { error = "Failed to apply migration" });
         }
     }
 }

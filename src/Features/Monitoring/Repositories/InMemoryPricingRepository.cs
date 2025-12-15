@@ -22,7 +22,8 @@ public class InMemoryPricingRepository : IPricingRepository
             OutputTokenCost = 0.010m,
             AvatarCostPerMin = 0.50m,
             TtsCostPer1MChars = 15.00m,
-            UpdatedAt = DateTime.UtcNow
+            UpdatedAt = DateTime.UtcNow,
+            IsPerMillion = false
         },
         ["gpt-4o-mini"] = new PricingConfig
         {
@@ -32,7 +33,8 @@ public class InMemoryPricingRepository : IPricingRepository
             OutputTokenCost = 0.0006m,
             AvatarCostPerMin = 0.50m,
             TtsCostPer1MChars = 15.00m,
-            UpdatedAt = DateTime.UtcNow
+            UpdatedAt = DateTime.UtcNow,
+            IsPerMillion = false
         },
         ["gpt-4o-realtime-preview"] = new PricingConfig
         {
@@ -42,7 +44,8 @@ public class InMemoryPricingRepository : IPricingRepository
             OutputTokenCost = 0.020m,
             AvatarCostPerMin = 0.50m,
             TtsCostPer1MChars = 15.00m,
-            UpdatedAt = DateTime.UtcNow
+            UpdatedAt = DateTime.UtcNow,
+            IsPerMillion = false
         }
     };
 
@@ -77,6 +80,15 @@ public class InMemoryPricingRepository : IPricingRepository
 
     public Task UpsertAsync(PricingConfig config, CancellationToken cancellationToken = default)
     {
+        // Normalize any per-1M incoming payloads by converting to per-1k and clearing the flag
+        if (config.IsPerMillion)
+        {
+            if (config.InputTokenCost != 0) config.InputTokenCost = Decimal.Divide(config.InputTokenCost, 1000m);
+            if (config.OutputTokenCost != 0) config.OutputTokenCost = Decimal.Divide(config.OutputTokenCost, 1000m);
+            if (config.CachedInputTokenCost != 0) config.CachedInputTokenCost = Decimal.Divide(config.CachedInputTokenCost, 1000m);
+            config.IsPerMillion = false;
+        }
+
         config.UpdatedAt = DateTime.UtcNow;
         _storage[config.ModelName] = config;
         _logger.LogInformation("Upserted pricing config for model: {ModelName} (in-memory)", config.ModelName);

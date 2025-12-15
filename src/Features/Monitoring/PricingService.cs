@@ -11,6 +11,7 @@ public class PricingService
 {
     private readonly IPricingRepository _pricingRepository;
     private readonly ILogger<PricingService> _logger;
+    private readonly PricingMigrationService _migrationService;
     private readonly ConcurrentDictionary<string, PricingConfig> _pricingCache = new();
     private DateTime _lastCacheUpdate = DateTime.MinValue;
     private readonly SemaphoreSlim _cacheLock = new(1, 1);
@@ -164,10 +165,11 @@ public class PricingService
         }
     };
 
-    public PricingService(IPricingRepository pricingRepository, ILogger<PricingService> logger)
+    public PricingService(IPricingRepository pricingRepository, ILogger<PricingService> logger, PricingMigrationService migrationService)
     {
         _pricingRepository = pricingRepository;
         _logger = logger;
+        _migrationService = migrationService;
     }
 
     /// <summary>
@@ -176,6 +178,22 @@ public class PricingService
     public async Task InitializeAsync(CancellationToken cancellationToken = default)
     {
         await LoadPricingFromRepositoryAsync(cancellationToken);
+    }
+
+    /// <summary>
+    /// Returns a normalization plan (dry-run) from PricingMigrationService
+    /// </summary>
+    public Task<object> GetNormalizationPlanAsync(CancellationToken cancellationToken = default)
+    {
+        return _migrationService.GetPlanAsync(cancellationToken);
+    }
+
+    /// <summary>
+    /// Applies normalization plan (converts per-1M to per-1k) via PricingMigrationService
+    /// </summary>
+    public Task<object> ApplyNormalizationPlanAsync(CancellationToken cancellationToken = default)
+    {
+        return _migrationService.ApplyPlanAsync(cancellationToken);
     }
 
     /// <summary>
@@ -246,6 +264,43 @@ public class PricingService
     }
 
     /// <summary>
+    /// Upsert a pricing configuration into the repository and update cache.
+    /// Normalizes per-1M values into per-1k before persisting.
+    /// </summary>
+    public async Task UpsertAsync(PricingConfig config, CancellationToken cancellationToken = default)
+    {
+        if (config == null) throw new ArgumentNullException(nameof(config));
+
+        // Normalize if admin submitted values as per-1M
+        if (config.IsPerMillion)
+        {
+            try
+            {
+                config.InputTokenCost = Decimal.Divide(config.InputTokenCost, 1000m);
+                config.OutputTokenCost = Decimal.Divide(config.OutputTokenCost, 1000m);
+                if (config.CachedInputTokenCost != 0)
+                {
+                    config.CachedInputTokenCost = Decimal.Divide(config.CachedInputTokenCost, 1000m);
+                }
+                config.IsPerMillion = false;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to normalize upserted pricing for model {ModelName}", config.ModelName);
+            }
+        }
+
+        config.UpdatedAt = DateTime.UtcNow;
+
+        // Persist to repository
+        await _pricingRepository.UpsertAsync(config, cancellationToken);
+
+        // Update cache
+        _pricingCache[config.ModelName] = config;
+        _logger.LogInformation("Upserted pricing for model {ModelName}", config.ModelName);
+    }
+
+    /// <summary>
     /// Calculates cost for token consumption.
     /// </summary>
     public decimal CalculateTokenCost(string modelName, int inputTokens, int outputTokens)
@@ -301,9 +356,48 @@ public class PricingService
             var configs = await _pricingRepository.GetAllAsync(cancellationToken);
             
             _pricingCache.Clear();
+            var toPersist = new List<PricingConfig>();
             foreach (var config in configs)
             {
+                // Normalize: if stored as per-1M, convert to per-1k for runtime consistency
+                if (config.IsPerMillion)
+                {
+                    try
+                    {
+                        config.InputTokenCost = Decimal.Divide(config.InputTokenCost, 1000m);
+                        config.OutputTokenCost = Decimal.Divide(config.OutputTokenCost, 1000m);
+                        if (config.CachedInputTokenCost != 0)
+                        {
+                            config.CachedInputTokenCost = Decimal.Divide(config.CachedInputTokenCost, 1000m);
+                        }
+                        config.IsPerMillion = false; // mark normalized
+                        toPersist.Add(config);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "Failed to normalize pricing for model {ModelName}", config.ModelName);
+                    }
+                }
+
                 _pricingCache[config.ModelName] = config;
+            }
+
+            // Best-effort persist normalized configs back to repository so future loads are per-1k
+            if (toPersist.Count > 0)
+            {
+                _logger.LogInformation("Persisting {Count} normalized pricing configs back to repository", toPersist.Count);
+                foreach (var p in toPersist)
+                {
+                    try
+                    {
+                        // Fire-and-forget but await to avoid overwhelming repository during startup
+                        await _pricingRepository.UpsertAsync(p, cancellationToken);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "Failed to persist normalized pricing for model {ModelName}", p.ModelName);
+                    }
+                }
             }
 
             _lastCacheUpdate = DateTime.UtcNow;

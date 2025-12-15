@@ -62,24 +62,25 @@ export class ConsumptionTracker {
     this.modelTokenUsage = {}; // { modelName: { input: 0, output: 0, cached: 0 } }
     this.modelCosts = {}; // { modelName: { input: 0, output: 0, cached: 0, total: 0 } }
     
-    // Model pricing configuration (in USD per 1M tokens)
+    // Model pricing configuration (in USD per 1K tokens)
+    // These values are the per-1M numbers divided by 1000 to match server-side (per-1K) schema
     this.modelPrices = {
-      'gpt-4o': { input: 2.50, output: 10.00, cached: 1.25 },
-      'gpt-4o-mini': { input: 0.15, output: 0.60, cached: 0.075 },
-      'gpt-4-turbo': { input: 10.00, output: 30.00, cached: 5.00 },
-      'gpt-4': { input: 30.00, output: 60.00, cached: 15.00 },
-      'gpt-3.5-turbo': { input: 0.50, output: 1.50, cached: 0.25 },
-      // Added new models
-      'gpt-5-nano': { input: 12.9730, output: 28.5406, cached: 0.0346 },
-      'phi4-mm-realtime': { input: 3.4595, output: 28.5406, cached: 0.0346 },
-      'phi4-mini': { input: 12.9730, output: 28.5406, cached: 0.0346 },
-      // mini models requested
-      'gpt-realtime-mini': { input: 9.5136, output: 19.0271, cached: 0.2855 },
-      'gpt-4o-mini': { input: 12.9730, output: 28.5406, cached: 0.2855 },
-      'gpt-4.1-mini': { input: 12.9730, output: 28.5406, cached: 0.2855 },
-      'gpt-5-mini': { input: 12.9730, output: 28.5406, cached: 0.2855 },
-      'gpt-realtime': { input: 38.0541, output: 76.1082, cached: 2.3784 },
-      'default': { input: 1.00, output: 2.00, cached: 0.50 }
+      'gpt-4o': { input: 0.00250, output: 0.01000, cached: 0.00125 },
+      'gpt-4o-mini': { input: 0.00015, output: 0.00060, cached: 0.000075 },
+      'gpt-4-turbo': { input: 0.01000, output: 0.03000, cached: 0.00500 },
+      'gpt-4': { input: 0.03000, output: 0.06000, cached: 0.01500 },
+      'gpt-3.5-turbo': { input: 0.00050, output: 0.00150, cached: 0.00025 },
+      // Added new models (per-1K)
+      'gpt-5-nano': { input: 0.0129730, output: 0.0285406, cached: 0.0000346 },
+      'phi4-mm-realtime': { input: 0.0034595, output: 0.0285406, cached: 0.0000346 },
+      'phi4-mini': { input: 0.0129730, output: 0.0285406, cached: 0.0000346 },
+      // mini models requested (per-1K)
+      'gpt-realtime-mini': { input: 0.0095136, output: 0.0190271, cached: 0.0002855 },
+      'gpt-4o-mini': { input: 0.0129730, output: 0.0285406, cached: 0.0002855 },
+      'gpt-4.1-mini': { input: 0.0129730, output: 0.0285406, cached: 0.0002855 },
+      'gpt-5-mini': { input: 0.0129730, output: 0.0285406, cached: 0.0002855 },
+      'gpt-realtime': { input: 0.0380541, output: 0.0761082, cached: 0.0023784 },
+      'default': { input: 0.00100, output: 0.00200, cached: 0.00050 }
     };
     
     // UI elements cache
@@ -101,17 +102,21 @@ export class ConsumptionTracker {
     try {
       const resp = await fetch('/api/admin/pricing/list', { cache: 'no-store' });
       if (!resp.ok) return;
-      const list = await resp.json();
-      if (!Array.isArray(list)) return;
+      const json = await resp.json();
+
+      // API historically returned an array at the root, but newer controller returns
+      // an object with a `pricing` array. Support both shapes for compatibility.
+      const list = Array.isArray(json) ? json : (Array.isArray(json?.pricing) ? json.pricing : []);
+      if (list.length === 0) return;
 
       list.forEach(p => {
         try {
           const model = p.modelName || p.model || p.name;
           if (!model) return;
-          // server uses per-1K decimals; frontend map uses per-1M for legacy reasons
-          const input = (p.inputTokenCost || p.inputTokenCost === 0) ? (p.inputTokenCost * 1000) : undefined;
-          const output = (p.outputTokenCost || p.outputTokenCost === 0) ? (p.outputTokenCost * 1000) : undefined;
-          const cached = (p.cachedInputTokenCost || p.cachedInputTokenCost === 0) ? (p.cachedInputTokenCost * 1000) : undefined;
+          // server uses per-1K decimals and frontend now also uses per-1K. Keep values as-is.
+          const input = (p.inputTokenCost || p.inputTokenCost === 0) ? p.inputTokenCost : undefined;
+          const output = (p.outputTokenCost || p.outputTokenCost === 0) ? p.outputTokenCost : undefined;
+          const cached = (p.cachedInputTokenCost || p.cachedInputTokenCost === 0) ? p.cachedInputTokenCost : undefined;
 
           this.modelPrices[model] = {
             input: (input !== undefined) ? input : (this.modelPrices[model]?.input ?? this.modelPrices['default'].input),
@@ -505,20 +510,27 @@ export class ConsumptionTracker {
     
     // Ensure we have a model name - try to extract from response if not already set
     if (!this.sessionModel) {
-      this.sessionModel = response.model || response.Model || payload.model || payload.Model || 'unknown';
+      this.sessionModel = response.model || response.Model || response.modelName || response.ModelName || response.model_name || response.Model_Name || payload.model || payload.Model || payload.modelName || payload.ModelName || 'unknown';
     }
     
     // Extract usage information
-    const usage = response.usage || response.Usage || payload.Usage;
+    const usage = response.usage || response.Usage || payload.Usage || response.usage_info || response.UsageInfo || payload.usage || payload.usage_info;
     if (usage) {
-      // Cumulative token tracking
-      const inputTokens = usage.input_tokens || usage.InputTokens || 0;
-      const outputTokens = usage.output_tokens || usage.OutputTokens || 0;
-      const totalTokens = usage.total_tokens || usage.TotalTokens || (inputTokens + outputTokens);
-      
+      // Be resilient to different naming conventions returned by various API versions
+      const inputTokens = usage.input_tokens ?? usage.InputTokens ?? usage.inputTokens ?? usage.input ?? usage.Input ?? usage.inputs ?? 0;
+      const outputTokens = usage.output_tokens ?? usage.OutputTokens ?? usage.outputTokens ?? usage.output ?? usage.Output ?? 0;
+      const totalTokens = usage.total_tokens ?? usage.TotalTokens ?? usage.totalTokens ?? usage.total ?? (inputTokens + outputTokens);
+
       this.totalInputTokens += inputTokens;
       this.totalOutputTokens += outputTokens;
       this.totalTokens += totalTokens;
+
+      // Log raw usage for debugging if tokens are unexpectedly zero
+      if ((inputTokens + outputTokens) === 0) {
+        this.logEvent('ResponseUsageEmpty', { responseId: this.currentResponseId, rawUsage: usage, response, payload });
+      } else {
+        this.logEvent('ResponseUsage', { responseId: this.currentResponseId, inputTokens, outputTokens, totalTokens });
+      }
       
       // Track tokens per model
       if (this.sessionModel && this.sessionModel !== 'unknown') {
@@ -530,12 +542,12 @@ export class ConsumptionTracker {
           };
         }
         
-        // Extract cached tokens separately
-        const inputDetails = usage.input_token_details || usage.InputTokenDetails || {};
-        const cachedTokens = inputDetails.cached_tokens || inputDetails.CachedTokens || 0;
-        
+        // Extract cached tokens separately (support multiple naming conventions)
+        const inputDetails = usage.input_token_details ?? usage.InputTokenDetails ?? usage.inputTokenDetails ?? usage.inputDetails ?? usage.InputDetails ?? {};
+        const cachedTokens = inputDetails.cached_tokens ?? inputDetails.CachedTokens ?? inputDetails.cachedTokens ?? inputDetails.Cached ?? 0;
+
         // Calculate actual input tokens (not including cached)
-        const actualInputTokens = inputTokens - cachedTokens;
+        const actualInputTokens = Math.max(0, inputTokens - cachedTokens);
         
         // Add to model usage
         this.modelTokenUsage[this.sessionModel].input += actualInputTokens;
@@ -801,11 +813,10 @@ export class ConsumptionTracker {
     for (const modelName in this.modelTokenUsage) {
       const usage = this.modelTokenUsage[modelName];
       const pricing = this.modelPrices[modelName] || this.modelPrices['default'];
-      
-      // Convert tokens to millions for pricing calculation
-      const inputCost = (usage.input / 1_000_000) * pricing.input;
-      const outputCost = (usage.output / 1_000_000) * pricing.output;
-      const cachedCost = (usage.cached / 1_000_000) * pricing.cached;
+      // Pricing values are per 1K tokens. Convert tokens to thousands for cost calculation.
+      const inputCost = (usage.input / 1000) * pricing.input;
+      const outputCost = (usage.output / 1000) * pricing.output;
+      const cachedCost = (usage.cached / 1000) * pricing.cached;
       
       this.modelCosts[modelName] = {
         input: inputCost,

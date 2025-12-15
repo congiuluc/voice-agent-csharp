@@ -3181,7 +3181,11 @@ body.light-mode .icon-btn:hover {
 }
 
 .chart-card canvas {
-  max-height: 300px;
+  /* Allow charts to be taller to accommodate rotated/wrapped x-axis labels */
+  max-height: 420px;
+  width: 100% !important;
+  height: 320px !important;
+  display: block;
 }
 
 /* Table card */

@@ -114,6 +114,9 @@ builder.Services.AddSingleton<FoundryService>();
 // Register monitoring services with repository pattern (CosmosDB with InMemory fallback)
 builder.Services.AddMonitoringRepositories(builder.Configuration);
 
+// Monitoring services
+builder.Services.AddSingleton<PricingMigrationService>();
+
 builder.Services.AddSingleton<PricingService>();
 builder.Services.AddSingleton<BatchWriterService>();
 builder.Services.AddHostedService<BatchWriterService>(sp => 
