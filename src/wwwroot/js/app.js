@@ -28,6 +28,7 @@ import {
   clearTraceEntries,
   toggleTracePanel
 } from './ui-utils.js';
+import { getSavedTheme, applyThemeMode, toggleTheme, listenForExternalChanges } from './theme-sync.js';
 
 /**
  * Main application class
@@ -50,8 +51,8 @@ class VoiceAgentApp {
     // DOM elements (will be initialized in init())
     this.elements = {};
     
-    // Theme state
-    this.isDarkMode = this.loadThemePreference();
+    // Theme state (centralized)
+    this.isDarkMode = getSavedTheme() === 'dark';
   }
 
   /**
@@ -655,47 +656,23 @@ class VoiceAgentApp {
   /**
    * Load theme preference from localStorage
    */
-  loadThemePreference() {
-    const themeKey = `voiceAgent_${this.pageName}_theme`;
-    const savedTheme = localStorage.getItem(themeKey);
-    if (savedTheme) {
-      return savedTheme === 'dark';
-    }
-    // Default to dark mode
-    return true;
-  }
+  loadThemePreference() { return getSavedTheme() === 'dark'; }
   
-  /**
-   * Toggle theme between dark and light mode
-   */
   toggleTheme() {
-    this.isDarkMode = !this.isDarkMode;
-    this.applyTheme();
-    const themeKey = `voiceAgent_${this.pageName}_theme`;
-    localStorage.setItem(themeKey, this.isDarkMode ? 'dark' : 'light');
+    toggleTheme();
+    this.isDarkMode = getSavedTheme() === 'dark';
     addTraceEntry('system', `Tema cambiato a ${this.isDarkMode ? 'scuro' : 'chiaro'}`);
   }
-  
-  /**
-   * Apply the current theme to the document
-   */
+
   applyTheme() {
-    if (this.isDarkMode) {
-      document.body.classList.remove('light-mode');
-    } else {
-      document.body.classList.add('light-mode');
-    }
-    // Accessibility: update toggle button aria state and label
-    try {
-      const btn = this.elements && this.elements.themeToggleButton;
-      if (btn) {
-        // aria-pressed reflects whether dark mode is active
-        btn.setAttribute('aria-pressed', String(!!this.isDarkMode));
-        btn.setAttribute('aria-label', this.isDarkMode ? 'Tema scuro attivo. Premi per cambiare.' : 'Tema chiaro attivo. Premi per cambiare.');
-      }
-    } catch (e) {
-      // ignore if elements not initialized
-    }
+    applyThemeMode(getSavedTheme());
+  }
+
+  // Call this during init to listen for external changes
+  enableThemeSync() {
+    listenForExternalChanges((mode) => {
+      this.isDarkMode = mode === 'dark';
+    });
   }
   
   /**
@@ -1024,6 +1001,8 @@ document.addEventListener('DOMContentLoaded', () => {
   try {
     const app = new VoiceAgentApp();
     app.init();
+      // Enable cross-tab theme synchronization
+      if (typeof app.enableThemeSync === 'function') app.enableThemeSync();
     
     // Make app globally accessible for debugging (optional)
     window.voiceAgentApp = app;

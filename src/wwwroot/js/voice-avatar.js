@@ -32,6 +32,7 @@ import {
     ITALIAN_VOICES, 
     AUDIO_CONFIG 
 } from './config.js';
+import { getSavedTheme, applyThemeMode, toggleTheme as themeToggle, listenForExternalChanges } from './theme-sync.js';
 
 class VoiceAvatarApp {
     constructor() {
@@ -75,7 +76,17 @@ class VoiceAvatarApp {
         this.populateSettingsUI();
         this.initializeAvatarUI();
         this.setupEventListeners();
-        
+        // Apply the saved theme on init and start listening for external changes
+        try {
+            applyThemeMode(getSavedTheme());
+            listenForExternalChanges((mode) => {
+                // Ensure the theme is applied when changed in another tab/window
+                applyThemeMode(mode);
+            });
+        } catch (err) {
+            // If theme-sync isn't available for some reason, fail silently
+            console.warn('Theme sync initialization failed', err);
+        }
         // Initial UI state
         this.updateMuteButtonState();
         
@@ -378,11 +389,17 @@ class VoiceAvatarApp {
      * Toggle Theme
      */
     toggleTheme() {
-        const html = document.documentElement;
-        const currentTheme = html.getAttribute('data-theme');
-        const newTheme = currentTheme === 'light' ? 'dark' : 'light';
-        html.setAttribute('data-theme', newTheme);
-        localStorage.setItem('theme', newTheme);
+        // Delegate theme toggle to centralized theme-sync module
+        try {
+            themeToggle();
+        } catch (err) {
+            // Fallback: toggle data-theme attribute and localStorage if theme-sync fails
+            const html = document.documentElement;
+            const currentTheme = html.getAttribute('data-theme');
+            const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+            html.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+        }
     }
 
     /**

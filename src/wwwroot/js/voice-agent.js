@@ -28,6 +28,8 @@ import {
   toggleTracePanel
 } from './ui-utils.js';
 
+import { getSavedTheme, applyThemeMode, toggleTheme, listenForExternalChanges, saveTheme } from './theme-sync.js';
+
 /**
  * Voice Agent Application Class
  */
@@ -48,8 +50,8 @@ class VoiceAgentApp {
     // DOM elements
     this.elements = {};
     
-    // Theme state
-    this.isDarkMode = this.loadThemePreference();
+    // Theme state (use centralized theme)
+    this.isDarkMode = getSavedTheme() === 'dark';
   }
 
   /**
@@ -68,7 +70,7 @@ class VoiceAgentApp {
       }
       
       // Apply saved theme
-      this.applyTheme();
+        applyThemeMode(getSavedTheme());
       
       // Initialize visualizer
       this.visualizer = new VoiceVisualizer(this.elements.canvas);
@@ -237,7 +239,16 @@ class VoiceAgentApp {
     });
     
     // Theme
-    this.safeAddListener(this.elements.themeToggleButton, 'click', () => this.toggleTheme());
+    this.safeAddListener(this.elements.themeToggleButton, 'click', () => {
+      // toggle centrally and save
+      toggleTheme();
+      this.isDarkMode = getSavedTheme() === 'dark';
+    });
+
+    // Listen for theme changes from other tabs/pages
+    listenForExternalChanges((mode) => {
+      this.isDarkMode = mode === 'dark';
+    });
     
     // Voice selection
     this.safeAddListener(this.elements.voiceSelect, 'change', () => {
@@ -375,20 +386,10 @@ class VoiceAgentApp {
     if (this.elements.localeSelect) this.elements.localeSelect.value = this.currentSettings.locale || 'it-IT';
   }
   
-  loadThemePreference() {
-    const saved = localStorage.getItem(`voiceAgent_${this.pageName}_theme`);
-    return saved ? saved === 'dark' : true;
-  }
-  
-  toggleTheme() {
-    this.isDarkMode = !this.isDarkMode;
-    this.applyTheme();
-    localStorage.setItem(`voiceAgent_${this.pageName}_theme`, this.isDarkMode ? 'dark' : 'light');
-  }
-  
-  applyTheme() {
-    this.isDarkMode ? document.body.classList.remove('light-mode') : document.body.classList.add('light-mode');
-  }
+  // Deprecated per-page methods kept for compatibility (no-op)
+  loadThemePreference() { return getSavedTheme() === 'dark'; }
+  toggleTheme() { toggleTheme(); this.isDarkMode = getSavedTheme() === 'dark'; }
+  applyTheme() { applyThemeMode(getSavedTheme()); }
   
   saveSettingsFromModal() {
     const newSettings = {
