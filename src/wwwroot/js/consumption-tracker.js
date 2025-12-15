@@ -69,6 +69,16 @@ export class ConsumptionTracker {
       'gpt-4-turbo': { input: 10.00, output: 30.00, cached: 5.00 },
       'gpt-4': { input: 30.00, output: 60.00, cached: 15.00 },
       'gpt-3.5-turbo': { input: 0.50, output: 1.50, cached: 0.25 },
+      // Added new models
+      'gpt-5-nano': { input: 12.9730, output: 28.5406, cached: 0.0346 },
+      'phi4-mm-realtime': { input: 3.4595, output: 28.5406, cached: 0.0346 },
+      'phi4-mini': { input: 12.9730, output: 28.5406, cached: 0.0346 },
+      // mini models requested
+      'gpt-realtime-mini': { input: 9.5136, output: 19.0271, cached: 0.2855 },
+      'gpt-4o-mini': { input: 12.9730, output: 28.5406, cached: 0.2855 },
+      'gpt-4.1-mini': { input: 12.9730, output: 28.5406, cached: 0.2855 },
+      'gpt-5-mini': { input: 12.9730, output: 28.5406, cached: 0.2855 },
+      'gpt-realtime': { input: 38.0541, output: 76.1082, cached: 2.3784 },
       'default': { input: 1.00, output: 2.00, cached: 0.50 }
     };
     
@@ -77,6 +87,45 @@ export class ConsumptionTracker {
     
     // Initialize UI
     this.initializeDashboard();
+    // Try to load server-driven pricing to override frontend fallbacks
+    this.loadServerPricing();
+  }
+
+  /**
+   * Load pricing from server and populate modelPrices map.
+   * The server returns prices per 1K tokens; frontend expects per 1M tokens
+   * in the modelPrices map to preserve the existing calculations. Convert
+   * from per-1K to per-1M by multiplying by 1000.
+   */
+  async loadServerPricing() {
+    try {
+      const resp = await fetch('/api/admin/pricing/list', { cache: 'no-store' });
+      if (!resp.ok) return;
+      const list = await resp.json();
+      if (!Array.isArray(list)) return;
+
+      list.forEach(p => {
+        try {
+          const model = p.modelName || p.model || p.name;
+          if (!model) return;
+          // server uses per-1K decimals; frontend map uses per-1M for legacy reasons
+          const input = (p.inputTokenCost || p.inputTokenCost === 0) ? (p.inputTokenCost * 1000) : undefined;
+          const output = (p.outputTokenCost || p.outputTokenCost === 0) ? (p.outputTokenCost * 1000) : undefined;
+          const cached = (p.cachedInputTokenCost || p.cachedInputTokenCost === 0) ? (p.cachedInputTokenCost * 1000) : undefined;
+
+          this.modelPrices[model] = {
+            input: (input !== undefined) ? input : (this.modelPrices[model]?.input ?? this.modelPrices['default'].input),
+            output: (output !== undefined) ? output : (this.modelPrices[model]?.output ?? this.modelPrices['default'].output),
+            cached: (cached !== undefined) ? cached : (this.modelPrices[model]?.cached ?? this.modelPrices['default'].cached)
+          };
+        } catch (e) {
+          console.warn('Failed to process pricing entry', e);
+        }
+      });
+    } catch (e) {
+      // network error or not available - keep fallbacks
+      console.debug('Could not load server pricing, using frontend fallbacks', e);
+    }
   }
   
   /**

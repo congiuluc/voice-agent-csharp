@@ -162,7 +162,8 @@ function updateTokenConsumptionCharts(modelData) {
         pricingTable.forEach(row => {
             modelPricing[row.dataset.model] = {
                 input: parseFloat(row.dataset.input),
-                output: parseFloat(row.dataset.output)
+                output: parseFloat(row.dataset.output),
+                cached: row.dataset.cached ? parseFloat(row.dataset.cached) : null
             };
         });
 
@@ -177,8 +178,12 @@ function updateTokenConsumptionCharts(modelData) {
         });
 
         const cachedCosts = models.map(m => {
-            // Cached tokens typically have reduced cost (usually 90% discount)
-            const pricing = modelPricing[m] || { input: 0 };
+            const pricing = modelPricing[m] || { input: 0, cached: null };
+            if (pricing.cached !== null && !isNaN(pricing.cached)) {
+                // pricing.cached is per-1K tokens (server stores per-1K units)
+                return (modelData[m].cachedTokens * pricing.cached) / 1000;
+            }
+            // Fallback: use 10% of input token cost
             return (modelData[m].cachedTokens * pricing.input * 0.1) / 1000;
         });
 

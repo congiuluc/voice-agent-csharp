@@ -63,7 +63,8 @@ public class MetricsController : ControllerBase
             var pricingModels = _pricingService.GetAllPricing().Count;
             var totalCost = _monitoringService.GetTotalCost();
 
-            // Build token consumption by model breakdown
+            // Build token consumption by model breakdown and include pricing info where available
+            var pricingDict = _pricingService.GetAllPricing();
             var tokenByModel = tokenMetrics.TokenConsumptionByModel
                 .Select(kvp => new
                 {
@@ -72,7 +73,11 @@ public class MetricsController : ControllerBase
                     outputTokens = kvp.Value.OutputTokens,
                     cachedTokens = kvp.Value.CachedTokens,
                     totalTokens = kvp.Value.TotalTokens,
-                    sessionCount = kvp.Value.SessionCount
+                    sessionCount = kvp.Value.SessionCount,
+                    // Pricing information (per 1K tokens)
+                    inputTokenCost = pricingDict.ContainsKey(kvp.Key) ? pricingDict[kvp.Key].InputTokenCost : 0m,
+                    outputTokenCost = pricingDict.ContainsKey(kvp.Key) ? pricingDict[kvp.Key].OutputTokenCost : 0m,
+                    cachedInputTokenCost = pricingDict.ContainsKey(kvp.Key) ? pricingDict[kvp.Key].CachedInputTokenCost : 0m
                 })
                 .OrderByDescending(m => m.totalTokens)
                 .ToList();

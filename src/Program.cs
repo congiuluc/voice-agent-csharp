@@ -135,6 +135,26 @@ catch (Exception ex)
     Log.Warning(ex, "Failed to initialize pricing service - will use defaults");
 }
 
+// Optionally seed default pricing into the repository at startup when configured.
+// This is controlled by the "SeedPricingDefaults" configuration key or the
+// SEED_PRICING_DEFAULTS environment variable (boolean). This avoids surprising
+// writes by default; enable explicitly when you want to persist defaults.
+try
+{
+    var shouldSeed = app.Configuration.GetValue<bool>("SeedPricingDefaults", false);
+    if (shouldSeed)
+    {
+        var pricingService = app.Services.GetRequiredService<PricingService>();
+        Log.Information("SeedPricingDefaults is enabled - seeding default pricing into repository");
+        await pricingService.SeedDefaultsAsync();
+        Log.Information("Seeding default pricing completed");
+    }
+}
+catch (Exception ex)
+{
+    Log.Warning(ex, "Failed to seed default pricing at startup");
+}
+
 // Initialize call monitoring service to load persisted cost data
 try
 {

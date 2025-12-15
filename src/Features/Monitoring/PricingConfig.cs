@@ -28,6 +28,13 @@ public class PricingConfig
     public decimal InputTokenCost { get; set; }
 
     /// <summary>
+    /// Cost per 1000 cached input tokens in USD (if the model supports cached tokens or discounts).
+    /// This is optional; if zero, callers may assume a cached discount is applied externally.
+    /// </summary>
+    [JsonPropertyName("cachedInputTokenCost")]
+    public decimal CachedInputTokenCost { get; set; }
+
+    /// <summary>
     /// Cost per 1000 output tokens in USD.
     /// </summary>
     [JsonPropertyName("outputTokenCost")]

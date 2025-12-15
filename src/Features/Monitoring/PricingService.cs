@@ -22,17 +22,96 @@ public class PricingService
         {
             Id = "gpt-4o",
             ModelName = "gpt-4o",
-            InputTokenCost = 0.0025m,
-            OutputTokenCost = 0.010m,
+            // Provided rates are per 1M tokens in EUR. Convert to per-1000 tokens for the existing schema
+            // Input: €14.7028 per 1M -> 0.0147028 per 1k
+            // Output: €32.8649 per 1M -> 0.0328649 per 1k
+            InputTokenCost = 0.0147028m,
+            OutputTokenCost = 0.0328649m,
             AvatarCostPerMin = 0.50m,
             TtsCostPer1MChars = 15.00m
+        },
+        ["gpt-realtime-mini"] = new PricingConfig
+        {
+            Id = "gpt-realtime-mini",
+            ModelName = "gpt-realtime-mini",
+            // Provided per-1M EUR rates converted to per-1k tokens
+            // Input: €9.5136 per 1M -> 0.0095136 per 1k
+            // Cached Input: €0.2855 per 1M -> 0.0002855 per 1k
+            // Output: €19.0271 per 1M -> 0.0190271 per 1k
+            InputTokenCost = 0.0095136m,
+            CachedInputTokenCost = 0.0002855m,
+            OutputTokenCost = 0.0190271m,
+            AvatarCostPerMin = 0.25m,
+            TtsCostPer1MChars = 10.00m
         },
         ["gpt-4o-mini"] = new PricingConfig
         {
             Id = "gpt-4o-mini",
             ModelName = "gpt-4o-mini",
-            InputTokenCost = 0.00015m,
-            OutputTokenCost = 0.0006m,
+            InputTokenCost = 0.0129730m,
+            CachedInputTokenCost = 0.0002855m,
+            OutputTokenCost = 0.0285406m,
+            AvatarCostPerMin = 0.25m,
+            TtsCostPer1MChars = 10.00m
+        },
+        ["gpt-4.1-mini"] = new PricingConfig
+        {
+            Id = "gpt-4.1-mini",
+            ModelName = "gpt-4.1-mini",
+            InputTokenCost = 0.0129730m,
+            CachedInputTokenCost = 0.0002855m,
+            OutputTokenCost = 0.0285406m,
+            AvatarCostPerMin = 0.25m,
+            TtsCostPer1MChars = 10.00m
+        },
+        ["gpt-5-mini"] = new PricingConfig
+        {
+            Id = "gpt-5-mini",
+            ModelName = "gpt-5-mini",
+            InputTokenCost = 0.0129730m,
+            CachedInputTokenCost = 0.0002855m,
+            OutputTokenCost = 0.0285406m,
+            AvatarCostPerMin = 0.25m,
+            TtsCostPer1MChars = 10.00m
+        },
+        ["gpt-realtime"] = new PricingConfig
+        {
+            Id = "gpt-realtime",
+            ModelName = "gpt-realtime",
+            // Updated per-1M EUR rates converted to per-1k tokens
+            // Input: €38.0541 per 1M -> 0.0380541 per 1k
+            // Cached Input: €2.3784 per 1M -> 0.0023784 per 1k
+            // Output: €76.1082 per 1M -> 0.0761082 per 1k
+            InputTokenCost = 0.0380541m,
+            CachedInputTokenCost = 0.0023784m,
+            OutputTokenCost = 0.0761082m,
+            AvatarCostPerMin = 0.50m,
+            TtsCostPer1MChars = 15.00m
+        },
+        ["gpt-4.1"] = new PricingConfig
+        {
+            Id = "gpt-4.1",
+            ModelName = "gpt-4.1",
+            InputTokenCost = 0.0147028m,
+            OutputTokenCost = 0.0328649m,
+            AvatarCostPerMin = 0.50m,
+            TtsCostPer1MChars = 15.00m
+        },
+        ["gpt-5"] = new PricingConfig
+        {
+            Id = "gpt-5",
+            ModelName = "gpt-5",
+            InputTokenCost = 0.0147028m,
+            OutputTokenCost = 0.0328649m,
+            AvatarCostPerMin = 0.50m,
+            TtsCostPer1MChars = 15.00m
+        },
+        ["gpt-5-chat"] = new PricingConfig
+        {
+            Id = "gpt-5-chat",
+            ModelName = "gpt-5-chat",
+            InputTokenCost = 0.0147028m,
+            OutputTokenCost = 0.0328649m,
             AvatarCostPerMin = 0.50m,
             TtsCostPer1MChars = 15.00m
         },
@@ -44,6 +123,44 @@ public class PricingService
             OutputTokenCost = 0.020m,
             AvatarCostPerMin = 0.50m,
             TtsCostPer1MChars = 15.00m
+        }
+        ,
+        ["gpt-5-nano"] = new PricingConfig
+        {
+            Id = "gpt-5-nano",
+            ModelName = "gpt-5-nano",
+            // Provided per-1M EUR rates converted to per-1k tokens
+            // Input: €12.9730 per 1M -> 0.0129730 per 1k
+            // Cached Input: €0.0346 per 1M -> 0.0000346 per 1k
+            // Output: €28.5406 per 1M -> 0.0285406 per 1k
+            InputTokenCost = 0.0129730m,
+            CachedInputTokenCost = 0.0000346m,
+            OutputTokenCost = 0.0285406m,
+            AvatarCostPerMin = 0.25m,
+            TtsCostPer1MChars = 10.00m
+        },
+        ["phi4-mm-realtime"] = new PricingConfig
+        {
+            Id = "phi4-mm-realtime",
+            ModelName = "phi4-mm-realtime",
+            // Updated per-1M EUR rates converted to per-1k tokens
+            // Input: €3.4595 per 1M -> 0.0034595 per 1k
+            // Cached Input: €0.0346 per 1M -> 0.0000346 per 1k
+            InputTokenCost = 0.0034595m,
+            CachedInputTokenCost = 0.0000346m,
+            OutputTokenCost = 0.0285406m,
+            AvatarCostPerMin = 0.30m,
+            TtsCostPer1MChars = 12.00m
+        },
+        ["phi4-mini"] = new PricingConfig
+        {
+            Id = "phi4-mini",
+            ModelName = "phi4-mini",
+            InputTokenCost = 0.0129730m,
+            CachedInputTokenCost = 0.0000346m,
+            OutputTokenCost = 0.0285406m,
+            AvatarCostPerMin = 0.20m,
+            TtsCostPer1MChars = 8.00m
         }
     };
 
@@ -75,6 +192,48 @@ public class PricingService
         finally
         {
             _cacheLock.Release();
+        }
+    }
+
+    /// <summary>
+    /// Persist default pricing into the repository (upsert each default entry).
+    /// This is intended for seeding the DB with the in-memory defaults.
+    /// </summary>
+    public async Task SeedDefaultsAsync(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            // Check repository availability if supported
+            try
+            {
+                if (!await _pricingRepository.IsAvailableAsync(cancellationToken))
+                {
+                    _logger.LogWarning("Pricing repository not available - skipping seeding");
+                    return;
+                }
+            }
+            catch (Exception ex)
+            {
+                // If IsAvailableAsync is not implemented or fails, log and continue to attempt upserts
+                _logger.LogWarning(ex, "Failed to determine repository availability - attempting upserts anyway");
+            }
+
+            foreach (var kvp in DefaultPricing)
+            {
+                var config = kvp.Value;
+                // Ensure UpdatedAt is set
+                config.UpdatedAt = DateTime.UtcNow;
+                await _pricingRepository.UpsertAsync(config, cancellationToken);
+            }
+
+            _logger.LogInformation("Seeded {Count} default pricing configs into repository", DefaultPricing.Count);
+            // Refresh cache from repository after seeding
+            await LoadPricingFromRepositoryAsync(cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to seed default pricing into repository");
+            throw;
         }
     }
 

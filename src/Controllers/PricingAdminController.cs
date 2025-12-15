@@ -50,6 +50,30 @@ public class PricingAdminController : ControllerBase
     }
 
     /// <summary>
+    /// Seed default pricing configuration into the repository.
+    /// </summary>
+    [HttpPost("seed-defaults")]
+    public async Task<IActionResult> SeedDefaults(CancellationToken cancellationToken)
+    {
+        try
+        {
+            _logger.LogInformation("Admin user {User} requested seeding default pricing", User.Identity?.Name);
+            await _pricingService.SeedDefaultsAsync(cancellationToken);
+
+            return Ok(new
+            {
+                message = "Default pricing seeded successfully",
+                timestamp = DateTime.UtcNow
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to seed default pricing");
+            return StatusCode(500, new { error = "Failed to seed default pricing" });
+        }
+    }
+
+    /// <summary>
     /// Lists current pricing configuration.
     /// </summary>
     /// <returns>Pricing configurations</returns>
@@ -69,6 +93,7 @@ public class PricingAdminController : ControllerBase
                     outputTokenCost = p.OutputTokenCost,
                     avatarCostPerMin = p.AvatarCostPerMin,
                     ttsCostPer1MChars = p.TtsCostPer1MChars,
+                    cachedInputTokenCost = p.CachedInputTokenCost,
                     updatedAt = p.UpdatedAt
                 }),
                 count = pricing.Count,
