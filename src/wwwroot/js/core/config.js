@@ -172,12 +172,11 @@ export const AUDIO_CONFIG = {
  * Extract the display name from a voice ID
  * Example: "it-IT-IsabellaNeural" -> "Isabella"
  * 
- * @deprecated DUPLICATION: Use 'extractVoiceName' from 'ui-utils.js' instead.
+ * @deprecated Use 'extractVoiceName' from './ui-utils.js' instead.
  * @param {string} voiceId - Full voice identifier (e.g., "it-IT-IsabellaNeural")
  * @returns {string} - Extracted voice name (e.g., "Isabella")
  */
 export function getVoiceName(voiceId) {
-  // TODO: Refactor consumers to import { extractVoiceName } from './ui-utils.js'
   try {
     const voice = getVoiceById(voiceId);
     if (voice) return voice.name;
