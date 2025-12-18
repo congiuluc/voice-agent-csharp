@@ -1,12 +1,14 @@
 @{
     Layout = null;
 }
+@using Microsoft.Extensions.Localization
+@inject IStringLocalizer<SharedResource> Localizer
 
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8" />
-    <title>Error</title>
+    <title>@Localizer["ErrorPageTitle"]</title>
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         .container { max-width: 800px; margin: 50px auto; padding: 20px; }
@@ -15,8 +17,8 @@
 </head>
 <body>
     <div class="container">
-        <h1>An error occurred while processing your request.</h1>
-        <p>Please try again later or contact support if the problem persists.</p>
+        <h1>@Localizer["ErrorOccurred"]</h1>
+        <p>@Localizer["ErrorContactSupport"]</p>
     </div>
 </body>
 </html>

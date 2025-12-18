@@ -9,12 +9,12 @@
  * - trace-manager.js for trace/debug panel
  */
 
-import { getVoiceName, validateCompatibility, DEFAULT_SETTINGS } from './config.js';
-import { SettingsManager } from './modules/settings-manager.js';
+import { getVoiceName, validateCompatibility, DEFAULT_SETTINGS } from '../core/config.js';
+import { SettingsManager } from '../modules/settings-manager.js';
 
 // Re-export transcript and trace functions from their dedicated modules
-export { addTranscript, clearTranscripts, toggleTranscriptPanel } from './transcript-manager.js';
-export { addTraceEntry, clearTraceEntries, toggleTracePanel } from './trace-manager.js';
+export { addTranscript, clearTranscripts, toggleTranscriptPanel } from '../managers/transcript-manager.js';
+export { addTraceEntry, clearTraceEntries, toggleTracePanel } from '../managers/trace-manager.js';
 
 /**
  * Show a modern toast notification
@@ -41,11 +41,11 @@ export function showToast(message, type = 'info', duration = 4000, title = null)
   
   // Auto-generate title if not provided
   const toastTitle = title || {
-    info: 'Informazione',
-    success: 'Successo',
-    warning: 'Attenzione',
-    error: 'Errore'
-  }[type] || 'Notifica';
+    info: window.APP_RESOURCES?.Information || 'Information',
+    success: window.APP_RESOURCES?.Success || 'Success',
+    warning: window.APP_RESOURCES?.Warning || 'Warning',
+    error: window.APP_RESOURCES?.Error || 'Error'
+  }[type] || window.APP_RESOURCES?.Notification || 'Notification';
   
   // Create icon element (SVG inserted inline so it inherits currentColor)
   const icon = document.createElement('span');
@@ -73,7 +73,7 @@ export function showToast(message, type = 'info', duration = 4000, title = null)
   const closeBtn = document.createElement('button');
   closeBtn.className = 'toast-close';
   closeBtn.innerHTML = '×';
-  closeBtn.setAttribute('aria-label', 'Chiudi notifica');
+  closeBtn.setAttribute('aria-label', window.APP_RESOURCES?.CloseNotification || 'Close notification');
   
   // Build toast structure
   toast.appendChild(icon);
@@ -214,7 +214,8 @@ export function extractVoiceName(voiceId) {
  * @returns {string} - Welcome message
  */
 export function generateWelcomeMessage(voiceName) {
-  return `Ciao! Sono ${voiceName}, come posso aiutarti oggi?`;
+  const template = window.APP_RESOURCES?.WelcomeMessageTemplate || 'Hello! I am {0}, how can I help you today?';
+  return template.replace('{0}', voiceName);
 }
 
 /**
@@ -242,7 +243,7 @@ export function saveSettings(settings, pageName = 'default') {
     return true;
   } catch (error) {
     console.error('Error saving settings:', error);
-    showToast('Impossibile salvare le impostazioni', 'error');
+    showToast(window.APP_RESOURCES?.UnableToSaveSettings || 'Unable to save settings', 'error');
     return false;
   }
 }

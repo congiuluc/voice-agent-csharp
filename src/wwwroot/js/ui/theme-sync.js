@@ -1,4 +1,4 @@
-import { SettingsManager } from './modules/settings-manager.js';
+import { SettingsManager } from '../modules/settings-manager.js';
 
 // Centralized theme sync helper
 // Exposes functions to get/apply/toggle theme and sync across tabs
@@ -8,7 +8,10 @@ const themeManager = new SettingsManager(THEME_KEY, { theme: 'dark' });
 function getSavedTheme() {
   try {
     const theme = themeManager.get('theme');
-    return (theme === 'dark' || theme === 'light') ? theme : 'dark';
+    const finalTheme = (theme === 'dark' || theme === 'light') ? theme : 'dark';
+    console.log('Retrieved theme from storage:', theme, '-> using:', finalTheme);
+    console.log('localStorage voiceAgent_theme:', localStorage.getItem('voiceAgent_theme'));
+    return finalTheme;
   } catch (error) {
     console.error('Error loading theme:', error);
     return 'dark';
@@ -16,22 +19,32 @@ function getSavedTheme() {
 }
 
 function applyThemeMode(mode) {
-  if (mode === 'dark') document.body.classList.remove('light-mode');
-  else document.body.classList.add('light-mode');
+  console.log('Applying theme mode:', mode);
+  document.documentElement.setAttribute('data-theme', mode);
+  if (mode === 'dark') {
+    document.body.classList.remove('light-mode');
+    console.log('✓ Removed light-mode class, body is now dark');
+  } else {
+    document.body.classList.add('light-mode');
+    console.log('✓ Added light-mode class, body is now light');
+  }
 
   const btn = document.getElementById('themeToggleButton');
   if (btn) {
     btn.setAttribute('aria-pressed', String(mode === 'dark'));
     btn.setAttribute('aria-label', mode === 'dark'
-      ? 'Tema scuro attivo. Premi per cambiare.'
-      : 'Tema chiaro attivo. Premi per cambiare.');
+      ? (window.APP_RESOURCES?.DarkThemeActive || 'Dark theme active. Press to change.')
+      : (window.APP_RESOURCES?.LightThemeActive || 'Light theme active. Press to change.'));
+    console.log('✓ Updated button aria attributes for', mode, 'theme');
   }
 }
 
 function saveTheme(mode) {
   try {
-    themeManager.set({ theme: mode === 'dark' ? 'dark' : 'light' });
-    themeManager.save();
+    const themeValue = mode === 'dark' ? 'dark' : 'light';
+    themeManager.set('theme', themeValue);
+    console.log('✓ Theme saved:', themeValue);
+    console.log('✓ localStorage theme:', localStorage.getItem('voiceAgent_theme'));
   } catch (error) {
     console.error('Error saving theme:', error);
   }
@@ -50,8 +63,10 @@ function saveTheme(mode) {
 function toggleTheme() {
   const current = getSavedTheme();
   const next = current === 'dark' ? 'light' : 'dark';
+  console.log('Toggling theme from', current, 'to', next);
   saveTheme(next);
   applyThemeMode(next);
+  console.log('✓ Theme toggled and applied:', next);
 }
 
 // Listen for storage events (other tabs) and BroadcastChannel messages

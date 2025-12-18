@@ -325,7 +325,7 @@ button svg {
    ======================================== */
 .chat-toggle {
   position: fixed;
-  top: calc(var(--spacing-xl) + 140px);
+  top: calc(var(--spacing-xl) + 280px);
   right: var(--spacing-xl);
   z-index: 1700; /* Ensure chat toggle sits above transcript when visible */
 }
@@ -353,7 +353,7 @@ button svg {
    ======================================== */
 #settingsButton {
   position: fixed;
-  top: calc(var(--spacing-xl) + 280px);
+  top: calc(var(--spacing-xl) + 140px);
   right: var(--spacing-xl);
   z-index: 1700;
 }
@@ -364,8 +364,8 @@ button svg {
    ======================================== */
 #startButton {
   position: fixed;
-  /* Placed below settings which is at +280px; add spacing to avoid overlap (button height ~60px + 10px gap) */
-  top: calc(var(--spacing-xl) + 350px);
+  /* Placed below settings which is at +140px; add spacing to avoid overlap (button height ~60px + 10px gap) */
+  top: calc(var(--spacing-xl) + 210px);
   right: var(--spacing-xl);
   z-index: 1700;
 }
@@ -978,6 +978,12 @@ button svg {
   margin-bottom: var(--spacing-lg);
 }
 
+/* Ensure settings are left-aligned for readability */
+.setting-group {
+  text-align: left;
+  display: block;
+}
+
 .setting-group label {
   display: block;
   margin-bottom: var(--spacing-xs);
@@ -1376,6 +1382,7 @@ body.light-mode .setting-group input[type="checkbox"] {
   justify-content: center;
   background: var(--theme-glass-bg);
   border: 1px solid var(--theme-glass-border);
+  -webkit-backdrop-filter: var(--theme-glass-blur);
   backdrop-filter: var(--theme-glass-blur);
   border-radius: 50%;
   cursor: pointer;
@@ -1402,6 +1409,7 @@ body.light-mode .setting-group input[type="checkbox"] {
   justify-content: center;
   background: var(--theme-glass-bg);
   border: 1px solid var(--theme-glass-border);
+  -webkit-backdrop-filter: var(--theme-glass-blur);
   backdrop-filter: var(--theme-glass-blur);
   border-radius: 50%;
   cursor: pointer;
@@ -1427,6 +1435,47 @@ body.light-mode .logout-btn {
 }
 
 body.light-mode .logout-btn:hover {
+  background: rgba(255, 255, 255, 0.9);
+}
+
+/* Settings button - styled like theme toggle and logout, positioned below logout */
+.settings-btn {
+  position: fixed;
+  top: calc(var(--spacing-xl) + 140px);
+  right: var(--spacing-xl);
+  z-index: 1700;
+  width: 60px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--theme-glass-bg);
+  border: 1px solid var(--theme-glass-border);
+  -webkit-backdrop-filter: var(--theme-glass-blur);
+  backdrop-filter: var(--theme-glass-blur);
+  border-radius: 50%;
+  cursor: pointer;
+  transition: background var(--transition-fast), transform var(--transition-fast);
+  color: var(--text-color);
+  padding: 0;
+}
+
+.settings-btn:hover {
+  background: rgba(255, 255, 255, 0.25);
+  transform: scale(1.08);
+}
+
+.settings-btn svg {
+  stroke: currentColor;
+}
+
+body.light-mode .settings-btn {
+  background: rgba(255, 255, 255, 0.7);
+  border-color: rgba(0, 0, 0, 0.1);
+  color: #1f1f1f;
+}
+
+body.light-mode .settings-btn:hover {
   background: rgba(255, 255, 255, 0.9);
 }
 
@@ -1480,7 +1529,7 @@ body.light-mode #moonIcon {
    ======================================== */
 .trace-toggle-btn {
   position: fixed;
-  top: calc(var(--spacing-xl) + 210px);
+  top: calc(var(--spacing-xl) + 350px);
   right: var(--spacing-xl);
   z-index: 1700;
   width: 60px;
@@ -1490,6 +1539,7 @@ body.light-mode #moonIcon {
   justify-content: center;
   background: var(--theme-glass-bg);
   border: 1px solid var(--theme-glass-border);
+  -webkit-backdrop-filter: var(--theme-glass-blur);
   backdrop-filter: var(--theme-glass-blur);
   border-radius: 50%;
   cursor: pointer;
@@ -1884,19 +1934,24 @@ body.light-mode .toggle-label {
    ======================================== */
 @media (max-width: 768px) {
   h1 {
-    font-size: 4em;
+    font-size: 3em;
+    top: 140px;
+    width: 90%;
+    left: 50%;
+    transform: translateX(-50%);
   }
   
   #voiceCanvas {
     width: 80vw;
     height: auto;
+    top: 55%;
   }
   
   .transcript-box {
     width: 90%;
     right: 5%;
-    height: 70vh;
-    max-height: 70vh;
+    height: 60vh;
+    max-height: 60vh;
     border-radius: 20px;
   }
   
@@ -1908,21 +1963,51 @@ body.light-mode .toggle-label {
   }
   
   .status-monitor {
-    bottom: 10px;
+    bottom: 90px;
     right: 10px;
-    min-width: 200px;
-    font-size: 0.8em;
+    min-width: auto;
+    font-size: 0.75em;
+    padding: 6px 10px;
   }
   
-  .chat-toggle,
-  #startButton,
-  #settingsButton,
+  /* Hide secondary controls on mobile/tablet - moved to hamburger menu */
+  .home-btn,
+  .dashboard-toggle-btn,
+  .admin-btn,
   .theme-toggle-btn,
+  #settingsButton,
   .logout-btn,
+  .chat-toggle,
   .trace-toggle-btn {
-    right: 10px;
-    z-index: 1700;
+    display: none !important;
   }
+
+  /* Ensure Hamburger is visible and positioned */
+  .hamburger-btn {
+    display: flex !important;
+    top: 20px;
+    left: 20px;
+    width: 50px;
+    height: 50px;
+  }
+  
+  /* Primary Actions (Start/Mute) remain visible at bottom */
+  #startButton {
+    top: auto;
+    bottom: 20px;
+    right: 20px;
+    width: 60px;
+    height: 60px;
+  }
+  
+  #muteButton {
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%); /* Center mute button */
+    width: 60px;
+    height: 60px;
+  }
+
   .settings-content {
     width: 95%;
     max-height: 80vh;
@@ -1940,61 +2025,47 @@ body.light-mode .toggle-label {
 
 @media (max-width: 480px) {
   h1 {
-    font-size: 3em;
-    top: 15px;
-    letter-spacing: 4px;
+    font-size: 2em;
+    top: 110px;
+    letter-spacing: 1px;
   }
   
   #voiceCanvas {
     width: 100%;
-    height: 250px;
-    top: 45%;
+    height: 200px;
+    top: 50%;
   }
   
-  button {
-    width: 48px;
-    height: 48px;
+  /* Adjust primary buttons for smaller screens */
+  #startButton {
+    bottom: 20px;
+    right: 20px;
+    width: 50px;
+    height: 50px;
   }
   
   #muteButton {
-    width: 55px;
-    height: 55px;
-    bottom: 85px;
+    bottom: 20px;
+    width: 50px;
+    height: 50px;
   }
   
-  .chat-toggle,
-  #startButton,
-  #settingsButton,
-  .theme-toggle-btn,
-  .logout-btn,
-  .trace-toggle-btn {
-    right: 8px;
-  }
-
-  #startButton {
-    /* Place start below settings on small screens as well */
-    top: calc(var(--spacing-xl) + 350px);
-  }  #settingsButton {
-    top: 140px;
-  }
-  
-  .theme-toggle-btn {
+  .hamburger-btn {
     top: 15px;
+    left: 15px;
     width: 45px;
     height: 45px;
   }
   
-  .trace-toggle {
-    /* Keep trace toggle below the chat toggle on small screens as well */
-    top: calc(var(--spacing-xl) + 65px);
-    right: var(--spacing-xl);
-    width: 56px;
-    height: 56px;
-    border-radius: 14px;
+  .status-monitor {
+    bottom: 80px;
+    right: 5px;
+    font-size: 0.7em;
+    max-width: 150px;
   }
   
   .trace-panel {
-    bottom: 70px;
+    bottom: 80px;
     left: 10px;
     right: 10px;
     width: calc(100vw - 20px);
@@ -2020,22 +2091,6 @@ body.light-mode .toggle-label {
     width: 95vw;
     border-radius: 15px;
   }
-  
-  .settings-body {
-    max-height: 70vh;
-    overflow-y: auto;
-  }
-  
-  .status-monitor {
-    bottom: 8px;
-    right: 8px;
-    font-size: 0.75em;
-    padding: 8px 12px;
-  }
-  
-  .setting-toggle {
-    gap: 10px;
-  }
 }
 
 /* Left panel (hamburger) - mobile friendly menu */
@@ -2052,6 +2107,14 @@ body.light-mode .toggle-label {
   display: flex;
   align-items: center;
   justify-content: center;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+/* Hide hamburger when menu is open */
+body.menu-open .hamburger-btn {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
 }
 
 .left-panel {
@@ -2096,15 +2159,85 @@ body.light-mode .toggle-label {
   background: transparent;
   border: none;
   color: white;
-  padding: 12px 10px;
+  padding: 12px 16px;
   border-radius: 8px;
   cursor: pointer;
   text-align: left;
+  width: 100%;
+  height: auto;
+  justify-content: flex-start;
+  text-decoration: none;
+  font-size: 1rem;
+  transition: background-color 0.2s ease;
+}
+
+.lp-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  transform: none; /* Disable scale effect from global button */
 }
 
 .lp-btn svg { position: static; transform: none; }
 
 .lp-btn span { font-size: 0.95em; }
+
+/* Sun flares background effect */
+.sun-flares {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: -1;
+  overflow: hidden;
+}
+
+.flare {
+  position: absolute;
+  width: 150vw;
+  height: 150vh;
+  background: radial-gradient(circle, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0) 60%);
+  opacity: 0.6;
+  animation: flare-move 25s infinite linear;
+  transform-origin: center;
+  top: -25%;
+  left: -25%;
+}
+
+.flare.two {
+  width: 120vw;
+  height: 120vh;
+  background: radial-gradient(circle, rgba(100,149,237,0.08) 0%, rgba(100,149,237,0) 50%);
+  animation: flare-move-reverse 30s infinite linear;
+  top: -10%;
+  left: -10%;
+}
+
+.flare.three {
+  width: 80vw;
+  height: 80vh;
+  background: radial-gradient(circle, rgba(138,43,226,0.06) 0%, rgba(138,43,226,0) 40%);
+  animation: flare-pulse 15s infinite ease-in-out;
+  top: 10%;
+  left: 10%;
+}
+
+@keyframes flare-move {
+  0% { transform: rotate(0deg) translate(-5%, -5%); }
+  50% { transform: rotate(180deg) translate(5%, 5%); }
+  100% { transform: rotate(360deg) translate(-5%, -5%); }
+}
+
+@keyframes flare-move-reverse {
+  0% { transform: rotate(360deg) translate(5%, 5%); }
+  50% { transform: rotate(180deg) translate(-5%, -5%); }
+  100% { transform: rotate(0deg) translate(5%, 5%); }
+}
+
+@keyframes flare-pulse {
+  0%, 100% { transform: scale(1) translate(0, 0); opacity: 0.4; }
+  50% { transform: scale(1.2) translate(2%, 2%); opacity: 0.7; }
+}
 
 /* Overlay to dim content when left panel is open */
 .left-panel-overlay {
@@ -2227,7 +2360,7 @@ body.light-mode .status-action-btn {
   gap: var(--spacing-lg);
   position: absolute;
   left: 50%;
-  top: 50%;
+  top: 40%;
   transform: translate(-50%, -10%);
   z-index: 100;
   width: min(1100px, 90vw);
@@ -2827,6 +2960,7 @@ body.light-mode .icon-btn:hover {
 .token-card {
   background: var(--theme-glass-bg);
   border: 1px solid var(--theme-border);
+  -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(12px);
   border-radius: 20px;
   padding: 24px;
@@ -2971,6 +3105,7 @@ body.light-mode .icon-btn:hover {
   padding: 12px 20px;
   background: var(--theme-glass-bg);
   border: 1px solid var(--theme-border);
+  -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
   border-radius: 30px;
   transition: all var(--transition-fast) ease;
@@ -3038,6 +3173,7 @@ body.light-mode .icon-btn:hover {
   height: 60px;
   background: var(--theme-glass-bg);
   border: 1px solid var(--theme-glass-border);
+  -webkit-backdrop-filter: var(--theme-glass-blur);
   backdrop-filter: var(--theme-glass-blur);
   color: var(--theme-text-primary);
   border-radius: 50%;
@@ -3107,6 +3243,7 @@ body.light-mode .icon-btn:hover {
 .stat-card {
   background: var(--theme-glass-bg);
   border: 1px solid var(--theme-border);
+  -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
   border-radius: 16px;
   padding: 20px;
@@ -3162,6 +3299,7 @@ body.light-mode .icon-btn:hover {
 .chart-card {
   background: var(--theme-glass-bg);
   border: 1px solid var(--theme-border);
+  -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
   border-radius: 16px;
   padding: 20px;
@@ -3192,6 +3330,7 @@ body.light-mode .icon-btn:hover {
 .table-card {
   background: var(--theme-glass-bg);
   border: 1px solid var(--theme-border);
+  -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
   border-radius: 16px;
   padding: 20px;
@@ -3225,6 +3364,7 @@ body.light-mode .icon-btn:hover {
   height: 60px;
   background: var(--theme-glass-bg);
   border: 1px solid var(--theme-glass-border);
+  -webkit-backdrop-filter: var(--theme-glass-blur);
   backdrop-filter: var(--theme-glass-blur);
   color: var(--theme-text-primary);
   border-radius: 50%;
@@ -3374,6 +3514,7 @@ body.light-mode .icon-btn:hover {
 .link-card {
   background: var(--theme-glass-bg);
   border: 1px solid var(--theme-border);
+  -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
   border-radius: 16px;
   padding: 20px;
@@ -3418,6 +3559,7 @@ body.light-mode .icon-btn:hover {
   position: relative;
   background: var(--theme-glass-bg);
   border: 1px solid var(--theme-border);
+  -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
   border-radius: 12px;
   padding: 15px 20px;
@@ -3454,8 +3596,22 @@ body.light-mode .icon-btn:hover {
 @media (max-width: 768px) {
   .dashboard-content {
     width: 95%;
-    top: 120px;
-    max-height: calc(100vh - 140px);
+    top: 160px; /* Increased to clear title */
+    max-height: calc(100vh - 180px);
+    padding-bottom: 100px; /* Space for FABs */
+  }
+
+  /* Move floating buttons to bottom right on mobile */
+  .refresh-btn {
+    top: auto;
+    bottom: 90px;
+    right: 20px;
+  }
+
+  .btn-reload {
+    top: auto;
+    bottom: 20px;
+    right: 20px;
   }
 
   .stats-grid {

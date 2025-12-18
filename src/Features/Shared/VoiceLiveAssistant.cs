@@ -147,9 +147,9 @@ public class VoiceLiveAssistant : IAsyncDisposable
 
             var turnDetectionConfig = new ServerVadTurnDetection
             {
-                Threshold = 0.5f,
-                PrefixPadding = TimeSpan.FromMilliseconds(300),
-                SilenceDuration = TimeSpan.FromMilliseconds(500)
+                Threshold = 0.3f,
+                PrefixPadding = TimeSpan.FromMilliseconds(200),
+                SilenceDuration = TimeSpan.FromMilliseconds(300)
             };
 
             var sessionOptions = new VoiceLiveSessionOptions

@@ -10,21 +10,51 @@
  * Each model has different capabilities and characteristics
  */
 export const VOICE_MODELS = [
-  { id: 'gpt-realtime-mini', name: 'GPT-4o Mini Realtime', description: 'Modello leggero e veloce (consigliato)' },
-  { id: 'gpt-4o-realtime-preview', name: 'GPT-4o Realtime', description: 'Modello realtime standard' },
-  { id: 'gpt-4o', name: 'GPT-4o', description: 'Modello GPT-4 ottimizzato' },
-  { id: 'gpt-4.1', name: 'GPT-4.1', description: 'Versione aggiornata di GPT-4' },
-  { id: 'gpt-5-mini-realtime', name: 'GPT-5 Mini Realtime', description: 'Nuova generazione - Mini' },
-  { id: 'gpt-5-realtime', name: 'GPT-5 Realtime', description: 'Nuova generazione - Standard' },
-  { id: 'phi4-mm-realtime', name: 'Phi-4 MM Realtime', description: 'Modello multimodale Phi-4' },
-  { id: 'phi4-mini', name: 'Phi-4 Mini', description: 'Versione compatta di Phi-4' }
+  { id: 'gpt-realtime-mini', name: 'GPT-4o Mini Realtime', description: 'Lightweight and fast model (recommended)' },
+  { id: 'gpt-4o-realtime-preview', name: 'GPT-4o Realtime', description: 'Standard realtime model' },
+  { id: 'gpt-4o', name: 'GPT-4o', description: 'Optimized GPT-4 model' },
+  { id: 'gpt-4.1', name: 'GPT-4.1', description: 'Updated version of GPT-4' },
+  { id: 'gpt-5-mini-realtime', name: 'GPT-5 Mini Realtime', description: 'Next generation - Mini' },
+  { id: 'gpt-5-realtime', name: 'GPT-5 Realtime', description: 'Next generation - Standard' },
+  { id: 'phi4-mm-realtime', name: 'Phi-4 MM Realtime', description: 'Multimodal Phi-4 model' },
+  { id: 'phi4-mini', name: 'Phi-4 Mini', description: 'Compact version of Phi-4' }
 ];
 
 /**
  * Italian TTS voices available in Azure
  * Each voice has a unique personality and gender
  */
-export const ITALIAN_VOICES = [
+export const VOICES = [
+  // English Voices
+  { 
+    id: 'en-US-AvaNeural', 
+    name: 'Ava', 
+    displayName: 'Ava (Female)',
+    gender: 'female',
+    description: 'Standard English female voice'
+  },
+  { 
+    id: 'en-US-AndrewNeural', 
+    name: 'Andrew', 
+    displayName: 'Andrew (Male)',
+    gender: 'male',
+    description: 'Standard English male voice'
+  },
+  { 
+    id: 'en-US-EmmaNeural', 
+    name: 'Emma', 
+    displayName: 'Emma (Female)',
+    gender: 'female',
+    description: 'Alternative English female voice'
+  },
+  { 
+    id: 'en-US-BrianNeural', 
+    name: 'Brian', 
+    displayName: 'Brian (Male)',
+    gender: 'male',
+    description: 'Alternative English male voice'
+  },
+  // Italian Voices
   { 
     id: 'it-IT-IsabellaNeural', 
     name: 'Isabella', 
@@ -79,42 +109,52 @@ export const ITALIAN_VOICES = [
  * - Phi models have their own compatibility requirements
  */
 export const MODEL_VOICE_COMPATIBILITY = {
-  // Realtime models support all Italian voices
+  // Realtime models support all voices
   'gpt-realtime-mini': 'all',
   'gpt-4o-realtime-preview': 'all',
   
   // GPT-4 models support Azure TTS voices
-  'gpt-4o': ['it-IT-IsabellaNeural', 'it-IT-ElsaNeural', 'it-IT-DiegoNeural', 'it-IT-GiuseppeNeural', 'it-IT-BenignoNeural', 'it-IT-CalimeroNeural'],
-  'gpt-4.1': ['it-IT-IsabellaNeural', 'it-IT-ElsaNeural', 'it-IT-DiegoNeural', 'it-IT-GiuseppeNeural', 'it-IT-BenignoNeural', 'it-IT-CalimeroNeural'],
+  'gpt-4o': VOICES.map(v => v.id),
+  'gpt-4.1': VOICES.map(v => v.id),
   
   // GPT-5 models support Azure TTS voices
-  'gpt-5-mini-realtime': ['it-IT-IsabellaNeural', 'it-IT-ElsaNeural', 'it-IT-DiegoNeural', 'it-IT-GiuseppeNeural', 'it-IT-BenignoNeural', 'it-IT-CalimeroNeural'],
-  'gpt-5-realtime': ['it-IT-IsabellaNeural', 'it-IT-ElsaNeural', 'it-IT-DiegoNeural', 'it-IT-GiuseppeNeural', 'it-IT-BenignoNeural', 'it-IT-CalimeroNeural'],
+  'gpt-5-mini-realtime': VOICES.map(v => v.id),
+  'gpt-5-realtime': VOICES.map(v => v.id),
   
   // Phi models support Azure TTS voices
-  'phi4-mm-realtime': ['it-IT-IsabellaNeural', 'it-IT-ElsaNeural', 'it-IT-DiegoNeural', 'it-IT-GiuseppeNeural', 'it-IT-BenignoNeural', 'it-IT-CalimeroNeural'],
-  'phi4-mini': ['it-IT-IsabellaNeural', 'it-IT-ElsaNeural', 'it-IT-DiegoNeural', 'it-IT-GiuseppeNeural', 'it-IT-BenignoNeural', 'it-IT-CalimeroNeural']
+  'phi4-mm-realtime': VOICES.map(v => v.id),
+  'phi4-mini': VOICES.map(v => v.id)
 };
+
+/**
+ * Get voice by ID
+ * @param {string} voiceId - The ID of the voice to find
+ * @returns {Object|null} The voice object or null if not found
+ */
+export function getVoiceById(voiceId) {
+  return VOICES.find(voice => voice.id === voiceId) || null;
+}
 
 /**
  * Default application settings
  */
 export const DEFAULT_SETTINGS = {
   voiceModel: 'gpt-4o', // Fast and efficient
-  voice: 'it-IT-IsabellaNeural', // Female Italian voice
-  welcomeMessage: 'Ciao! Sono Isabella, come posso aiutarti oggi?',
+  voice: 'en-US-AvaNeural', // Female English voice
+  welcomeMessage: 'Hello! I am Ava, how can I help you today?',
   // System/model instructions that the user can provide via the settings dialog.
   // This will be sent to the server as part of the session configuration and used as the model's system prompt.
   modelInstructions: '',
   showToastNotifications: false, // Enable toast notifications by default
-  language: 'it-IT',
+  language: 'en-US',
+  visualizerType: 'oscilloscope', // Default visualizer type (wave, cardio, vortex, lines, holographic, tesseract, cortana)
   // Voice Live service connection settings
   voiceLiveEndpoint: '',
   voiceLiveApiKey: '',
   // Microsoft Foundry Agent Service settings
   foundryAgentId: '',        // Foundry Agent ID (e.g., "asst_123")
   foundryProjectName: '',    // Foundry Project name containing the agent
-  locale: 'it-IT'            // Locale for voice recognition and synthesis
+  locale: 'en-US'            // Locale for voice recognition and synthesis
 };
 
 /**
@@ -139,6 +179,9 @@ export const AUDIO_CONFIG = {
 export function getVoiceName(voiceId) {
   // TODO: Refactor consumers to import { extractVoiceName } from './ui-utils.js'
   try {
+    const voice = getVoiceById(voiceId);
+    if (voice) return voice.name;
+
     // Voice IDs follow pattern: "language-country-NameNeural"
     // Split by hyphen and get the third part, then remove "Neural" suffix
     const parts = voiceId.split('-');
@@ -146,10 +189,10 @@ export function getVoiceName(voiceId) {
       const nameWithNeural = parts[2];
       return nameWithNeural.replace('Neural', '');
     }
-    return 'Assistente'; // Fallback name
+    return window.APP_RESOURCES?.Assistant || 'Assistant'; // Fallback name
   } catch (error) {
     console.error('Error extracting voice name:', error);
-    return 'Assistente';
+    return window.APP_RESOURCES?.Assistant || 'Assistant';
   }
 }
 
@@ -170,7 +213,7 @@ export function validateCompatibility(modelId, voiceId) {
     if (!compatibility) {
       return {
         valid: false,
-        message: `Modello "${modelId}" non riconosciuto`
+        message: (window.APP_RESOURCES?.ModelNotRecognized || 'Model "{0}" not recognized').replace('{0}', modelId)
       };
     }
     
@@ -178,7 +221,7 @@ export function validateCompatibility(modelId, voiceId) {
     if (compatibility === 'all') {
       return {
         valid: true,
-        message: 'Compatibilità verificata'
+        message: window.APP_RESOURCES?.CompatibilityVerified || 'Compatibility verified'
       };
     }
     
@@ -186,20 +229,20 @@ export function validateCompatibility(modelId, voiceId) {
     if (Array.isArray(compatibility) && compatibility.includes(voiceId)) {
       return {
         valid: true,
-        message: 'Compatibilità verificata'
+        message: window.APP_RESOURCES?.CompatibilityVerified || 'Compatibility verified'
       };
     }
     
     // Voice not compatible with this model
     return {
       valid: false,
-      message: `La voce selezionata non è compatibile con il modello ${modelId}`
+      message: (window.APP_RESOURCES?.VoiceNotCompatible || 'The selected voice is not compatible with model {0}').replace('{0}', modelId)
     };
   } catch (error) {
     console.error('Error validating compatibility:', error);
     return {
       valid: false,
-      message: 'Errore durante la verifica della compatibilità'
+      message: 'Error during compatibility check'
     };
   }
 }
@@ -222,7 +265,7 @@ export function getDefaultSettings() {
  * @returns {Object|null} - Voice information or null if not found
  */
 export function getVoiceInfo(voiceId) {
-  return ITALIAN_VOICES.find(voice => voice.id === voiceId) || null;
+  return VOICES.find(voice => voice.id === voiceId) || null;
 }
 
 /**

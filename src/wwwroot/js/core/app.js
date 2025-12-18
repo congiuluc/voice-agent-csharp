@@ -5,11 +5,12 @@
  * This is the entry point for the ES6 modular application.
  */
 
-import { VOICE_MODELS, ITALIAN_VOICES, getVoiceName } from './config.js';
-import { VoiceVisualizerFactory } from './modules/voice-visualizer-factory.js';
-import { AudioHandler } from './audio-handler.js';
-import { WebSocketHandler } from './websocket-handler.js';
-import { consumptionTracker } from './consumption-tracker.js';
+import { VOICE_MODELS, VOICES, getVoiceName } from './config.js';
+import { VoiceVisualizerFactory } from '../modules/voice-visualizer-factory.js';
+import { AudioHandler } from '../handlers/audio-handler.js';
+import { WebSocketHandler } from '../handlers/websocket-handler.js';
+import { consumptionTracker } from '../managers/consumption-tracker.js';
+import { SettingsManager } from '../modules/settings-manager.js';
 import {
   showToast,
   addTranscript,
@@ -27,8 +28,9 @@ import {
   addTraceEntry,
   clearTraceEntries,
   toggleTracePanel
-} from './ui-utils.js';
-import { getSavedTheme, applyThemeMode, toggleTheme, listenForExternalChanges } from './theme-sync.js';
+} from '../ui/ui-utils.js';
+import { getSavedTheme, applyThemeMode, toggleTheme, listenForExternalChanges } from '../ui/theme-sync.js';
+import { initHamburgerMenu } from '/js/ui/hamburger-menu.js';
 
 /**
  * Main application class
@@ -73,73 +75,31 @@ class VoiceAgentApp {
     return 'default';
   }
 
-  /**
-   * Open the left panel (slideover)
-   */
-  openLeftPanel() {
-    const panel = this.elements.leftPanel;
-    if (!panel) return;
-    panel.setAttribute('aria-hidden', 'false');
-    // show overlay
-    let overlay = document.querySelector('.left-panel-overlay');
-    if (!overlay) {
-      overlay = document.createElement('div');
-      overlay.className = 'left-panel-overlay visible';
-      document.body.appendChild(overlay);
-    } else {
-      overlay.classList.add('visible');
-    }
-    // lock body scroll
-    document.body.style.overflow = 'hidden';
 
-    // focus the first focusable element inside the panel
-    setTimeout(() => {
-      try {
-        const focusable = panel.querySelector('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
-        if (focusable) focusable.focus();
-      } catch (e) {}
-    }, 50);
-  }
-
-  /**
-   * Close the left panel
-   */
-  closeLeftPanel() {
-    const panel = this.elements.leftPanel;
-    if (!panel) return;
-    panel.setAttribute('aria-hidden', 'true');
-    const overlay = document.querySelector('.left-panel-overlay');
-    if (overlay) {
-      overlay.classList.remove('visible');
-    }
-    // restore body scroll
-    document.body.style.overflow = '';
-
-    // return focus to hamburger button for accessibility
-    try {
-      const hb = this.elements.hamburgerButton;
-      if (hb) hb.focus();
-    } catch (e) {}
-  }
   
   /**
    * Initialize the application
    */
   async init() {
     try {
-      // Get DOM references
-      const uiPresent = this.initDOMReferences();
-      if (!uiPresent) {
-        // Not a VoiceAgent page — skip heavy initialization but keep module loaded safely
-        console.log('Voice Agent UI not present on this page. Skipping app initialization.');
-        return;
-      }
-      
       // Apply saved theme
       this.applyTheme();
       
-      // Initialize visualizer using factory
-      this.visualizer = await VoiceVisualizerFactory.createVisualizer('wave', this.elements.canvas);
+      initHamburgerMenu();
+
+      // Get DOM references
+      const uiPresent = this.initDOMReferences();
+      if (!uiPresent) {
+        console.log('Voice Agent UI not present on this page. Skipping full app initialization.');
+        return;
+      }
+      
+      // Initialize visualizer using the configured type from shared uiSettings
+      // Check both the shared uiSettings and the page-specific settings
+      const sharedUISettings = new SettingsManager('uiSettings', {}).getAll();
+      const visualizerType = sharedUISettings.visualizerType || this.currentSettings.visualizerType || 'wave';
+      console.log('📊 Initializing visualizer with type:', visualizerType);
+      this.visualizer = await VoiceVisualizerFactory.createVisualizer(visualizerType, this.elements.canvas);
       
       // Initialize audio handler with RMS callback for visualizer
       this.audioHandler = new AudioHandler((rms, source) => {
@@ -172,26 +132,26 @@ class VoiceAgentApp {
       this.populateSettings();
 
       // Relocate controls for small screens and enable focus trap
-      this.relocateControlsForSmallScreens();
+      // this.relocateControlsForSmallScreens();
       this.enableLeftPanelFocusTrap();
       
       // Ensure initial mute UI state reflects audio handler (muted by default)
       if (this.elements.muteButton) {
         this.elements.muteButton.classList.add('muted');
         try { this.elements.muteButton.setAttribute('aria-pressed', 'true'); } catch(e) {}
-        try { this.elements.muteButton.setAttribute('aria-label', 'Microfono disattivato'); } catch(e) {}
+        try { this.elements.muteButton.setAttribute('aria-label', window.APP_RESOURCES?.MicrophoneMuted || 'Microphone muted'); } catch(e) {}
       }
 
       // Initial status
-      updateStatus('In attesa di connessione...', 'disconnected');
-      addTraceEntry('system', 'Applicazione inizializzata');
+      updateStatus(window.APP_RESOURCES?.WaitingForConnection || 'Waiting for connection...', 'disconnected');
+      addTraceEntry('system', window.APP_RESOURCES?.ApplicationInitialized || 'Application initialized');
       
       console.log('Voice Agent App initialized');
       
     } catch (error) {
       console.error('Fatal error during initialization:', error);
-      addTraceEntry('system', `Errore di inizializzazione: ${error.message}`);
-      showErrorBoundary(`Errore durante l'inizializzazione dell'applicazione: ${error.message}`);
+      addTraceEntry('system', `${window.APP_RESOURCES?.Error || 'Error'} during initialization: ${error.message}`);
+      showErrorBoundary(`${window.APP_RESOURCES?.ApplicationError || 'Application Initialization Error'}: ${error.message}`);
     }
   }
   
@@ -244,11 +204,10 @@ class VoiceAgentApp {
       hamburgerButton: document.getElementById('hamburgerButton'),
       leftPanel: document.getElementById('leftPanel'),
       closeLeftPanel: document.getElementById('closeLeftPanel'),
-      lp_startButton: document.getElementById('lp_startButton'),
-      lp_muteButton: document.getElementById('lp_muteButton'),
       lp_traceToggle: document.getElementById('lp_traceToggle'),
       lp_settingsButton: document.getElementById('lp_settingsButton'),
-      lp_chatToggle: document.getElementById('lp_chatToggle')
+      lp_chatToggle: document.getElementById('lp_chatToggle'),
+      lp_themeToggle: document.getElementById('lp_themeToggle')
     };
     // Verify critical elements exist. Return true if present, false otherwise.
     const criticalElements = ['canvas', 'startButton', 'muteButton'];
@@ -321,8 +280,8 @@ class VoiceAgentApp {
         // If no session is active, prevent enabling the mic (unmuting)
         // currentlyMuted === true means the button is currently muted and clicking would unmute
         if (!this.isSessionActive && currentlyMuted) {
-          this.conditionalShowToast('Avvia una sessione prima di attivare il microfono', 'warning');
-          addTraceEntry('system', 'Tentativo di attivare microfono senza sessione');
+          this.conditionalShowToast(window.APP_RESOURCES?.StartSessionBeforeMicrophone || 'Start a session before activating the microphone', 'warning');
+          addTraceEntry('system', 'Attempted to activate microphone without session');
           return;
         }
       } catch (e) {
@@ -354,7 +313,7 @@ class VoiceAgentApp {
     // Clear chat
     this.safeAddListener(this.elements.clearChatButton, 'click', () => {
       clearTranscripts();
-      this.conditionalShowToast('Conversazione cancellata', 'info');
+      this.conditionalShowToast(window.APP_RESOURCES?.ConversationCleared || 'Conversation cleared', 'info');
     });
     
     // Send text message
@@ -426,7 +385,7 @@ class VoiceAgentApp {
     // Clear trace
     this.safeAddListener(this.elements.clearTraceButton, 'click', () => {
       clearTraceEntries();
-      addTraceEntry('system', 'Trace cancellato');
+      addTraceEntry('system', 'Trace cleared');
     });
 
     // Voice Live endpoint copy/test buttons
@@ -434,65 +393,58 @@ class VoiceAgentApp {
       try {
         const val = this.elements.voiceLiveEndpointInput ? this.elements.voiceLiveEndpointInput.value.trim() : '';
         if (!val) {
-          this.showEndpointFeedback('Nessun endpoint da copiare', 'error');
+          this.showEndpointFeedback('No endpoint to copy', 'error');
           return;
         }
         await navigator.clipboard.writeText(val);
-        this.showEndpointFeedback('Endpoint copiato negli appunti', 'success');
-        this.conditionalShowToast('Endpoint copiato', 'success');
+        this.showEndpointFeedback(window.APP_RESOURCES?.EndpointCopied || 'Endpoint copied to clipboard', 'success');
+        this.conditionalShowToast(window.APP_RESOURCES?.EndpointCopied || 'Endpoint copied', 'success');
       } catch (err) {
         console.error('Copy failed', err);
-        this.showEndpointFeedback('Impossibile copiare endpoint', 'error');
+        this.showEndpointFeedback(window.APP_RESOURCES?.UnableToCopyEndpoint || 'Unable to copy endpoint', 'error');
       }
     });
 
     this.safeAddListener(this.elements.voiceLiveEndpointTest, 'click', async () => {
       const url = this.elements.voiceLiveEndpointInput ? this.elements.voiceLiveEndpointInput.value.trim() : '';
       if (!url) {
-        this.showEndpointFeedback('Inserisci un URL valido prima del test', 'error');
+        this.showEndpointFeedback(window.APP_RESOURCES?.EnterValidUrl || 'Enter a valid URL before testing', 'error');
         return;
       }
-      this.showEndpointFeedback('Testing endpoint...', '');
+      this.showEndpointFeedback(window.APP_RESOURCES?.TestingEndpoint || 'Testing endpoint...', '');
       try {
         const ok = await this.testEndpoint(url, 6000);
         if (ok) {
-          this.showEndpointFeedback('Endpoint raggiungibile', 'success');
-          this.conditionalShowToast('Endpoint raggiungibile', 'success');
+          this.showEndpointFeedback(window.APP_RESOURCES?.EndpointReachable || 'Endpoint reachable', 'success');
+          this.conditionalShowToast(window.APP_RESOURCES?.EndpointReachable || 'Endpoint reachable', 'success');
         } else {
-          this.showEndpointFeedback('Endpoint non raggiungibile (timeout o risposta non valida)', 'error');
-          this.conditionalShowToast('Endpoint non raggiungibile', 'error');
+          this.showEndpointFeedback(window.APP_RESOURCES?.EndpointNotReachable || 'Endpoint not reachable (timeout or invalid response)', 'error');
+          this.conditionalShowToast(window.APP_RESOURCES?.EndpointNotReachable || 'Endpoint not reachable', 'error');
         }
       } catch (err) {
-        this.showEndpointFeedback(`Errore test endpoint: ${err.message}`, 'error');
-        this.conditionalShowToast('Errore durante il test endpoint', 'error');
+        this.showEndpointFeedback(`${window.APP_RESOURCES?.EndpointTestError || 'Endpoint test error'}: ${err.message}`, 'error');
+        this.conditionalShowToast(window.APP_RESOURCES?.EndpointTestErrorMessage || 'Error during endpoint test', 'error');
       }
     });
 
-    // Hamburger / left-panel toggle
-    this.safeAddListener(this.elements.hamburgerButton, 'click', () => {
-      this.openLeftPanel();
-    });
-
-    this.safeAddListener(this.elements.closeLeftPanel, 'click', () => {
-      this.closeLeftPanel();
-    });
+    // Hamburger / left-panel toggle - Handled by initHamburgerMenu
 
     // Left-panel buttons mapping to main actions
-    this.safeAddListener(this.elements.lp_startButton, 'click', () => { this.elements.startButton && this.elements.startButton.click(); this.closeLeftPanel(); });
-    this.safeAddListener(this.elements.lp_muteButton, 'click', () => { this.elements.muteButton && this.elements.muteButton.click(); this.closeLeftPanel(); });
-    this.safeAddListener(this.elements.lp_traceToggle, 'click', () => { this.elements.traceToggle && this.elements.traceToggle.click(); this.closeLeftPanel(); });
-    this.safeAddListener(this.elements.lp_settingsButton, 'click', () => { this.elements.settingsButton && this.elements.settingsButton.click(); this.closeLeftPanel(); });
-    this.safeAddListener(this.elements.lp_chatToggle, 'click', () => { this.elements.chatToggle && this.elements.chatToggle.click(); this.closeLeftPanel(); });
+    this.safeAddListener(this.elements.lp_traceToggle, 'click', () => { 
+        this.elements.traceToggle && this.elements.traceToggle.click(); 
+        document.body.classList.remove('menu-open'); 
+    });
+    this.safeAddListener(this.elements.lp_settingsButton, 'click', () => { 
+        this.elements.settingsButton && this.elements.settingsButton.click(); 
+        document.body.classList.remove('menu-open'); 
+    });
+    this.safeAddListener(this.elements.lp_chatToggle, 'click', () => { 
+        this.elements.chatToggle && this.elements.chatToggle.click(); 
+        document.body.classList.remove('menu-open'); 
+    });
+    // lp_themeToggle is handled by initHamburgerMenu
 
-    // Close left panel when clicking overlay (we add overlay dynamically)
-    const overlayClickHandler = (e) => {
-      const overlay = document.querySelector('.left-panel-overlay');
-      if (overlay && overlay.classList.contains('visible') && e.target === overlay) {
-        this.closeLeftPanel();
-      }
-    };
-    document.addEventListener('click', overlayClickHandler);
-    this.eventListeners.push({ element: document, event: 'click', handler: overlayClickHandler });
+    // Close left panel when clicking overlay - Handled by initHamburgerMenu
 
     // Ensure Escape closes left panel as well
     const escapePanelHandler = (e) => {
@@ -635,7 +587,7 @@ class VoiceAgentApp {
     
     // Populate voices
     this.elements.voiceSelect.innerHTML = '';
-    ITALIAN_VOICES.forEach(voice => {
+    VOICES.forEach(voice => {
       const option = document.createElement('option');
       option.value = voice.id;
       option.textContent = voice.displayName;
@@ -672,7 +624,7 @@ class VoiceAgentApp {
       this.elements.foundryAgentInput.value = this.currentSettings.foundryAgentId || '';
     }
     if (this.elements.localeSelect) {
-      this.elements.localeSelect.value = this.currentSettings.locale || this.currentSettings.language || 'it-IT';
+      this.elements.localeSelect.value = this.currentSettings.locale || this.currentSettings.language || 'en-US';
     }
   }
   
@@ -684,7 +636,7 @@ class VoiceAgentApp {
   toggleTheme() {
     toggleTheme();
     this.isDarkMode = getSavedTheme() === 'dark';
-    addTraceEntry('system', `Tema cambiato a ${this.isDarkMode ? 'scuro' : 'chiaro'}`);
+    addTraceEntry('system', `Theme changed to ${this.isDarkMode ? 'dark' : 'light'}`);
   }
 
   applyTheme() {
@@ -713,8 +665,8 @@ class VoiceAgentApp {
       // Foundry Agent settings
       foundryAgentId: this.elements.foundryAgentInput ? this.elements.foundryAgentInput.value : '',
       foundryProjectName: this.elements.foundryProjectInput ? this.elements.foundryProjectInput.value : '',
-      locale: this.elements.localeSelect ? this.elements.localeSelect.value : 'it-IT',
-      language: this.elements.localeSelect ? this.elements.localeSelect.value : 'it-IT'
+      locale: this.elements.localeSelect ? this.elements.localeSelect.value : 'en-US',
+      language: this.elements.localeSelect ? this.elements.localeSelect.value : 'en-US'
     };
     
     // Validate compatibility
@@ -727,13 +679,13 @@ class VoiceAgentApp {
     // Save to localStorage
     if (saveSettings(newSettings, this.pageName)) {
       this.currentSettings = newSettings;
-      addTraceEntry('system', 'Impostazioni salvate');
-      this.conditionalShowToast('Impostazioni salvate con successo', 'success');
+      addTraceEntry('system', 'Settings saved');
+      this.conditionalShowToast(window.APP_RESOURCES?.SettingsSavedSuccessfully || 'Settings saved successfully', 'success');
       hideSettingsModal();
       
       // If session is active, notify user to restart
       if (this.isSessionActive) {
-        this.conditionalShowToast('Riavvia la sessione per applicare le nuove impostazioni', 'info');
+        this.conditionalShowToast(window.APP_RESOURCES?.RestartSessionForSettings || 'Restart the session to apply new settings', 'info');
       }
     }
   }
@@ -771,8 +723,8 @@ class VoiceAgentApp {
         return;
       }
       
-      updateStatus('Connessione in corso...', 'disconnected');
-      addTraceEntry('system', 'Connessione in corso...');
+      updateStatus('Connecting...', 'disconnected');
+      addTraceEntry('system', 'Connecting...');
       
       // Connect WebSocket
       await this.wsHandler.connect();
@@ -799,18 +751,18 @@ class VoiceAgentApp {
       this.elements.startButton.classList.add('active');
       this.elements.muteButton.classList.remove('muted');
       
-      updateStatus('Sessione attiva', 'connected');
-      this.conditionalShowToast('Sessione avviata', 'success');
+      updateStatus('Session active', 'connected');
+      this.conditionalShowToast(window.APP_RESOURCES?.SessionStarted || 'Session started', 'success');
       
       // Add system message to transcript
       const voiceName = getVoiceName(this.currentSettings.voice);
-      addTranscript('system', `Sessione avviata con ${voiceName}`);
-      addTraceEntry('system', `Sessione avviata con ${voiceName}`);
+      addTranscript('system', `Session started with ${voiceName}`);
+      addTraceEntry('system', `Session started with ${voiceName}`);
       
     } catch (error) {
       console.error('Error starting session:', error);
-      this.conditionalShowToast('Impossibile avviare la sessione', 'error');
-      addTraceEntry('system', `Errore avvio sessione: ${error.message}`);
+      this.conditionalShowToast(window.APP_RESOURCES?.SessionStartFailed || 'Unable to start session', 'error');
+      addTraceEntry('system', `Session start error: ${error.message}`);
       this.stopSession();
     }
   }
@@ -846,16 +798,16 @@ class VoiceAgentApp {
       this.elements.startButton.classList.remove('active');
       this.elements.muteButton.classList.add('muted');
       
-      updateStatus('Sessione terminata', 'disconnected');
-      this.conditionalShowToast('Sessione terminata', 'info');
+      updateStatus('Session ended', 'disconnected');
+      this.conditionalShowToast(window.APP_RESOURCES?.SessionEnded || 'Session ended', 'info');
       
       // Add system message to transcript
-      addTranscript('system', 'Sessione terminata');
-      addTraceEntry('system', 'Sessione terminata');
+      addTranscript('system', 'Session ended');
+      addTraceEntry('system', 'Session ended');
       
     } catch (error) {
       console.error('Error stopping session:', error);
-      addTraceEntry('system', `Errore arresto sessione: ${error.message}`);
+      addTraceEntry('system', `Session stop error: ${error.message}`);
     }
   }
   
@@ -871,15 +823,15 @@ class VoiceAgentApp {
       this.elements.muteButton.classList.add('muted');
       // Accessibility: reflect pressed state and label
       try { this.elements.muteButton.setAttribute('aria-pressed', 'true'); } catch(e) {}
-      try { this.elements.muteButton.setAttribute('aria-label', 'Microfono disattivato'); } catch(e) {}
-      this.conditionalShowToast('Microfono disattivato', 'warning');
-      addTraceEntry('system', 'Microfono disattivato');
+      try { this.elements.muteButton.setAttribute('aria-label', 'Microphone deactivated'); } catch(e) {}
+      this.conditionalShowToast(window.APP_RESOURCES?.MicrophoneMuted || 'Microphone deactivated', 'warning');
+      addTraceEntry('system', 'Microphone deactivated');
     } else {
       this.elements.muteButton.classList.remove('muted');
       try { this.elements.muteButton.setAttribute('aria-pressed', 'false'); } catch(e) {}
-      try { this.elements.muteButton.setAttribute('aria-label', 'Microfono attivato'); } catch(e) {}
-      this.conditionalShowToast('Microfono attivato', 'success');
-      addTraceEntry('system', 'Microfono attivato');
+      try { this.elements.muteButton.setAttribute('aria-label', 'Microphone activated'); } catch(e) {}
+      this.conditionalShowToast(window.APP_RESOURCES?.MicrophoneUnmuted || 'Microphone activated', 'success');
+      addTraceEntry('system', 'Microphone activated');
     }
   }
   
@@ -892,8 +844,8 @@ class VoiceAgentApp {
     if (!text) return;
     
     if (!this.isSessionActive) {
-      this.conditionalShowToast('Avvia una sessione per inviare messaggi', 'warning');
-      addTraceEntry('system', 'Tentativo di inviare messaggio senza sessione attiva');
+      this.conditionalShowToast(window.APP_RESOURCES?.StartSessionBeforeMessage || 'Start a session to send messages', 'warning');
+      addTraceEntry('system', 'Attempted to send message without active session');
       return;
     }
     
@@ -922,19 +874,19 @@ class VoiceAgentApp {
       if (!text) return;
 
       if (!this.wsHandler || !this.wsHandler.isSocketConnected()) {
-        this.conditionalShowToast('Connessione assente: impossibile inviare messaggio', 'error');
-        addTraceEntry('system', 'Tentativo invio messaggio senza connessione WebSocket');
+        this.conditionalShowToast(window.APP_RESOURCES?.NoConnectionToSendMessage || 'No connection: unable to send message', 'error');
+        addTraceEntry('system', 'Attempted to send message without WebSocket connection');
         return;
       }
 
       // Use WebSocketHandler.sendMessage which follows the server protocol (Kind: 'Message')
       this.wsHandler.sendMessage(text);
-      addTraceEntry('system', `Messaggio inviato al server: ${text}`);
-      this.conditionalShowToast('Messaggio inviato', 'success');
+      addTraceEntry('system', `Message sent to server: ${text}`);
+      this.conditionalShowToast(window.APP_RESOURCES?.MessageSent || 'Message sent', 'success');
     } catch (error) {
       console.error('Error sending text message to server:', error);
-      addTraceEntry('system', `Errore invio messaggio: ${error.message}`);
-      this.conditionalShowToast('Errore durante l\'invio del messaggio', 'error');
+      addTraceEntry('system', `Message send error: ${error.message}`);
+      this.conditionalShowToast(window.APP_RESOURCES?.ErrorSendingMessage || 'Error sending message', 'error');
     }
   }
   
@@ -942,8 +894,8 @@ class VoiceAgentApp {
    * Handle WebSocket connection opened
    */
   handleWebSocketOpen() {
-    updateStatus('In attesa della sessione...', 'disconnected');
-    addTraceEntry('system', 'WebSocket connesso');
+    updateStatus('Waiting for session...', 'disconnected');
+    addTraceEntry('system', 'WebSocket connected');
   }
   
   /**
@@ -952,8 +904,8 @@ class VoiceAgentApp {
   handleWebSocketClose() {
     if (this.isSessionActive) {
       // Unexpected disconnect
-      this.conditionalShowToast('Connessione persa', 'error');
-      addTraceEntry('system', 'Connessione WebSocket persa');
+      this.conditionalShowToast(window.APP_RESOURCES?.ConnectionLost || 'Connection lost', 'error');
+      addTraceEntry('system', window.APP_RESOURCES?.WebSocketConnectionLost || 'WebSocket connection lost');
       this.stopSession();
     }
   }
@@ -990,7 +942,7 @@ class VoiceAgentApp {
 
     // Update status if agent is speaking
     if (role === 'agent') {
-      updateStatus('Assistente sta parlando...', 'speaking');
+      updateStatus(window.APP_RESOURCES?.AssistantSpeaking || 'Assistant is speaking...', 'speaking');
     }
   }
   
@@ -1001,7 +953,7 @@ class VoiceAgentApp {
     if (this.audioHandler) {
       this.audioHandler.stopPlayback();
     }
-    updateStatus('Sessione attiva', 'connected');
+    updateStatus(window.APP_RESOURCES?.SessionActive || 'Session active', 'connected');
   }
   
   /**
@@ -1010,7 +962,7 @@ class VoiceAgentApp {
    */
   handleWebSocketError(error) {
     console.error('WebSocket error:', error);
-    addTraceEntry('system', `Errore WebSocket: ${error.message}`);
+    addTraceEntry('system', `${window.APP_RESOURCES?.WebSocketError || 'WebSocket error'}: ${error.message}`);
     if (this.isSessionActive) {
       this.stopSession();
     }
@@ -1037,6 +989,6 @@ document.addEventListener('DOMContentLoaded', () => {
     
   } catch (error) {
     console.error('Fatal error:', error);
-    showErrorBoundary(`Errore critico: ${error.message}`);
+    showErrorBoundary(`${window.APP_RESOURCES?.CriticalError || 'Critical error'}: ${error.message}`);
   }
 });

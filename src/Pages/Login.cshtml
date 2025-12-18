@@ -1,40 +1,44 @@
 @page
 @model VoiceAgentCSharp.Pages.LoginModel
+@using Microsoft.Extensions.Localization
+@using System.Globalization
+@inject IStringLocalizer<SharedResource> Localizer
 @{
-    ViewData["Title"] = "Login";
+    ViewData["Title"] = Localizer["LoginTitle"];
+    var currentCulture = CultureInfo.CurrentCulture.Name;
 }
 
 <!DOCTYPE html>
-<html lang="it">
+<html lang="@currentCulture.Replace("-", "-").ToLowerInvariant()">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>@ViewData["Title"]</title>
     <link rel="icon" type="image/svg+xml" href="~/favicon.svg">
-    <link rel="stylesheet" href="~/theme.css">
-    <link rel="stylesheet" href="~/styles.css">
-    <link rel="stylesheet" href="~/login.css">
+    <link rel="stylesheet" href="~/theme.css" asp-append-version="true">
+    <link rel="stylesheet" href="~/styles.css" asp-append-version="true">
+    <link rel="stylesheet" href="~/login.css" asp-append-version="true">
 </head>
 <body>
     <div class="login-container">
         <div class="login-box">
-            <h1>Login</h1>
-            <p style="margin-bottom: 20px; opacity: 0.8;">Please login to access the application.</p>
+            <h1>@Localizer["LoginTitle"]</h1>
+            <p style="margin-bottom: 20px; opacity: 0.8;">@Localizer["LoginMessage"]</p>
             
             <form method="post">
                 <div class="form-group">
-                    <label for="username" class="form-label">Username</label>
+                    <label for="username" class="form-label">@Localizer["Username"]</label>
                     <input type="text" class="form-control" id="username" name="username" required />
                 </div>
                 <div class="form-group">
-                    <label for="password" class="form-label">Password</label>
+                    <label for="password" class="form-label">@Localizer["Password"]</label>
                     <input type="password" class="form-control" id="password" name="password" required />
                 </div>
                 @if (!string.IsNullOrEmpty(Model.ErrorMessage))
                 {
                     <div class="alert alert-danger">@Model.ErrorMessage</div>
                 }
-                <button type="submit" class="btn-primary">Login</button>
+                <button type="submit" class="btn-primary">@Localizer["LoginButton"]</button>
             </form>
         </div>
     </div>

@@ -12,12 +12,19 @@ import { getSavedTheme, applyThemeMode, toggleTheme, listenForExternalChanges } 
 
   function init() {
     // Apply saved theme
-    applyThemeMode(getSavedTheme());
+    const savedTheme = getSavedTheme();
+    console.log('🎨 Index theme init - saved theme:', savedTheme);
+    applyThemeMode(savedTheme);
 
     const btn = document.getElementById('themeToggleButton');
-    if (!btn) return;
+    if (!btn) {
+      console.warn('⚠️ Theme toggle button not found');
+      return;
+    }
+    
     btn.addEventListener('click', (e) => {
       e.preventDefault();
+      console.log('🖱️ Theme toggle button clicked');
       toggleTheme();
       animateButton();
     });

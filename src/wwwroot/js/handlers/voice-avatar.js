@@ -24,16 +24,17 @@ import {
     validateModelVoiceCompatibility,
     updateWelcomeMessageInput,
     autoResizeTextarea
-} from './ui-utils.js';
+} from '/js/ui/ui-utils.js';
 
 import { 
     DEFAULT_SETTINGS, 
     VOICE_MODELS, 
-    ITALIAN_VOICES, 
+    VOICES, 
     AUDIO_CONFIG 
-} from './config.js';
-import { getSavedTheme, applyThemeMode, toggleTheme as themeToggle, listenForExternalChanges } from './theme-sync.js';
-import { SettingsManager } from './modules/settings-manager.js';
+} from '../core/config.js';
+import { getSavedTheme, applyThemeMode, toggleTheme as themeToggle, listenForExternalChanges } from '/js/ui/theme-sync.js';
+import { SettingsManager } from '../modules/settings-manager.js';
+import { initHamburgerMenu } from '/js/ui/hamburger-menu.js';
 
 class VoiceAvatarApp {
     constructor() {
@@ -77,6 +78,7 @@ class VoiceAvatarApp {
         this.populateSettingsUI();
         this.initializeAvatarUI();
         this.setupEventListeners();
+        initHamburgerMenu();
         // Apply the saved theme on init and start listening for external changes
         try {
             applyThemeMode(getSavedTheme());
@@ -91,7 +93,7 @@ class VoiceAvatarApp {
         // Initial UI state
         this.updateMuteButtonState();
         
-        addTraceEntry('system', 'Voice Avatar initialized');
+        addTraceEntry('system', window.APP_RESOURCES?.VoiceAvatarInitialized || 'Voice Avatar initialized');
     }
 
     /**
@@ -100,44 +102,44 @@ class VoiceAvatarApp {
     getAvatarCatalog() {
         return {
             harry: {
-                displayName: 'Harry',
+                displayName: window.APP_RESOURCES?.AvatarHarry || 'Harry',
                 styles: {
-                    business: { label: 'Business', image: '/media/harry-business.png', gestures: ['wave', 'point'] },
-                    casual: { label: 'Casual', image: '/media/harry-casual.png', gestures: ['smile', 'nod'] }
+                    business: { label: window.APP_RESOURCES?.Business || 'Business', image: '/media/harry-business.png', gestures: ['wave', 'point'] },
+                    casual: { label: window.APP_RESOURCES?.Casual || 'Casual', image: '/media/harry-casual.png', gestures: ['smile', 'nod'] }
                 }
             },
             jeff: {
-                displayName: 'Jeff',
+                displayName: window.APP_RESOURCES?.AvatarJeff || 'Jeff',
                 styles: {
-                    business: { label: 'Business', image: '/media/jeff-business.png', gestures: ['wave', 'thumbs-up'] },
-                    casual: { label: 'Casual', image: '/media/jeff-casual.png', gestures: ['smile'] }
+                    business: { label: window.APP_RESOURCES?.Business || 'Business', image: '/media/jeff-business.png', gestures: ['wave', 'thumbs-up'] },
+                    casual: { label: window.APP_RESOURCES?.Casual || 'Casual', image: '/media/jeff-casual.png', gestures: ['smile'] }
                 }
             },
             lisa: {
-                displayName: 'Lisa',
+                displayName: window.APP_RESOURCES?.AvatarLisa || 'Lisa',
                 styles: {
-                    'casual-sitting': { label: 'Casual Sitting', image: '/media/lisa-casual-sitting.png', gestures: ['smile', 'nod'] },
-                    casual: { label: 'Casual', image: '/media/lisa-casual.png', gestures: ['wave'] }
+                    'casual-sitting': { label: window.APP_RESOURCES?.CasualSitting || 'Casual Sitting', image: '/media/lisa-casual-sitting.png', gestures: ['smile', 'nod'] },
+                    casual: { label: window.APP_RESOURCES?.Casual || 'Casual', image: '/media/lisa-casual.png', gestures: ['wave'] }
                 }
             },
             lori: {
-                displayName: 'Lori',
+                displayName: window.APP_RESOURCES?.AvatarLori || 'Lori',
                 styles: {
-                    casual: { label: 'Casual', image: '/media/lori-casual.png', gestures: ['smile', 'hand-raise'] }
+                    casual: { label: window.APP_RESOURCES?.Casual || 'Casual', image: '/media/lori-casual.png', gestures: ['smile', 'hand-raise'] }
                 }
             },
             max: {
-                displayName: 'Max',
+                displayName: window.APP_RESOURCES?.AvatarMax || 'Max',
                 styles: {
-                    business: { label: 'Business', image: '/media/max-business.png', gestures: ['point'] },
-                    casual: { label: 'Casual', image: '/media/max-casual.png', gestures: ['smile'] }
+                    business: { label: window.APP_RESOURCES?.Business || 'Business', image: '/media/max-business.png', gestures: ['point'] },
+                    casual: { label: window.APP_RESOURCES?.Casual || 'Casual', image: '/media/max-casual.png', gestures: ['smile'] }
                 }
             },
             meg: {
-                displayName: 'Meg',
+                displayName: window.APP_RESOURCES?.AvatarMeg || 'Meg',
                 styles: {
-                    business: { label: 'Business', image: '/media/meg-business.png', gestures: ['wave', 'smile'] },
-                    casual: { label: 'Casual', image: '/media/meg-casual.png', gestures: ['nod'] }
+                    business: { label: window.APP_RESOURCES?.Business || 'Business', image: '/media/meg-business.png', gestures: ['wave', 'smile'] },
+                    casual: { label: window.APP_RESOURCES?.Casual || 'Casual', image: '/media/meg-casual.png', gestures: ['nod'] }
                 }
             }
         };
@@ -206,7 +208,7 @@ class VoiceAvatarApp {
         gesturesList.innerHTML = '';
         const gestures = styleEntry?.gestures || [];
         if (gestures.length === 0) {
-            gesturesList.textContent = 'Nessun gesto disponibile per questa combinazione.';
+            gesturesList.textContent = window.APP_RESOURCES?.NoGesturesAvailable || 'No gestures available for this combination.';
         } else {
             const ul = document.createElement('ul');
             gestures.forEach(g => {
@@ -272,7 +274,18 @@ class VoiceAvatarApp {
             // Endpoint Test
             voiceLiveEndpointTest: document.getElementById('voiceLiveEndpointTest'),
             voiceLiveEndpointCopy: document.getElementById('voiceLiveEndpointCopy'),
-            voiceLiveEndpointFeedback: document.getElementById('voiceLiveEndpointFeedback')
+            voiceLiveEndpointFeedback: document.getElementById('voiceLiveEndpointFeedback'),
+
+            // Hamburger Menu
+            hamburgerButton: document.getElementById('hamburgerButton'),
+            leftPanel: document.getElementById('leftPanel'),
+            closeLeftPanel: document.getElementById('closeLeftPanel'),
+            lp_home: document.getElementById('lp_home'),
+            lp_settingsButton: document.getElementById('lp_settingsButton'),
+            lp_themeToggle: document.getElementById('lp_themeToggle'),
+            lp_chatToggle: document.getElementById('lp_chatToggle'),
+            lp_traceToggle: document.getElementById('lp_traceToggle'),
+            lp_logout: document.getElementById('lp_logout')
         };
     }
 
@@ -305,7 +318,7 @@ class VoiceAvatarApp {
         // Populate Voices
         if (this.elements.voiceSelect) {
             this.elements.voiceSelect.innerHTML = '';
-            ITALIAN_VOICES.forEach(voice => {
+            VOICES.forEach(voice => {
                 const option = document.createElement('option');
                 option.value = voice.id;
                 option.textContent = voice.displayName;
@@ -338,6 +351,25 @@ class VoiceAvatarApp {
         this.elements.traceToggle?.addEventListener('click', () => toggleTracePanel());
         this.elements.settingsButton?.addEventListener('click', () => showSettingsModal());
         this.elements.themeToggleButton?.addEventListener('click', () => this.toggleTheme());
+
+        // Hamburger Menu - Handled by initHamburgerMenu()
+        
+        // Left Panel Actions
+        this.elements.lp_settingsButton?.addEventListener('click', () => {
+            document.body.classList.remove('menu-open');
+            showSettingsModal();
+        });
+        
+        // lp_themeToggle is handled by initHamburgerMenu (proxies to themeToggleButton)
+
+        this.elements.lp_chatToggle?.addEventListener('click', () => {
+            document.body.classList.remove('menu-open');
+            toggleTranscriptPanel();
+        });
+        this.elements.lp_traceToggle?.addEventListener('click', () => {
+            document.body.classList.remove('menu-open');
+            toggleTracePanel();
+        });
 
         // Chat & Trace
         this.elements.sendTextButton?.addEventListener('click', () => this.sendTextMessage());
@@ -410,6 +442,9 @@ class VoiceAvatarApp {
         }
     }
 
+
+
+
     /**
      * Toggle Session (Start/Stop)
      */
@@ -425,11 +460,11 @@ class VoiceAvatarApp {
      * Start Session
      */
     async startSession() {
-        addTraceEntry('system', 'Starting avatar session...');
+        addTraceEntry('system', window.APP_RESOURCES?.StartingAvatarSession || 'Starting avatar session...');
         
         // Update UI
         this.showAvatarLoading(true);
-        this.updateAvatarStatus('connecting', 'Connessione...');
+        this.updateAvatarStatus('connecting', window.APP_RESOURCES?.Connecting || 'Connecting...');
         if (this.elements.startButton) {
             this.elements.startButton.classList.add('active');
             this.elements.startButton.innerHTML = `
@@ -443,10 +478,10 @@ class VoiceAvatarApp {
         try {
             await this.connectWebSocket();
             this.sendConfig();
-            addTraceEntry('system', 'Waiting for session to be ready...');
+            addTraceEntry('system', window.APP_RESOURCES?.WaitingForSessionToBeReady || 'Waiting for session to be ready...');
         } catch (error) {
-            addTraceEntry('error', 'Failed to start avatar: ' + error.message);
-            showToast('Errore avvio avatar: ' + error.message, 'error');
+            addTraceEntry('error', (window.APP_RESOURCES?.AvatarStartError || 'Failed to start avatar: {0}').replace('{0}', error.message));
+            showToast(`${window.APP_RESOURCES?.AvatarStartError || 'Avatar start error'}: ` + error.message, 'error');
             this.stopSession();
         }
     }
@@ -455,7 +490,7 @@ class VoiceAvatarApp {
      * Stop Session
      */
     stopSession() {
-        addTraceEntry('system', 'Stopping avatar...');
+        addTraceEntry('system', window.APP_RESOURCES?.StoppingAvatar || 'Stopping avatar...');
 
         // Close WebRTC
         if (this.state.peerConnection) {
@@ -496,7 +531,7 @@ class VoiceAvatarApp {
         this.elements.avatarOverlay?.classList.remove('hidden');
         this.elements.avatarPlaceholder?.classList.remove('hidden');
         this.elements.avatarLoading?.classList.add('hidden');
-        this.updateAvatarStatus('disconnected', 'Non connesso');
+        this.updateAvatarStatus('disconnected', window.APP_RESOURCES?.Disconnected || 'Disconnected');
 
         if (this.elements.startButton) {
             this.elements.startButton.classList.remove('active');
@@ -507,8 +542,8 @@ class VoiceAvatarApp {
             `; // Change back to Play icon
         }
 
-        addTraceEntry('system', 'Avatar stopped');
-        showToast('Sessione terminata', 'info');
+        addTraceEntry('system', window.APP_RESOURCES?.AvatarStopped || 'Avatar stopped');
+        showToast(window.APP_RESOURCES?.SessionEnded || 'Session ended', 'info');
     }
 
     /**
@@ -520,24 +555,24 @@ class VoiceAvatarApp {
             const host = window.location.host;
             const wsUrl = `${protocol}://${host}/avatar/ws`;
 
-            addTraceEntry('system', `Connecting to ${wsUrl}`);
+            addTraceEntry('system', (window.APP_RESOURCES?.ConnectingTo || 'Connecting to {0}').replace('{0}', wsUrl));
 
             this.state.websocket = new WebSocket(wsUrl);
             this.state.websocket.binaryType = 'arraybuffer';
 
             this.state.websocket.onopen = () => {
-                addTraceEntry('system', 'WebSocket connected');
+                addTraceEntry('system', window.APP_RESOURCES?.WebSocketConnected || 'WebSocket connected');
                 resolve();
             };
 
             this.state.websocket.onclose = (event) => {
-                addTraceEntry('system', `WebSocket closed: ${event.code}`);
+                addTraceEntry('system', (window.APP_RESOURCES?.WebSocketClosed || 'WebSocket closed: {0}').replace('{0}', event.code));
                 this.handleDisconnect();
             };
 
             this.state.websocket.onerror = (error) => {
-                addTraceEntry('error', 'WebSocket error');
-                reject(new Error('WebSocket connection failed'));
+                addTraceEntry('error', window.APP_RESOURCES?.WebSocketError || 'WebSocket error');
+                reject(new Error(window.APP_RESOURCES?.WebSocketConnectionFailed || 'WebSocket connection failed'));
             };
 
             this.state.websocket.onmessage = (e) => this.handleWebSocketMessage(e);
@@ -555,7 +590,7 @@ class VoiceAvatarApp {
                 const message = JSON.parse(event.data);
                 this.handleJsonMessage(message);
             } catch (e) {
-                addTraceEntry('error', 'Failed to parse message: ' + e.message);
+                addTraceEntry('error', (window.APP_RESOURCES?.FailedToParseMessage || 'Failed to parse message: {0}').replace('{0}', e.message));
             }
         }
     }
@@ -586,7 +621,7 @@ class VoiceAvatarApp {
                 this.handleError(message);
                 break;
             default:
-                addTraceEntry('system', `Received: ${kind}`);
+                addTraceEntry('system', (window.APP_RESOURCES?.ReceivedKind || 'Received: {0}').replace('{0}', kind));
         }
     }
 
@@ -597,11 +632,11 @@ class VoiceAvatarApp {
         const eventType = message.Event || message.event;
         const payload = message.Payload || message.payload;
 
-        addTraceEntry('system', `Session event: ${eventType}`);
+        addTraceEntry('system', (window.APP_RESOURCES?.SessionEvent || 'Session event: {0}').replace('{0}', eventType));
 
         switch (eventType) {
             case 'SessionConnected':
-                addTraceEntry('system', 'Session connected');
+                addTraceEntry('system', window.APP_RESOURCES?.SessionConnected || 'Session connected');
                 if (payload?.IceServers && Array.isArray(payload.IceServers)) {
                     this.state.avatarIceServers = payload.IceServers.map(server => ({
                         urls: server.urls,
@@ -616,26 +651,26 @@ class VoiceAvatarApp {
                 break;
             case 'SessionCreated':
                 this.state.sessionId = payload?.SessionId || payload?.sessionId;
-                this.updateAvatarStatus('connected', 'Connesso');
+                this.updateAvatarStatus('connected', window.APP_RESOURCES?.Connected || 'Connected');
                 break;
             case 'SessionDisconnected':
             case 'SessionClosed':
             case 'SessionEnded':
             case 'Disconnected':
-                this.updateAvatarStatus('disconnected', 'Disconnesso');
+                this.updateAvatarStatus('disconnected', window.APP_RESOURCES?.Disconnected || 'Disconnected');
                 break;
             case 'ResponseDone':
-                this.updateAvatarStatus('connected', 'Connesso');
+                this.updateAvatarStatus('connected', window.APP_RESOURCES?.Connected || 'Connected');
                 break;
             case 'SpeechStarted':
-                this.updateAvatarStatus('speaking', 'Parlando...');
+                this.updateAvatarStatus('speaking', window.APP_RESOURCES?.Speaking || 'Speaking...');
                 break;
             case 'SpeechStopped':
-                this.updateAvatarStatus('connected', 'Connesso');
+                this.updateAvatarStatus('connected', window.APP_RESOURCES?.Connected || 'Connected');
                 break;
             case 'Error':
-                const errorMsg = payload?.Message || payload?.message || 'Unknown error';
-                addTraceEntry('error', `Session error: ${errorMsg}`);
+                const errorMsg = payload?.Message || payload?.message || window.APP_RESOURCES?.UnknownError || 'Unknown error';
+                addTraceEntry('error', (window.APP_RESOURCES?.SessionError || 'Session error: {0}').replace('{0}', errorMsg));
                 showToast(errorMsg, 'error');
                 break;
         }
@@ -645,7 +680,7 @@ class VoiceAvatarApp {
      * Start WebRTC
      */
     async startAvatarWebRTC() {
-        addTraceEntry('system', 'Starting WebRTC connection...');
+        addTraceEntry('system', window.APP_RESOURCES?.StartingWebRtc || 'Starting WebRTC connection...');
 
         try {
             let iceServersConfig = this.state.avatarIceServers.length > 0 ? this.state.avatarIceServers : [
@@ -671,7 +706,7 @@ class VoiceAvatarApp {
                         }
                     }
                 } catch (e) {
-                    addTraceEntry('system', 'Using default STUN server');
+                    addTraceEntry('system', window.APP_RESOURCES?.UsingDefaultStun || 'Using default STUN server');
                 }
             }
 
@@ -686,7 +721,7 @@ class VoiceAvatarApp {
 
             this.state.peerConnection.ontrack = (e) => this.handleTrack(e);
             this.state.peerConnection.onconnectionstatechange = () => {
-                addTraceEntry('system', `WebRTC state: ${this.state.peerConnection.connectionState}`);
+                addTraceEntry('system', (window.APP_RESOURCES?.WebRtcState || 'WebRTC state: {0}').replace('{0}', this.state.peerConnection.connectionState));
                 if (this.state.peerConnection.connectionState === 'connected') {
                     this.onAvatarConnected();
                 } else if (this.state.peerConnection.connectionState === 'failed') {
@@ -701,7 +736,7 @@ class VoiceAvatarApp {
             await new Promise(resolve => setTimeout(resolve, 1000));
 
             const localSdp = this.state.peerConnection.localDescription?.sdp;
-            if (!localSdp) throw new Error('Failed to obtain local SDP');
+            if (!localSdp) throw new Error(window.APP_RESOURCES?.FailedToObtainLocalSdp || 'Failed to obtain local SDP');
 
             // Send SDP via WebSocket
             if (this.state.websocket && this.state.websocket.readyState === WebSocket.OPEN) {
@@ -709,11 +744,11 @@ class VoiceAvatarApp {
                     Kind: 'AvatarConnect',
                     Sdp: localSdp
                 }));
-                addTraceEntry('system', 'Sent SDP offer via WebSocket');
+                addTraceEntry('system', window.APP_RESOURCES?.SentSdpOffer || 'Sent SDP offer via WebSocket');
             }
 
         } catch (error) {
-            addTraceEntry('error', 'WebRTC error: ' + error.message);
+            addTraceEntry('error', (window.APP_RESOURCES?.WebRtcError || 'WebRTC error: {0}').replace('{0}', error.message));
             this.onAvatarAudioOnlyMode();
         }
     }
@@ -725,7 +760,7 @@ class VoiceAvatarApp {
         const sdp = message.Sdp || message.sdp;
         if (sdp && this.state.peerConnection) {
             await this.state.peerConnection.setRemoteDescription({ type: 'answer', sdp });
-            addTraceEntry('system', 'WebRTC handshake completed');
+            addTraceEntry('system', window.APP_RESOURCES?.WebRtcHandshakeCompleted || 'WebRTC handshake completed');
         }
     }
 
@@ -759,21 +794,21 @@ class VoiceAvatarApp {
     onAvatarConnected() {
         this.state.isAvatarConnected = true;
         this.showAvatarLoading(false);
-        this.updateAvatarStatus('connected', 'Connesso');
+        this.updateAvatarStatus('connected', window.APP_RESOURCES?.Connected || 'Connected');
         this.elements.avatarOverlay?.classList.add('hidden');
         this.startMicrophone();
-        showToast('Avatar connesso', 'success');
+        showToast(window.APP_RESOURCES?.AvatarConnected || 'Avatar connected', 'success');
     }
 
     /**
      * Audio Only Mode
      */
     onAvatarAudioOnlyMode() {
-        addTraceEntry('system', 'Entering audio-only mode');
+        addTraceEntry('system', window.APP_RESOURCES?.EnteringAudioOnlyMode || 'Entering audio-only mode');
         this.showAvatarLoading(false);
-        this.updateAvatarStatus('connected', 'Solo Audio');
+        this.updateAvatarStatus('connected', window.APP_RESOURCES?.AudioOnly || 'Audio Only');
         if (this.elements.avatarPlaceholder) {
-            this.elements.avatarPlaceholder.innerHTML = '<p>Modalità Solo Audio</p>';
+            this.elements.avatarPlaceholder.innerHTML = `<p>${window.APP_RESOURCES?.AudioOnlyMode || 'Audio Only Mode'}</p>`;
         }
         this.startMicrophone();
     }
@@ -813,11 +848,11 @@ class VoiceAvatarApp {
             
             this.state.isMuted = false;
             this.updateMuteButtonState();
-            addTraceEntry('system', 'Microphone started');
+            addTraceEntry('system', window.APP_RESOURCES?.MicrophoneStarted || 'Microphone started');
 
         } catch (error) {
-            addTraceEntry('error', 'Microphone error: ' + error.message);
-            showToast('Errore microfono', 'error');
+            addTraceEntry('error', (window.APP_RESOURCES?.MicrophoneError || 'Microphone error: {0}').replace('{0}', error.message));
+            showToast(window.APP_RESOURCES?.MicrophoneError || 'Microphone error', 'error');
         }
     }
 
@@ -846,9 +881,9 @@ class VoiceAvatarApp {
                 this.state.audioContext = null;
             }
 
-            addTraceEntry('system', 'Microphone stopped');
+            addTraceEntry('system', window.APP_RESOURCES?.MicrophoneStopped || 'Microphone stopped');
         } catch (error) {
-            addTraceEntry('error', 'Error stopping microphone: ' + error.message);
+            addTraceEntry('error', (window.APP_RESOURCES?.ErrorStoppingMicrophone || 'Error stopping microphone: {0}').replace('{0}', error.message));
         }
     }
 
@@ -858,7 +893,7 @@ class VoiceAvatarApp {
     toggleMute() {
         this.state.isMuted = !this.state.isMuted;
         this.updateMuteButtonState();
-        addTraceEntry('system', this.state.isMuted ? 'Microphone muted' : 'Microphone unmuted');
+        addTraceEntry('system', this.state.isMuted ? (window.APP_RESOURCES?.MicrophoneMuted || 'Microphone muted') : (window.APP_RESOURCES?.MicrophoneUnmuted || 'Microphone unmuted'));
     }
 
     /**
@@ -906,10 +941,10 @@ class VoiceAvatarApp {
             VoiceModelInstructions: this.state.settings.modelInstructions,
             AvatarCharacter: this.state.settings.avatarCharacter,
             AvatarStyle: this.state.settings.avatarStyle,
-            Locale: 'it-IT'
+            Locale: document.documentElement.lang || 'en-US'
         };
         this.state.websocket.send(JSON.stringify(config));
-        addTraceEntry('system', 'Configuration sent');
+        addTraceEntry('system', window.APP_RESOURCES?.ConfigurationSent || 'Configuration sent');
     }
 
     /**
@@ -920,7 +955,7 @@ class VoiceAvatarApp {
         if (!text) return;
 
         if (!this.state.websocket || this.state.websocket.readyState !== WebSocket.OPEN) {
-            showToast('Non connesso', 'error');
+            showToast(window.APP_RESOURCES?.NotConnected || 'Not connected', 'error');
             return;
         }
 
@@ -1040,7 +1075,7 @@ class VoiceAvatarApp {
      */
     handleDisconnect() {
         if (this.state.isAvatarConnected) {
-            addTraceEntry('system', 'Disconnected from server');
+            addTraceEntry('system', window.APP_RESOURCES?.DisconnectedFromServer || 'Disconnected from server');
             this.stopSession();
         }
     }
@@ -1049,7 +1084,7 @@ class VoiceAvatarApp {
      * Handle Error
      */
     handleError(message) {
-        const errorText = message.Message || message.message || 'Unknown error';
+        const errorText = message.Message || message.message || window.APP_RESOURCES?.UnknownError || 'Unknown error';
         addTraceEntry('error', errorText);
         showToast(errorText, 'error');
     }
@@ -1108,7 +1143,7 @@ class VoiceAvatarApp {
         this.state.settings.showToastNotifications = this.elements.toastNotificationsToggle?.checked;
 
         if (saveSettings(this.state.settings, 'VoiceAvatar')) {
-            showToast('Impostazioni salvate', 'success');
+            showToast(window.APP_RESOURCES?.SettingsSaved || 'Settings saved', 'success');
             hideSettingsModal();
         }
     }

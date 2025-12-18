@@ -6,10 +6,10 @@
  * - Main application module
  */
 
-import { wireFoundryUi } from '/js/foundry-agents.js';
+import { wireFoundryUi } from '/js/handlers/foundry-agents.js';
 
 // Initialize Foundry UI support
 wireFoundryUi().catch(err => console.error('Error initializing Foundry UI:', err));
 
 // Import main application module
-import '/js/app.js?v=1.0.3';
+import '/js/core/app.js?v=1.0.3';

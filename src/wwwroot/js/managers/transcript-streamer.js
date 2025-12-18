@@ -4,7 +4,7 @@
  * Uses audio_timestamp.delta events for word-level synchronization
  */
 
-import { markdownToHtml } from './ui-utils.js';
+import { markdownToHtml } from '../ui/ui-utils.js';
 
 export class TranscriptStreamer {
   constructor() {

@@ -2,7 +2,7 @@ async function fetchAgentsForProject(projectId) {
     try {
         const url = `/Api/FoundryAgents?projectId=${encodeURIComponent(projectId)}`;
         const resp = await fetch(url);
-        if (!resp.ok) throw new Error('Failed to fetch agents');
+        if (!resp.ok) throw new Error(window.APP_RESOURCES?.FailedToFetchAgents || 'Failed to fetch agents');
         const agents = await resp.json();
         return agents;
     } catch (err) {
@@ -24,7 +24,7 @@ export async function wireFoundryUi() {
         agents.forEach(a => {
             const opt = document.createElement('option');
             opt.value = a.id || a.Id || '';
-            opt.textContent = a.name || a.Name || 'Unnamed agent';
+            opt.textContent = a.name || a.Name || (window.APP_RESOURCES?.UnnamedAgent || 'Unnamed agent');
             agentSelect.appendChild(opt);
         });
     }

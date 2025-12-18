@@ -4,7 +4,7 @@
  * Manages the transcript panel: adding messages, clearing, toggling visibility
  */
 
-import { markdownToHtml } from './ui-utils.js';
+import { markdownToHtml } from '../ui/ui-utils.js';
 
 /**
  * Add a transcript entry to the transcript panel

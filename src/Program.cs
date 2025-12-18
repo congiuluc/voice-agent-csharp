@@ -5,6 +5,8 @@ using VoiceAgentCSharp.Features.Monitoring;
 using VoiceAgentCSharp.Features.Monitoring.Repositories;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Localization;
+using Microsoft.Extensions.Localization;
 using Microsoft.ApplicationInsights;
 using Microsoft.ApplicationInsights.Extensibility;
 using Serilog;
@@ -58,6 +60,8 @@ builder.AddServiceDefaults();
 builder.Host.UseSerilog();
 
 // Add services to the container
+builder.Services.AddLocalization();
+
 builder.Services.AddRazorPages(options =>
 {
     options.Conventions.AuthorizeFolder("/");
@@ -65,7 +69,9 @@ builder.Services.AddRazorPages(options =>
     options.Conventions.AllowAnonymousToPage("/Logout");
     options.Conventions.AllowAnonymousToPage("/Error");
     options.Conventions.AuthorizeFolder("/Admin", "Admin");
-});
+})
+.AddViewLocalization()
+.AddDataAnnotationsLocalization();
 
 // Add controllers for Admin API
 builder.Services.AddControllers();
@@ -150,6 +156,15 @@ builder.Services.AddSingleton<CallMonitoringService>();
 // Note: Serilog configured via builder.Host.UseSerilog(); default providers cleared by Serilog host
 
 var app = builder.Build();
+
+// Configure localization
+var supportedCultures = new[] { "en-US", "it-IT" };
+var localizationOptions = new RequestLocalizationOptions()
+    .SetDefaultCulture(supportedCultures[0])
+    .AddSupportedCultures(supportedCultures)
+    .AddSupportedUICultures(supportedCultures);
+
+app.UseRequestLocalization(localizationOptions);
 
 // Initialize pricing service
 try

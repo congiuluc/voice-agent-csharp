@@ -5,8 +5,8 @@
  * and audio resampling for the voice agent application.
  */
 
-import { AUDIO_CONFIG } from './config.js';
-import { showToast } from './ui-utils.js';
+import { AUDIO_CONFIG } from '../core/config.js';
+import { showToast } from '../ui/ui-utils.js';
 
 /**
  * AudioHandler class
@@ -71,7 +71,8 @@ export class AudioHandler {
       
       // Load audio worklet module
       try {
-        await this.audioContext.audioWorklet.addModule('js/audio-processor.js');
+        const processorUrl = new URL('./audio-processor.js', import.meta.url).href;
+        await this.audioContext.audioWorklet.addModule(processorUrl);
       } catch (e) {
         console.error('Failed to load audio processor:', e);
         throw e;
@@ -106,7 +107,7 @@ export class AudioHandler {
       
     } catch (error) {
       console.error('Error starting microphone:', error);
-      showToast('Impossibile accedere al microfono', 'error');
+      showToast(window.APP_RESOURCES?.MicrophoneAccessDenied || 'Unable to access microphone', 'error');
       throw error;
     }
   }

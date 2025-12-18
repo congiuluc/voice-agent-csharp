@@ -1,8 +1,10 @@
 @page
 @model VoiceAgentCSharp.Pages.LogoutModel
+@using Microsoft.Extensions.Localization
+@inject IStringLocalizer<SharedResource> Localizer
 @{
-    ViewData["Title"] = "Logout";
+    ViewData["Title"] = Localizer["LogoutTitle"];
 }
-<h1>Logout</h1>
-<p>You have been logged out.</p>
-<a href="/Login">Login again</a>
+<h1>@Localizer["LogoutTitle"]</h1>
+<p>@Localizer["LogoutMessage"]</p>
+<a href="/Login">@Localizer["LoginAgain"]</a>

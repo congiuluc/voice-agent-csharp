@@ -103,10 +103,10 @@ function updateTokenConsumptionCharts(modelData) {
             type: 'bar',
             data: {
                 // labels shown to users
-                labels: models.length > 0 ? models : ['No Data'],
+                labels: models.length > 0 ? models : [window.APP_RESOURCES?.NoData || 'No Data'],
                 datasets: [
                     {
-                        label: 'Input Tokens',
+                        label: window.APP_RESOURCES?.InputTokens || 'Input Tokens',
                         data: inputTokens,
                         backgroundColor: colors.primary,
                         borderColor: colors.primary,
@@ -114,7 +114,7 @@ function updateTokenConsumptionCharts(modelData) {
                         stack: 'tokenStack'
                     },
                     {
-                        label: 'Output Tokens',
+                        label: window.APP_RESOURCES?.OutputTokens || 'Output Tokens',
                         data: outputTokens,
                         backgroundColor: colors.secondary,
                         borderColor: colors.secondary,
@@ -122,7 +122,7 @@ function updateTokenConsumptionCharts(modelData) {
                         stack: 'tokenStack'
                     },
                     {
-                        label: 'Cached Tokens',
+                        label: window.APP_RESOURCES?.CacheTokens || 'Cached Tokens',
                         data: cachedTokens,
                         backgroundColor: colors.success,
                         borderColor: colors.success,
@@ -162,7 +162,7 @@ function updateTokenConsumptionCharts(modelData) {
                         stacked: true,
                         ticks: { color: colors.text },
                         grid: { color: colors.grid },
-                        title: { display: true, text: 'Tokens', color: colors.text }
+                        title: { display: true, text: window.APP_RESOURCES?.TokensLabel || 'Tokens', color: colors.text }
                     }
                 },
                 plugins: {
@@ -220,10 +220,10 @@ function updateTokenConsumptionCharts(modelData) {
         costDistributionChart = new Chart(costCtx, {
             type: 'bar',
             data: {
-                labels: models.length > 0 ? models : ['No Data'],
+                labels: models.length > 0 ? models : [window.APP_RESOURCES?.NoData || 'No Data'],
                 datasets: [
                     {
-                        label: 'Input Cost ($)',
+                        label: window.APP_RESOURCES?.InputCostChart || 'Input Cost ($)',
                         data: inputCosts,
                         backgroundColor: colors.primary,
                         borderColor: colors.primary,
@@ -231,7 +231,7 @@ function updateTokenConsumptionCharts(modelData) {
                         stack: 'costStack'
                     },
                     {
-                        label: 'Output Cost ($)',
+                        label: window.APP_RESOURCES?.OutputCostChart || 'Output Cost ($)',
                         data: outputCosts,
                         backgroundColor: colors.secondary,
                         borderColor: colors.secondary,
@@ -239,7 +239,7 @@ function updateTokenConsumptionCharts(modelData) {
                         stack: 'costStack'
                     },
                     {
-                        label: 'Cached Cost ($)',
+                        label: window.APP_RESOURCES?.CachedCostChart || 'Cached Cost ($)',
                         data: cachedCosts,
                         backgroundColor: colors.success,
                         borderColor: colors.success,
@@ -278,7 +278,7 @@ function updateTokenConsumptionCharts(modelData) {
                         stacked: true,
                         ticks: { color: colors.text },
                         grid: { color: colors.grid },
-                        title: { display: true, text: 'Cost ($)', color: colors.text }
+                        title: { display: true, text: window.APP_RESOURCES?.CostLabel || 'Cost ($)', color: colors.text }
                     }
                 },
                 plugins: {
@@ -351,13 +351,13 @@ async function reloadPricing() {
         });
 
         if (response.ok) {
-            showToast('Prezzi ricaricati con successo!', 'success');
+            showToast(window.APP_RESOURCES?.PriceReloadedSuccessfully || 'Prices reloaded successfully!', 'success');
             setTimeout(() => location.reload(), 1000);
         } else {
-            showToast('Errore nel ricaricamento dei prezzi', 'error');
+            showToast(window.APP_RESOURCES?.PriceReloadError || 'Error reloading prices', 'error');
         }
     } catch (error) {
-        showToast('Errore: ' + error.message, 'error');
+        showToast(window.APP_RESOURCES?.Error || 'Error' + ': ' + error.message, 'error');
     }
 }
 
@@ -392,18 +392,21 @@ function openPricingEditModal(row) {
         modal.className = 'pricing-modal';
         modal.innerHTML = `
             <div class="modal-content">
-                <h3>Modifica Prezzo - <span id="modalModelName"></span></h3>
-                <div class="modal-row"><label>Input ($):</label><input id="modalInput" type="number" step="0.0001"></div>
-                <div class="modal-row"><label>Output ($):</label><input id="modalOutput" type="number" step="0.0001"></div>
-                <div class="modal-row"><label>Cached ($):</label><input id="modalCached" type="number" step="0.0001"></div>
-                <div class="modal-row"><label>Avatar ($/min):</label><input id="modalAvatar" type="number" step="0.01"></div>
-                <div class="modal-row"><label>TTS ($/1M chars):</label><input id="modalTts" type="number" step="0.01"></div>
-                <div class="modal-row"><label>Units:</label>
-                    <select id="modalUnits"><option value="per1k">Per 1K tokens</option><option value="per1m">Per 1M tokens</option></select>
+                <h3>${window.APP_RESOURCES?.EditPricing || 'Edit Pricing'} - <span id="modalModelName"></span></h3>
+                <div class="modal-row"><label>${window.APP_RESOURCES?.InputCostLabel || 'Input ($):'}</label><input id="modalInput" type="number" step="0.0001"></div>
+                <div class="modal-row"><label>${window.APP_RESOURCES?.OutputCostLabel || 'Output ($):'}</label><input id="modalOutput" type="number" step="0.0001"></div>
+                <div class="modal-row"><label>${window.APP_RESOURCES?.CachedCostLabel || 'Cached ($):'}</label><input id="modalCached" type="number" step="0.0001"></div>
+                <div class="modal-row"><label>${window.APP_RESOURCES?.AvatarCostLabel || 'Avatar ($/min):'}</label><input id="modalAvatar" type="number" step="0.01"></div>
+                <div class="modal-row"><label>${window.APP_RESOURCES?.TtsCostLabel || 'TTS ($/1M chars):'}</label><input id="modalTts" type="number" step="0.01"></div>
+                <div class="modal-row"><label>${window.APP_RESOURCES?.Units || 'Units:'}</label>
+                    <select id="modalUnits">
+                        <option value="per1k">${window.APP_RESOURCES?.Per1KTokens || 'Per 1K tokens'}</option>
+                        <option value="per1m">${window.APP_RESOURCES?.Per1MTokens || 'Per 1M tokens'}</option>
+                    </select>
                 </div>
                 <div class="modal-actions">
-                    <button id="modalSave">Save</button>
-                    <button id="modalCancel">Cancel</button>
+                    <button id="modalSave">${window.APP_RESOURCES?.Save || 'Save'}</button>
+                    <button id="modalCancel">${window.APP_RESOURCES?.Cancel || 'Cancel'}</button>
                 </div>
                 <div id="modalError" class="modal-error" style="display:none;color:var(--color-danger);"></div>
             </div>
@@ -432,7 +435,7 @@ function openPricingEditModal(row) {
 
         // Validation: ensure non-negative
         if (input < 0 || output < 0 || cached < 0) {
-            showModalError('Values must be non-negative');
+            showModalError(window.APP_RESOURCES?.ValuesMustBeNonNegative || 'Values must be non-negative');
             return;
         }
 
@@ -502,14 +505,15 @@ function animateNumber(element, newValue) {
     const stepDuration = duration / steps;
     
     let step = 0;
+    const lang = document.documentElement.lang || 'en-US';
     const interval = setInterval(() => {
         step++;
         const value = Math.round(currentValue + (stepValue * step));
-        element.textContent = value.toLocaleString();
+        element.textContent = value.toLocaleString(lang);
         
         if (step >= steps) {
             clearInterval(interval);
-            element.textContent = newValue.toLocaleString();
+            element.textContent = newValue.toLocaleString(lang);
         }
     }, stepDuration);
 }
@@ -534,9 +538,10 @@ async function fetchMetrics() {
         const totalCostElement = document.getElementById('totalCost');
         if (totalCostElement) {
             const costValue = data.totalEstimatedCost || 0;
-            const formattedCost = costValue.toLocaleString('it-IT', { 
+            const lang = document.documentElement.lang || 'en-US';
+            const formattedCost = costValue.toLocaleString(lang, { 
                 style: 'currency', 
-                currency: 'EUR',
+                currency: 'USD',
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2
             });
@@ -565,7 +570,8 @@ async function fetchMetrics() {
         const lastUpdate = document.getElementById('lastUpdate');
         if (lastUpdate) {
             const time = new Date(data.timestamp);
-            lastUpdate.textContent = time.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            const lang = document.documentElement.lang || 'en-US';
+            lastUpdate.textContent = time.toLocaleTimeString(lang, { hour: '2-digit', minute: '2-digit', second: '2-digit' });
         }
         
     } catch (error) {
@@ -582,7 +588,7 @@ function updateUsedModels(models) {
         grid.innerHTML = `
             <div class="no-models">
                 <svg class="no-models-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="17" y1="11" x2="23" y2="11"/></svg>
-                <span>No active models</span>
+                <span>${window.APP_RESOURCES?.NoActiveModels || 'No active models'}</span>
             </div>
         `;
         return;
@@ -604,7 +610,7 @@ function updateTokenConsumptionByModelUI(tokenConsumptionByModel) {
     if (!tokenConsumptionByModel || tokenConsumptionByModel.length === 0) {
         container.innerHTML = `
             <div class="no-data-message">
-                <p>Nessun consumo di token registrato</p>
+                <p>${window.APP_RESOURCES?.NoTokenConsumptionRecorded || 'No token consumption recorded'}</p>
             </div>
         `;
         return;
@@ -616,23 +622,25 @@ function updateTokenConsumptionByModelUI(tokenConsumptionByModel) {
     container.innerHTML = `
         <div class="token-consumption-table">
             <div class="table-header">
-                <div class="column model-col">Modello</div>
-                <div class="column tokens-col">Token Input</div>
-                <div class="column tokens-col">Token Output</div>
-                <div class="column tokens-col">Token Cache</div>
-                <div class="column tokens-col">Totale</div>
-                <div class="column sessions-col">Sessioni</div>
+                <div class="column model-col">${window.APP_RESOURCES?.Model || 'Model'}</div>
+                <div class="column tokens-col">${window.APP_RESOURCES?.InputTokens || 'Input Tokens'}</div>
+                <div class="column tokens-col">${window.APP_RESOURCES?.OutputTokens || 'Output Tokens'}</div>
+                <div class="column tokens-col">${window.APP_RESOURCES?.CacheTokens || 'Cache Tokens'}</div>
+                <div class="column tokens-col">${window.APP_RESOURCES?.Total || 'Total'}</div>
+                <div class="column sessions-col">${window.APP_RESOURCES?.Sessions || 'Sessions'}</div>
             </div>
-            ${sortedModels.map(model => `
+            ${sortedModels.map(model => {
+                const lang = document.documentElement.lang || 'en-US';
+                return `
                 <div class="table-row">
                     <div class="column model-col"><strong>${escapeHtml(model.model)}</strong></div>
-                    <div class="column tokens-col">${(model.inputTokens).toLocaleString('it-IT')}</div>
-                    <div class="column tokens-col">${(model.outputTokens).toLocaleString('it-IT')}</div>
-                    <div class="column tokens-col">${(model.cachedTokens).toLocaleString('it-IT')}</div>
-                    <div class="column tokens-col"><strong>${(model.totalTokens).toLocaleString('it-IT')}</strong></div>
+                    <div class="column tokens-col">${(model.inputTokens).toLocaleString(lang)}</div>
+                    <div class="column tokens-col">${(model.outputTokens).toLocaleString(lang)}</div>
+                    <div class="column tokens-col">${(model.cachedTokens).toLocaleString(lang)}</div>
+                    <div class="column tokens-col"><strong>${(model.totalTokens).toLocaleString(lang)}</strong></div>
                     <div class="column sessions-col">${model.sessionCount}</div>
                 </div>
-            `).join('')}
+            `}).join('')}
         </div>
     `;
 }

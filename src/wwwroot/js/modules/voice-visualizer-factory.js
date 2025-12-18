@@ -8,13 +8,15 @@
 export class VoiceVisualizerFactory {
   // Available visualizer types and their module paths
   static visualizerMap = {
-    'wave': 'voice-visualizer-wave.js',
-    'cardio': 'voice-visualizer-cardio.js',
-    'vortex': 'voice-visualizer-vortex.js',
-    'lines': 'voice-visualizer-lines.js',
-    'holographic': 'voice-visualizer-holographic.js',
-    'tesseract': 'voice-visualizer-tesseract.js',
-    'cortana': 'voice-visualizer-cortana.js'
+    'oscilloscope':'visualizers/voice-visualizer-oscilloscope.js',
+    'wave': 'visualizers/voice-visualizer-wave.js',
+    'cardio': 'visualizers/voice-visualizer-cardio.js',
+    'vortex': 'visualizers/voice-visualizer-vortex.js',
+    'lines': 'visualizers/voice-visualizer-lines.js',
+    'holographic': 'visualizers/voice-visualizer-holographic.js',
+    'tesseract': 'visualizers/voice-visualizer-tesseract.js',
+    'cortana': 'visualizers/voice-visualizer-cortana.js',
+    'equalizer': 'visualizers/voice-visualizer-equalizer.js'
   };
 
   /**
@@ -29,7 +31,7 @@ export class VoiceVisualizerFactory {
     
     if (!modulePath) {
       console.warn(`[VoiceVisualizerFactory] Unknown visualizer type: ${type}, falling back to wave`);
-      return this.createVisualizer('wave', canvas);
+      return this.createVisualizer('oscilloscope', canvas);
     }
 
     try {
@@ -37,9 +39,9 @@ export class VoiceVisualizerFactory {
       return new module.VoiceVisualizer(canvas);
     } catch (error) {
       console.error(`[VoiceVisualizerFactory] Error loading visualizer "${type}":`, error);
-      // Fallback to wave visualizer
-      if (type !== 'wave') {
-        return this.createVisualizer('wave', canvas);
+      // Fallback to oscilloscope visualizer
+      if (type !== 'oscilloscope') {
+        return this.createVisualizer('oscilloscope', canvas);
       }
       throw error;
     }

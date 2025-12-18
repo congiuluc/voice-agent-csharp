@@ -5,9 +5,9 @@
  * and communication with the voice agent server.
  */
 
-import { showToast, addTranscript, updateStatus, addTraceEntry, showMicMessage } from './ui-utils.js';
-import { consumptionTracker } from './consumption-tracker.js';
-import { transcriptStreamer } from './transcript-streamer.js';
+import { showToast, addTranscript, updateStatus, addTraceEntry, showMicMessage } from '../ui/ui-utils.js';
+import { consumptionTracker } from '../managers/consumption-tracker.js';
+import { transcriptStreamer } from '../managers/transcript-streamer.js';
 
 /**
  * WebSocketHandler class
@@ -57,7 +57,7 @@ export class WebSocketHandler {
         this.socket.onopen = () => {
           console.log('WebSocket connected');
           this.isConnected = true;
-          updateStatus('Connesso', 'connected');
+          updateStatus(window.APP_RESOURCES?.Connected || 'Connected', 'connected');
           this.callbacks.onOpen();
           resolve();
         };
@@ -71,7 +71,7 @@ export class WebSocketHandler {
         this.socket.onclose = () => {
           console.log('WebSocket disconnected');
           this.isConnected = false;
-          updateStatus('Disconnesso', 'disconnected');
+          updateStatus(window.APP_RESOURCES?.Disconnected || 'Disconnected', 'disconnected');
           consumptionTracker.handleSessionDisconnected();
           consumptionTracker.stopDurationTimer();
           this.callbacks.onClose();
@@ -80,14 +80,14 @@ export class WebSocketHandler {
         // Connection error
         this.socket.onerror = (error) => {
           console.error('WebSocket error:', error);
-          showToast('Errore di connessione WebSocket', 'error');
+          showToast(window.APP_RESOURCES?.WebSocketConnectionError || 'WebSocket connection error', 'error');
           this.callbacks.onError(error);
           reject(error);
         };
         
       } catch (error) {
         console.error('Error creating WebSocket:', error);
-        showToast('Impossibile connettersi al server', 'error');
+        showToast(window.APP_RESOURCES?.ServerConnectionFailed || 'Cannot connect to server', 'error');
         reject(error);
       }
     });
@@ -128,7 +128,7 @@ export class WebSocketHandler {
         // Model instructions / system prompt
         VoiceModelInstructions: settings.modelInstructions || '',
         // Locale for voice recognition and synthesis
-        Locale: settings.locale || settings.language || 'it-IT',
+        Locale: settings.locale || settings.language || 'en-US',
         // Microsoft Foundry Agent Service parameters
         FoundryAgentId: settings.foundryAgentId || '',
         FoundryProjectName: settings.foundryProjectName || ''
@@ -140,7 +140,7 @@ export class WebSocketHandler {
       console.log('Config sent:', configMessage);
     } catch (error) {
       console.error('Error sending config:', error);
-      showToast('Errore durante l\'invio della configurazione', 'warning');
+      showToast(window.APP_RESOURCES?.ConfigurationSendError || 'Error sending configuration', 'warning');
     }
   }
   
@@ -215,7 +215,7 @@ export class WebSocketHandler {
     }
     else {
       console.warn('Unknown message type:', typeof event.data);
-      showToast('Tipo di messaggio sconosciuto ricevuto', 'warning');
+      showToast(window.APP_RESOURCES?.UnknownMessageTypeReceived || 'Unknown message type received', 'warning');
     }
   }
   
@@ -277,11 +277,11 @@ export class WebSocketHandler {
           
         default:
           console.warn('Unknown message kind:', messageKind);
-          showToast(`Messaggio sconosciuto: ${messageKind}`, 'warning');
+          showToast(`${window.APP_RESOURCES?.UnknownMessage || 'Unknown message'}: ${messageKind}`, 'warning');
       }
     } catch (error) {
       console.error('Error parsing JSON message:', error, 'Message was:', jsonString);
-      showToast('Errore durante l\'elaborazione del messaggio', 'warning');
+      showToast(window.APP_RESOURCES?.MessageProcessingError || 'Error processing message', 'warning');
     }
   }
 
@@ -360,7 +360,7 @@ export class WebSocketHandler {
         consumptionTracker.handleSessionCreated(payload);
         consumptionTracker.startDurationTimer();
         if (payload && payload.SessionId) {
-          updateStatus(`Session: ${payload.SessionId.substring(0, 8)}...`, 'connected');
+          updateStatus((window.APP_RESOURCES?.SessionId || 'Session: {0}').replace('{0}', payload.SessionId.substring(0, 8)), 'connected');
         }
       }
       
@@ -373,18 +373,18 @@ export class WebSocketHandler {
       if (eventType === 'SessionDisconnected' || eventType === 'SessionClosed' || eventType === 'SessionEnded' || eventType === 'Disconnected') {
         consumptionTracker.handleSessionDisconnected();
         consumptionTracker.stopDurationTimer();
-        updateStatus('Disconnesso', 'disconnected');
+        updateStatus(window.APP_RESOURCES?.Disconnected || 'Disconnected', 'disconnected');
       }
       
       // Track response.created event
       if (eventType === 'ResponseCreated' || eventType === 'response.created') {
         consumptionTracker.handleResponseCreated(payload);
-        updateStatus('Generazione risposta...', 'connected');
+        updateStatus(window.APP_RESOURCES?.GeneratingResponse || 'Generating response...', 'connected');
       }
 
       // Track response.done event with token usage
       if (eventType === 'ResponseDone' || eventType === 'response.done') {
-        updateStatus('Sessione attiva', 'connected');
+        updateStatus(window.APP_RESOURCES?.SessionActive || 'Session active', 'connected');
         
         // Update consumption tracker with response done data
         consumptionTracker.handleResponseDone(payload);
@@ -411,28 +411,28 @@ export class WebSocketHandler {
          
       // Show user-visible info/error messages under mic for certain events
       if (eventType === 'SessionError' || eventType === 'Error' || eventType === 'error') {
-        const msg = (payload && payload.Message) ? payload.Message : (payload && payload.Error) ? payload.Error : 'Errore di sessione';
+        const msg = (payload && payload.Message) ? payload.Message : (payload && payload.Error) ? payload.Error : (window.APP_RESOURCES?.SessionError || 'Session error');
         showMicMessage('error', msg, 6000);
       }
 
       if (eventType === 'SessionInfo' || eventType === 'Info') {
-        const msg = (payload && payload.Message) ? payload.Message : (payload && payload.Info) ? payload.Info : 'Informazione';
+        const msg = (payload && payload.Message) ? payload.Message : (payload && payload.Info) ? payload.Info : (window.APP_RESOURCES?.Information || 'Information');
         showMicMessage('info', msg, 4500);
       }
 
       // Update status for speech events and track audio duration
       if (eventType === 'SpeechStarted' || eventType === 'input_audio_buffer.speech_started') {
-        updateStatus('Utente parla...', 'speaking');
+        updateStatus(window.APP_RESOURCES?.UserSpeaking || 'User speaking...', 'speaking');
         consumptionTracker.handleInputAudioSpeechStarted(payload);
       }
 
       if (eventType === 'SpeechStopped' || eventType === 'input_audio_buffer.speech_stopped') {
-        updateStatus('Elaborazione...', 'connected');
+        updateStatus(window.APP_RESOURCES?.Processing || 'Processing...', 'connected');
         consumptionTracker.handleInputAudioSpeechStopped(payload);
       }
 
       if (eventType === 'ResponseAudioDelta' || eventType === 'response.audio.delta') {
-        updateStatus('Assistente parla...', 'speaking');
+        updateStatus(window.APP_RESOURCES?.AssistantSpeaking || 'Assistant speaking...', 'speaking');
         consumptionTracker.handleOutputAudioDelta(payload);
       }
 
@@ -480,7 +480,7 @@ export class WebSocketHandler {
    * @param {Object} message - Error message object
    */
   handleError(message) {
-    const errorText = message.message || message.Message || message.error || message.Error || 'Errore sconosciuto dal server';
+    const errorText = message.message || message.Message || message.error || message.Error || 'Unknown server error';
     console.error('Server error:', errorText);
     showToast(errorText, 'error');
     

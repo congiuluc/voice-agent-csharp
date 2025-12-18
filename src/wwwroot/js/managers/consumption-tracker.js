@@ -5,10 +5,10 @@
  * Provides real-time updates to the consumption dashboard.
  */
 
-import { PricingManager } from './modules/pricing-manager.js';
-import { ConsumptionFormatter } from './modules/consumption-formatter.js';
-import { ConsumptionUIRenderer } from './modules/consumption-ui-renderer.js';
-import { SettingsManager } from './modules/settings-manager.js';
+import { PricingManager } from '../modules/pricing-manager.js';
+import { ConsumptionFormatter } from '../modules/consumption-formatter.js';
+import { ConsumptionUIRenderer } from '../modules/consumption-ui-renderer.js';
+import { SettingsManager } from '../modules/settings-manager.js';
 
 /**
  * ConsumptionTracker class
@@ -154,30 +154,31 @@ export class ConsumptionTracker {
    * Get the HTML structure for the dashboard
    */
   getDashboardHTML() {
+    const r = window.APP_RESOURCES || {};
     return `
       <div class="consumption-header">
-        <h3>${ConsumptionTracker.ICONS.dashboard} Consumption Dashboard</h3>
-        <button id="closeDashboard" class="close-dashboard-btn" title="Chiudi dashboard">×</button>
+        <h3>${ConsumptionTracker.ICONS.dashboard} ${r.ConsumptionDashboard || 'Consumption Dashboard'}</h3>
+        <button id="closeDashboard" class="close-dashboard-btn" title="${r.CloseDashboard || 'Chiudi dashboard'}">×</button>
       </div>
       <div class="consumption-body">
         <!-- Session Section -->
         <div class="consumption-section">
-          <h4>${ConsumptionTracker.ICONS.session} Session</h4>
+          <h4>${ConsumptionTracker.ICONS.session} ${r.Session || 'Session'}</h4>
           <div class="consumption-grid">
             <div class="consumption-item">
-              <span class="consumption-label">Session ID:</span>
+              <span class="consumption-label">${r.SessionID || 'Session ID:'}</span>
               <span class="consumption-value" id="dashSessionId">-</span>
             </div>
             <div class="consumption-item">
-              <span class="consumption-label">Model:</span>
+              <span class="consumption-label">${r.Model || 'Model:'}</span>
               <span class="consumption-value" id="dashSessionModel">-</span>
             </div>
             <div class="consumption-item">
-              <span class="consumption-label">Status:</span>
-              <span class="consumption-value consumption-status" id="dashSessionStatus">Disconnected</span>
+              <span class="consumption-label">${r.Status || 'Status:'}</span>
+              <span class="consumption-value consumption-status" id="dashSessionStatus">${r.Disconnected || 'Disconnected'}</span>
             </div>
             <div class="consumption-item">
-              <span class="consumption-label">Duration:</span>
+              <span class="consumption-label">${r.Duration || 'Duration:'}</span>
               <span class="consumption-value" id="dashSessionDuration">-</span>
             </div>
           </div>
@@ -185,18 +186,18 @@ export class ConsumptionTracker {
         
         <!-- Response Section -->
         <div class="consumption-section">
-          <h4>${ConsumptionTracker.ICONS.responses} Responses</h4>
+          <h4>${ConsumptionTracker.ICONS.responses} ${r.Responses || 'Responses'}</h4>
           <div class="consumption-grid">
             <div class="consumption-item">
-              <span class="consumption-label">Response Count:</span>
+              <span class="consumption-label">${r.ResponseCount || 'Response Count:'}</span>
               <span class="consumption-value consumption-count" id="dashResponseCount">0</span>
             </div>
             <div class="consumption-item">
-              <span class="consumption-label">Current Response:</span>
+              <span class="consumption-label">${r.CurrentResponse || 'Current Response:'}</span>
               <span class="consumption-value" id="dashCurrentResponse">-</span>
             </div>
             <div class="consumption-item">
-              <span class="consumption-label">Response Status:</span>
+              <span class="consumption-label">${r.ResponseStatus || 'Response Status:'}</span>
               <span class="consumption-value" id="dashResponseStatus">-</span>
             </div>
           </div>
@@ -204,18 +205,18 @@ export class ConsumptionTracker {
         
         <!-- Token Usage Section -->
         <div class="consumption-section">
-          <h4>${ConsumptionTracker.ICONS.tokens} Token Usage</h4>
+          <h4>${ConsumptionTracker.ICONS.tokens} ${r.TokenUsage || 'Token Usage'}</h4>
           <div class="consumption-grid tokens-grid">
             <div class="consumption-item token-item input">
-              <span class="consumption-label">Input Tokens:</span>
+              <span class="consumption-label">${r.InputTokens || 'Input Tokens:'}</span>
               <span class="consumption-value consumption-tokens" id="dashInputTokens">0</span>
             </div>
             <div class="consumption-item token-item output">
-              <span class="consumption-label">Output Tokens:</span>
+              <span class="consumption-label">${r.OutputTokens || 'Output Tokens:'}</span>
               <span class="consumption-value consumption-tokens" id="dashOutputTokens">0</span>
             </div>
             <div class="consumption-item token-item total">
-              <span class="consumption-label">Total Tokens:</span>
+              <span class="consumption-label">${r.TotalTokens || 'Total Tokens:'}</span>
               <span class="consumption-value consumption-tokens consumption-total" id="dashTotalTokens">0</span>
             </div>
           </div>
@@ -223,18 +224,18 @@ export class ConsumptionTracker {
           <!-- Token Details -->
           <div class="token-details">
             <div class="token-detail-section">
-              <h5>Input Details</h5>
+              <h5>${r.InputDetails || 'Input Details'}</h5>
               <div class="token-detail-grid">
-                <span>Text: <strong id="dashInputText">0</strong></span>
-                <span>Audio: <strong id="dashInputAudio">0</strong></span>
-                <span>Cached: <strong id="dashInputCached">0</strong></span>
+                <span>${r.Text || 'Text:'} <strong id="dashInputText">0</strong></span>
+                <span>${r.Audio || 'Audio:'} <strong id="dashInputAudio">0</strong></span>
+                <span>${r.Cached || 'Cached:'} <strong id="dashInputCached">0</strong></span>
               </div>
             </div>
             <div class="token-detail-section">
-              <h5>Output Details</h5>
+              <h5>${r.OutputDetails || 'Output Details'}</h5>
               <div class="token-detail-grid">
-                <span>Text: <strong id="dashOutputText">0</strong></span>
-                <span>Audio: <strong id="dashOutputAudio">0</strong></span>
+                <span>${r.Text || 'Text:'} <strong id="dashOutputText">0</strong></span>
+                <span>${r.Audio || 'Audio:'} <strong id="dashOutputAudio">0</strong></span>
               </div>
             </div>
           </div>
@@ -242,44 +243,44 @@ export class ConsumptionTracker {
         
         <!-- Audio Duration Section -->
         <div class="consumption-section">
-          <h4>${ConsumptionTracker.ICONS.audio} Audio Duration</h4>
+          <h4>${ConsumptionTracker.ICONS.audio} ${r.AudioDuration || 'Audio Duration'}</h4>
           <div class="consumption-grid audio-grid">
             <div class="consumption-item audio-item input">
-              <span class="consumption-label">Input Audio:</span>
+              <span class="consumption-label">${r.InputAudio || 'Input Audio:'}</span>
               <span class="consumption-value" id="dashInputAudioDuration">0.00s</span>
             </div>
             <div class="consumption-item audio-item output">
-              <span class="consumption-label">Output Audio:</span>
+              <span class="consumption-label">${r.OutputAudio || 'Output Audio:'}</span>
               <span class="consumption-value" id="dashOutputAudioDuration">0.00s</span>
             </div>
             <div class="consumption-item audio-item total">
-              <span class="consumption-label">Total Audio:</span>
+              <span class="consumption-label">${r.TotalAudio || 'Total Audio:'}</span>
               <span class="consumption-value consumption-total" id="dashTotalAudioDuration">0.00s</span>
             </div>
           </div>
           <div class="audio-format-info">
-            <span>Format: <strong id="dashAudioFormat">pcm16</strong></span>
-            <span>Sample Rate: <strong id="dashSampleRate">24kHz</strong></span>
+            <span>${r.Format || 'Format:'} <strong id="dashAudioFormat">pcm16</strong></span>
+            <span>${r.SampleRate || 'Sample Rate:'} <strong id="dashSampleRate">24kHz</strong></span>
           </div>
         </div>
         
         <!-- Rate Limits Section -->
         <div class="consumption-section" id="rateLimitsSection" style="display: none;">
-          <h4>${ConsumptionTracker.ICONS.rateLimits} Rate Limits</h4>
+          <h4>${ConsumptionTracker.ICONS.rateLimits} ${r.RateLimits || 'Rate Limits'}</h4>
           <div class="rate-limits-grid" id="dashRateLimits">
           </div>
         </div>
         
         <!-- Token Consumption per Model Section -->
         <div class="consumption-section" id="tokenConsumptionPerModelSection">
-          <h4>${ConsumptionTracker.ICONS.tokens} Token Consumption per Model</h4>
+          <h4>${ConsumptionTracker.ICONS.tokens} ${r.TokenConsumptionPerModel || 'Token Consumption per Model'}</h4>
           <div class="token-consumption-per-model-container" id="dashTokenConsumptionPerModel">
           </div>
         </div>
         
         <!-- Costs per Model Section -->
         <div class="consumption-section" id="costsPerModelSection">
-          <h4>💰 Costs per Model</h4>
+          <h4>💰 ${r.CostsPerModel || 'Costs per Model'}</h4>
           <div class="costs-per-model-container" id="dashCostsPerModel">
           </div>
         </div>
@@ -294,11 +295,12 @@ export class ConsumptionTracker {
     // Check if button already exists
     if (document.getElementById('dashboardToggle')) return;
     
+    const r = window.APP_RESOURCES || {};
     const button = document.createElement('button');
     button.id = 'dashboardToggle';
     button.className = 'dashboard-toggle-btn';
-    button.title = 'Mostra/Nascondi Consumption Dashboard';
-    button.setAttribute('aria-label', 'Toggle consumption dashboard');
+    button.title = r.ToggleConsumptionDashboard || 'Consumption Dashboard';
+    button.setAttribute('aria-label', r.ToggleConsumptionDashboard || 'Toggle consumption dashboard');
     button.innerHTML = `
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path d="M3 3v18h18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -307,15 +309,21 @@ export class ConsumptionTracker {
       <span class="dashboard-badge" id="tokenBadge">0</span>
     `;
     
-    // Find the start button and insert after it (last in the right column)
-    const startButton = document.getElementById('startButton');
-    if (startButton && startButton.parentNode) {
-      startButton.parentNode.insertBefore(button, startButton.nextSibling);
+    // Find the trace toggle button and insert after it
+    const traceToggle = document.getElementById('traceToggle');
+    if (traceToggle && traceToggle.parentNode) {
+      traceToggle.parentNode.insertBefore(button, traceToggle.nextSibling);
     } else {
-      // Fallback: add to main container
-      const mainContainer = document.querySelector('.main-container');
-      if (mainContainer) {
-        mainContainer.appendChild(button);
+      // Fallback: find the start button and insert after it
+      const startButton = document.getElementById('startButton');
+      if (startButton && startButton.parentNode) {
+        startButton.parentNode.insertBefore(button, startButton.nextSibling);
+      } else {
+        // Fallback: add to main container
+        const mainContainer = document.querySelector('.main-container');
+        if (mainContainer) {
+          mainContainer.appendChild(button);
+        }
       }
     }
     
