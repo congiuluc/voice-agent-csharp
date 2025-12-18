@@ -1039,4 +1039,22 @@
   <data name="GesturesHint" xml:space="preserve">
     <value>Seleziona un personaggio e uno stile per vedere i gesti disponibili.</value>
   </data>
-    <data name="FoundryAgentIDHint" xml:space="preserve"><value>Inserisci l'ID dell'agente Foundry</value></data>  <data name="FoundryProjectHint" xml:space="preserve"><value>Inserisci il nome del progetto Foundry o lascia vuoto per l'uso diretto del modello</value></data>  <data name="EnterAgentID" xml:space="preserve"><value>Inserisci l'ID dell'agente (es. asst_123)</value></data>  <data name="EnterProjectName" xml:space="preserve"><value>Inserisci il nome del progetto (o lascia vuoto)</value></data>  <data name="FoundryAgentID" xml:space="preserve"><value>ID Agente Foundry</value></data>  <data name="FoundryProject" xml:space="preserve"><value>Progetto Foundry</value></data>  <data name="FoundryAgentIDHint" xml:space="preserve"><value>Inserisci l'ID dell'agente Foundry</value></data>  <data name="FoundryProjectHint" xml:space="preserve"><value>Inserisci il nome del progetto Foundry o lascia vuoto per l'uso diretto del modello</value></data>  <data name="EnterAgentID" xml:space="preserve"><value>Inserisci l'ID dell'agente (es. asst_123)</value></data>  <data name="EnterProjectName" xml:space="preserve"><value>Inserisci il nome del progetto (o lascia vuoto)</value></data>  <data name="FoundryAgentID" xml:space="preserve"><value>ID Agente Foundry</value></data>  <data name="FoundryProject" xml:space="preserve"><value>Progetto Foundry</value></data></root>
+  <data name="FoundryAgentIDHint" xml:space="preserve">
+    <value>Inserisci l'ID dell'agente Foundry</value>
+  </data>
+  <data name="FoundryProjectHint" xml:space="preserve">
+    <value>Inserisci il nome del progetto Foundry o lascia vuoto per l'uso diretto del modello</value>
+  </data>
+  <data name="EnterAgentID" xml:space="preserve">
+    <value>Inserisci l'ID dell'agente (es. asst_123)</value>
+  </data>
+  <data name="EnterProjectName" xml:space="preserve">
+    <value>Inserisci il nome del progetto (o lascia vuoto)</value>
+  </data>
+  <data name="FoundryAgentID" xml:space="preserve">
+    <value>ID Agente Foundry</value>
+  </data>
+  <data name="FoundryProject" xml:space="preserve">
+    <value>Progetto Foundry</value>
+  </data>
+</root>
