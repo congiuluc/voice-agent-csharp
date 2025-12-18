@@ -213,8 +213,7 @@ class VoiceAgentApp extends BaseVoiceApp {
   
   async startSession() {
     try {
-      // Refresh settings from UI
-      this.saveSettingsFromModal(); // This saves and updates currentSettings
+      // Use currentSettings as last explicitly saved by the user
       
       updateStatus(window.APP_RESOURCES?.Connecting || 'Connecting...', 'disconnected');
       addTraceEntry('system', window.APP_RESOURCES?.Connecting || 'Connecting...');
