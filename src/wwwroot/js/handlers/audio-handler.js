@@ -77,11 +77,11 @@ export class AudioHandler {
           const baseUrl = (typeof import !== 'undefined' && import.meta && import.meta.url)
             ? import.meta.url
             : window.location.href;
-          processorUrl = new URL('./audio-processor.js', baseUrl).href;
+          processorUrl = new URL('../audio-processor.js', baseUrl).href;
         } catch (urlError) {
           // Fallback: let the browser resolve a simple relative path
           console.warn('Falling back to relative audio processor path:', urlError);
-          processorUrl = './audio-processor.js';
+          processorUrl = '../audio-processor.js';
         }
         await this.audioContext.audioWorklet.addModule(processorUrl);
       } catch (e) {
