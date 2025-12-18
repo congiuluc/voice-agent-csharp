@@ -6,7 +6,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.36.177.2456",
-      "templateHash": "15439767046904333321"
+      "templateHash": "4152139401469488135"
     }
   },
   "parameters": {
@@ -2386,7 +2386,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.36.177.2456",
-              "templateHash": "2428976854747256232"
+              "templateHash": "12296716988165349961"
             },
             "description": "Creates an Azure Cosmos DB account with SQL API for call monitoring."
           },
@@ -2462,7 +2462,7 @@
                   "id": "callSessions",
                   "partitionKey": {
                     "paths": [
-                      "/userId"
+                      "/type"
                     ],
                     "kind": "Hash"
                   },
@@ -2479,8 +2479,7 @@
                         "path": "/\"_etag\"/?"
                       }
                     ]
-                  },
-                  "defaultTtl": 7776000
+                  }
                 }
               },
               "dependsOn": [
@@ -2497,6 +2496,72 @@
                   "partitionKey": {
                     "paths": [
                       "/modelName"
+                    ],
+                    "kind": "Hash"
+                  },
+                  "indexingPolicy": {
+                    "indexingMode": "consistent",
+                    "automatic": true,
+                    "includedPaths": [
+                      {
+                        "path": "/*"
+                      }
+                    ],
+                    "excludedPaths": [
+                      {
+                        "path": "/\"_etag\"/?"
+                      }
+                    ]
+                  }
+                }
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.DocumentDB/databaseAccounts/sqlDatabases', parameters('name'), parameters('databaseName'))]"
+              ]
+            },
+            {
+              "type": "Microsoft.DocumentDB/databaseAccounts/sqlDatabases/containers",
+              "apiVersion": "2024-05-15",
+              "name": "[format('{0}/{1}/{2}', parameters('name'), parameters('databaseName'), 'costSnapshots')]",
+              "properties": {
+                "resource": {
+                  "id": "costSnapshots",
+                  "partitionKey": {
+                    "paths": [
+                      "/type"
+                    ],
+                    "kind": "Hash"
+                  },
+                  "indexingPolicy": {
+                    "indexingMode": "consistent",
+                    "automatic": true,
+                    "includedPaths": [
+                      {
+                        "path": "/*"
+                      }
+                    ],
+                    "excludedPaths": [
+                      {
+                        "path": "/\"_etag\"/?"
+                      }
+                    ]
+                  }
+                }
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.DocumentDB/databaseAccounts/sqlDatabases', parameters('name'), parameters('databaseName'))]"
+              ]
+            },
+            {
+              "type": "Microsoft.DocumentDB/databaseAccounts/sqlDatabases/containers",
+              "apiVersion": "2024-05-15",
+              "name": "[format('{0}/{1}/{2}', parameters('name'), parameters('databaseName'), 'tokenSnapshots')]",
+              "properties": {
+                "resource": {
+                  "id": "tokenSnapshots",
+                  "partitionKey": {
+                    "paths": [
+                      "/type"
                     ],
                     "kind": "Hash"
                   },
@@ -2950,6 +3015,9 @@
           "containerAppEnvironmentId": "[if(parameters('deployMcpServer'), createObject('value', reference('mcpserver').outputs.containerAppEnvironmentId.value), createObject('value', ''))]",
           "imageName": {
             "value": "mcr.microsoft.com/azuredocs/containerapps-helloworld:latest"
+          },
+          "applicationInsightsConnectionString": {
+            "value": "[reference('monitoring').outputs.appInsightsConnectionString.value]"
           }
         },
         "template": {
@@ -2959,7 +3027,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.36.177.2456",
-              "templateHash": "1824696956022297555"
+              "templateHash": "14143066941632087326"
             }
           },
           "parameters": {
@@ -3025,6 +3093,10 @@
               "defaultValue": ""
             },
             "containerAppEnvironmentId": {
+              "type": "string",
+              "defaultValue": ""
+            },
+            "applicationInsightsConnectionString": {
               "type": "string",
               "defaultValue": ""
             },
@@ -3096,6 +3168,10 @@
                       "name": "main",
                       "image": "[if(not(empty(parameters('imageName'))), parameters('imageName'), 'mcr.microsoft.com/azuredocs/containerapps-helloworld:latest')]",
                       "env": [
+                        {
+                          "name": "ApplicationInsights__ConnectionString",
+                          "value": "[parameters('applicationInsightsConnectionString')]"
+                        },
                         {
                           "name": "AzureVoiceLive__Endpoint",
                           "value": "[parameters('aiServicesEndpoint')]"
@@ -3228,6 +3304,7 @@
         "cosmosdb",
         "keyvault",
         "mcpserver",
+        "monitoring",
         "registry",
         "rg",
         "RoleAssignments"
@@ -3292,6 +3369,10 @@
     "COSMOS_DB_DATABASE_NAME": {
       "type": "string",
       "value": "[reference('cosmosdb').outputs.databaseName.value]"
+    },
+    "APPLICATIONINSIGHTS_CONNECTION_STRING": {
+      "type": "string",
+      "value": "[reference('monitoring').outputs.appInsightsConnectionString.value]"
     }
   }
 }

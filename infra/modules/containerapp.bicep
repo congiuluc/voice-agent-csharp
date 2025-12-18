@@ -17,6 +17,7 @@ param logAnalyticsWorkspaceName string
 param mcpServerUrl string = 'http://localhost:5001'
 param foundryAgentId string = ''
 param containerAppEnvironmentId string = ''
+param applicationInsightsConnectionString string = ''
 @description('The name of the container image')
 param imageName string = ''
 
@@ -91,6 +92,11 @@ resource containerApp 'Microsoft.App/containerApps@2024-10-02-preview' = {
           name: 'main'
           image: !empty(imageName) ? imageName : 'mcr.microsoft.com/azuredocs/containerapps-helloworld:latest'
           env: [
+            {
+              // Application Insights connection string for telemetry
+              name: 'ApplicationInsights__ConnectionString'
+              value: applicationInsightsConnectionString
+            }
             {
               // Maps to configuration["AzureVoiceLive:Endpoint"]
               name: 'AzureVoiceLive__Endpoint'

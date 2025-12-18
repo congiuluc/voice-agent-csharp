@@ -84,12 +84,13 @@ async function fetchMetricsForCharts() {
 function updateTokenConsumptionCharts(modelData) {
     const colors = getChartColors();
 
-    // Preserve original keys (could be agent ids) but map to friendly labels for display
+    // Preserve original keys (could be agent ids) and map to friendly labels for display
     const modelKeys = Object.keys(modelData);
     const models = modelKeys.map(k => mapAgentOrModelKeyToLabel(k));
-    const inputTokens = models.map(m => modelData[m].inputTokens);
-    const outputTokens = models.map(m => modelData[m].outputTokens);
-    const cachedTokens = models.map(m => modelData[m].cachedTokens);
+    // Use modelKeys for numeric lookups (they are the original keys in modelData)
+    const inputTokens = modelKeys.map(k => (modelData[k] && modelData[k].inputTokens) ? modelData[k].inputTokens : 0);
+    const outputTokens = modelKeys.map(k => (modelData[k] && modelData[k].outputTokens) ? modelData[k].outputTokens : 0);
+    const cachedTokens = modelKeys.map(k => (modelData[k] && modelData[k].cachedTokens) ? modelData[k].cachedTokens : 0);
 
     // Token Consumption Chart (Stacked Bar)
     const tokenCtx = document.getElementById('pricingChart');

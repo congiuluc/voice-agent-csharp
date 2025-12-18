@@ -193,8 +193,8 @@ public class VoiceLiveSessionConfig
     /// Gets or sets whether to enable output audio timestamps.
     /// When enabled, the API sends response.audio_timestamp.delta events with word-level timing.
     /// </summary>
-    [JsonPropertyName("output_audio_timestamps")]
-    public bool OutputAudioTimestamps { get; set; } = true;
+    //[JsonPropertyName("output_audio_timestamps")]
+    //public bool OutputAudioTimestamps { get; set; } = true;
 
     /// <summary>
     /// Gets or sets the avatar configuration.
@@ -497,14 +497,27 @@ public class VoiceLiveRawWebSocketClient : IAsyncDisposable
     /// <returns>The WebSocket URL.</returns>
     private string BuildWebSocketUrl(string? agentToken = null)
     {
-        var wsEndpoint = _endpoint.Replace("https://", "wss://");
-        var baseUrl = $"{wsEndpoint}/voice-live/realtime?api-version={_apiVersion}&model={_model}";
-        
+        // Support endpoints that may use https:// or http:// and convert to wss/ws accordingly
+        var wsEndpoint = _endpoint;
+        if (wsEndpoint.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+        {
+            wsEndpoint = wsEndpoint.Replace("https://", "wss://");
+        }
+        else if (wsEndpoint.StartsWith("http://", StringComparison.OrdinalIgnoreCase))
+        {
+            wsEndpoint = wsEndpoint.Replace("http://", "ws://");
+        }
+
+        // Ensure model is safely encoded for a query string
+        var encodedModel = Uri.EscapeDataString(_model ?? string.Empty);
+
+        var baseUrl = $"{wsEndpoint}/voice-live/realtime?api-version={Uri.EscapeDataString(_apiVersion)}&model={encodedModel}";
+
         if (!string.IsNullOrEmpty(agentToken))
         {
             baseUrl += $"&agent-access-token={Uri.EscapeDataString(agentToken)}";
         }
-        
+
         return baseUrl;
     }
 
@@ -561,7 +574,18 @@ public class VoiceLiveRawWebSocketClient : IAsyncDisposable
             _webSocket.Options.SetRequestHeader("x-ms-client-request-id", Guid.NewGuid().ToString());
 
             _logger.LogInformation("Connecting to Voice Live WebSocket: {Url}", wsUrl);
-            await _webSocket.ConnectAsync(new Uri(wsUrl), cancellationToken).ConfigureAwait(false);
+            try
+            {
+                await _webSocket.ConnectAsync(new Uri(wsUrl), cancellationToken).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                // Surface additional context to help troubleshooting: which auth method and url
+                var authMethod = string.IsNullOrEmpty(_apiKey) ? "AzureAD/Bearer" : "ApiKey";
+                _logger.LogError(ex, "Failed to connect to WebSocket (Url={Url}, AuthMethod={AuthMethod})", wsUrl, authMethod);
+                // Re-throw to preserve stack but augment message for logs
+                throw new InvalidOperationException($"WebSocket Connect failed. Url={wsUrl}, AuthMethod={authMethod}: {ex.Message}", ex);
+            }
             
             _isConnected = true;
             _logger.LogInformation("Connected to Azure Voice Live WebSocket");

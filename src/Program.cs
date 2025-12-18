@@ -10,6 +10,7 @@ using Microsoft.ApplicationInsights.Extensibility;
 using Serilog;
 using Serilog.Events;
 using Serilog.Formatting.Compact;
+using Serilog.Sinks.ApplicationInsights;
 
 // Configure Serilog early to capture startup logs
 var tempConfig = new ConfigurationBuilder()
@@ -18,13 +19,36 @@ var tempConfig = new ConfigurationBuilder()
     .AddCommandLine(args)
     .Build();
 
-Log.Logger = new LoggerConfiguration()
+// Configure Application Insights telemetry for Serilog (if configured) so startup logs are captured
+var tempAiConnectionString = tempConfig["ApplicationInsights:ConnectionString"];
+var tempAiKey = tempConfig["ApplicationInsights:InstrumentationKey"];
+TelemetryConfiguration? serilogAiTelemetryConfig = null;
+if (!string.IsNullOrEmpty(tempAiConnectionString))
+{
+    serilogAiTelemetryConfig = TelemetryConfiguration.CreateDefault();
+    serilogAiTelemetryConfig.ConnectionString = tempAiConnectionString;
+}
+else if (!string.IsNullOrEmpty(tempAiKey))
+{
+    serilogAiTelemetryConfig = TelemetryConfiguration.CreateDefault();
+    // Fallback to instrumentation key format for older configs
+    serilogAiTelemetryConfig.ConnectionString = $"InstrumentationKey={tempAiKey}";
+}
+
+var loggerConfig = new LoggerConfiguration()
     .ReadFrom.Configuration(tempConfig)
     .MinimumLevel.Override("Microsoft", LogEventLevel.Information)
     .Enrich.FromLogContext()
     .WriteTo.Console()
-    .WriteTo.File("logs/log-.txt", rollingInterval: RollingInterval.Day, retainedFileCountLimit: 14)
-    .CreateLogger();
+    .WriteTo.File("logs/log-.txt", rollingInterval: RollingInterval.Day, retainedFileCountLimit: 14);
+
+if (serilogAiTelemetryConfig != null)
+{
+    // Send trace telemetry to Application Insights so startup logs are available
+    loggerConfig = loggerConfig.WriteTo.ApplicationInsights(serilogAiTelemetryConfig, TelemetryConverter.Traces);
+}
+
+Log.Logger = loggerConfig.CreateLogger();
 
 VoiceAgentCSharp.Inspector.Inspect();
 

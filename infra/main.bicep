@@ -173,6 +173,7 @@ module containerapp 'modules/containerapp.bicep' = {
     mcpServerUrl: deployMcpServer ? mcpserver.outputs.mcpServerUrl : 'http://localhost:5001'
     containerAppEnvironmentId: deployMcpServer ? mcpserver.outputs.containerAppEnvironmentId : ''
     imageName: 'mcr.microsoft.com/azuredocs/containerapps-helloworld:latest'
+    applicationInsightsConnectionString: monitoring.outputs.appInsightsConnectionString
   }
   dependsOn: [keyvault, RoleAssignments]
 }
@@ -195,4 +196,5 @@ output MCP_SERVER_URL string = deployMcpServer ? mcpserver.outputs.mcpServerUrl 
 output COSMOS_DB_ENDPOINT string = cosmosdb.outputs.endpoint
 output COSMOS_DB_ACCOUNT_NAME string = cosmosdb.outputs.accountName
 output COSMOS_DB_DATABASE_NAME string = cosmosdb.outputs.databaseName
+output APPLICATIONINSIGHTS_CONNECTION_STRING string = monitoring.outputs.appInsightsConnectionString
 

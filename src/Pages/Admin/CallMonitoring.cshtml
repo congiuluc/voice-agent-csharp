@@ -351,6 +351,14 @@
     <!-- Theme toggle script -->
     <script type="module" src="~/js/index-theme.js"></script>
     
+    <!-- Runtime checks -->
+    <script>
+        // Ensure Chart.js is loaded; give a clear console error if not
+        if (typeof Chart === 'undefined') {
+            console.error('Chart.js not loaded. Ensure ~/js/chart.js is included and accessible. Charts will not render.');
+        }
+    </script>
+
     <!-- Dashboard script -->
     <script type="module" src="~/js/admin-dashboard.js"></script>
 </body>

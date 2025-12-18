@@ -349,7 +349,7 @@ public class VoiceAvatarSession : VoiceSessionBase
             {
                 Model = "whisper-1"
             },
-            OutputAudioTimestamps = true, // Enable word-level audio timestamps for streaming text
+            //OutputAudioTimestamps = true, // Enable word-level audio timestamps for streaming text
             Avatar = avatarConfig,
             Animation = new AnimationConfig
             {

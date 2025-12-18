@@ -6,7 +6,6 @@ using mcpServer.Tools;
 using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
-/*
 // Ensure deterministic listening URLs when running from terminals that don't use launchSettings
 // Honor ASPNETCORE_URLS if present, otherwise default to the values in launchSettings.json
 var urls = Environment.GetEnvironmentVariable("ASPNETCORE_URLS");
@@ -15,7 +14,7 @@ if (string.IsNullOrWhiteSpace(urls))
     urls = "https://localhost:7102;http://localhost:5001";
 }
 builder.WebHost.UseUrls(urls);
-*/
+
 builder.AddServiceDefaults();
 builder.Services.AddHttpClient();
 builder.Services.AddScoped<WeatherTools>();
