@@ -71,7 +71,18 @@ export class AudioHandler {
       
       // Load audio worklet module
       try {
-        const processorUrl = new URL('./audio-processor.js', import.meta.url).href;
+        let processorUrl;
+        try {
+          // Prefer resolving relative to this module when available
+          const baseUrl = (typeof import !== 'undefined' && import.meta && import.meta.url)
+            ? import.meta.url
+            : window.location.href;
+          processorUrl = new URL('./audio-processor.js', baseUrl).href;
+        } catch (urlError) {
+          // Fallback: let the browser resolve a simple relative path
+          console.warn('Falling back to relative audio processor path:', urlError);
+          processorUrl = './audio-processor.js';
+        }
         await this.audioContext.audioWorklet.addModule(processorUrl);
       } catch (e) {
         console.error('Failed to load audio processor:', e);
