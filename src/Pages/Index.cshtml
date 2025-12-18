@@ -1,39 +1,18 @@
 @page
 @model VoiceAgentCSharp.Pages.IndexModel
-@using Microsoft.AspNetCore.Mvc.Localization
-@using Microsoft.Extensions.Localization
-@using VoiceAgentCSharp
-@using System.Text.Json
-@using System.Globalization
-@inject IStringLocalizer<SharedResource> SharedLocalizer
 @{
-    ViewData["Title"] = SharedLocalizer["AppTitle"];
+    Layout = "_Layout";
+    ViewData["Title"] = Localizer["AppTitle"];
     var currentCulture = CultureInfo.CurrentCulture.Name;
 }
 
-<!DOCTYPE html>
-<html lang="@currentCulture.Replace("-", "-").ToLowerInvariant()">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>@ViewData["Title"]</title>
-    <link rel="icon" type="image/svg+xml" href="~/favicon.svg">
-    <link rel="stylesheet" href="~/theme.css" asp-append-version="true">
-    <link rel="stylesheet" href="~/styles.css" asp-append-version="true">
-    
-    <!-- Inject localization resources into global window object -->
-    <script>
-        window.APP_RESOURCES = @Html.Raw(JsonSerializer.Serialize(SharedLocalizer.GetAllStrings().ToDictionary(x => x.Name, x => x.Value)));
-    </script>
-</head>
-<body>
-    <div class="main-container">
+<div class="main-container">
         <!-- Main Title -->
         <h1><span class="brand-l">Voice</span> <span class="brand-ia">Live</span></h1>
 
         <!-- Feature selection grid: 3 boxes linking to Assistant, Agent (this page), and Avatar -->
-        <div class="feature-grid" role="navigation" aria-label="@SharedLocalizer["FeatureSelection"]">
-            <a class="feature-card" href="/Assistant" title="@SharedLocalizer["VoiceAssistant"]">
+        <div class="feature-grid" role="navigation" aria-label="@Localizer["FeatureSelection"]">
+            <a class="feature-card" href="/Assistant" title="@Localizer["VoiceAssistant"]">
                 <div class="feature-icon" aria-hidden="true">
                     <!-- Chat / assistant icon -->
                     <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" xmlns="http://www.w3.org/2000/svg">
@@ -41,10 +20,10 @@
                         <path d="M7 9h10M7 13h6" stroke-linecap="round" stroke-linejoin="round"></path>
                     </svg>
                 </div>
-                <div class="feature-title">@SharedLocalizer["VoiceAssistant"]</div>
+                <div class="feature-title">@Localizer["VoiceAssistant"]</div>
             </a>
 
-            <a class="feature-card" href="/VoiceAgent" title="@SharedLocalizer["VoiceAgent"]">
+            <a class="feature-card" href="/VoiceAgent" title="@Localizer["VoiceAgent"]">
                 <div class="feature-icon" aria-hidden="true">
                     <!-- Microphone / agent icon -->
                     <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" xmlns="http://www.w3.org/2000/svg">
@@ -53,10 +32,10 @@
                         <rect x="11" y="17" width="2" height="3" rx="1"></rect>
                     </svg>
                 </div>
-                <div class="feature-title">@SharedLocalizer["VoiceAgent"]</div>
+                <div class="feature-title">@Localizer["VoiceAgent"]</div>
             </a>
 
-            <a class="feature-card" href="/VoiceAvatar" title="@SharedLocalizer["VoiceAvatar"]">
+            <a class="feature-card" href="/VoiceAvatar" title="@Localizer["VoiceAvatar"]">
                 <div class="feature-icon" aria-hidden="true">
                     <!-- Avatar / user icon -->
                     <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" xmlns="http://www.w3.org/2000/svg">
@@ -64,141 +43,52 @@
                         <path d="M5.5 20a6.5 6.5 0 0 1 13 0" stroke-linecap="round" stroke-linejoin="round"></path>
                     </svg>
                 </div>
-                <div class="feature-title">@SharedLocalizer["VoiceAvatar"]</div>
+                <div class="feature-title">@Localizer["VoiceAvatar"]</div>
             </a>
         </div>
 
-        <!-- Voice Visualizer Canvas -->
-        <canvas id="voiceCanvas"></canvas>
+        <partial name="_VoiceVisualizer" />
 
-      
-        <!-- Top Right Controls -->
+        <partial name="_CommonControls" />
 
-
-        <!-- Hamburger (Left) for mobile/compact menu -->
-        <button id="hamburgerButton" class="hamburger-btn" title="@SharedLocalizer["OpenMenu"]" aria-label="@SharedLocalizer["OpenMenu"]">
-            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M3 6h18M3 12h18M3 18h18" stroke="currentColor" stroke-linecap="round"/>
-            </svg>
-        </button>
-
-        <!-- Incoming Call Settings button 
-        <button id="incomingCallSettingsButton" title="@SharedLocalizer["OpenIncomingCallSettings"]" aria-label="@SharedLocalizer["OpenIncomingCallSettings"]" class="icon-btn">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" stroke-linecap="round" stroke-linejoin="round"></path>
-            </svg>
-        </button>
--->
-        <!-- Theme toggle button -->
-        <button id="themeToggleButton" title="@SharedLocalizer["ToggleDarkTheme"]" aria-label="@SharedLocalizer["ChangeTheme"]" class="theme-toggle-btn">
-            <svg id="sunIcon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="12" cy="12" r="5"></circle>
-                <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
-            </svg>
-            <svg id="moonIcon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
-            </svg>
-        </button>
-
-        <!-- Logout button -->
-        <a href="/Logout" class="logout-btn" title="@SharedLocalizer["Logout"]" aria-label="@SharedLocalizer["Logout"]">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" stroke-linecap="round" stroke-linejoin="round"></path>
-                <polyline points="16 17 21 12 16 7" stroke-linecap="round" stroke-linejoin="round"></polyline>
-                <line x1="21" y1="12" x2="9" y2="12" stroke-linecap="round" stroke-linejoin="round"></line>
-            </svg>
-        </a>
-
-        <!-- Settings button -->
-        <button id="settingsButton" class="settings-btn" title="@SharedLocalizer["Settings"]" aria-label="@SharedLocalizer["Settings"]">
-            <!-- Gear / settings icon -->
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
-                <path d="M19.14 12.94c.04-.31.06-.63.06-.94s-.02-.64-.06-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.11-.2-.36-.28-.57-.2l-2.39.96c-.5-.38-1.04-.7-1.64-.94l-.36-1.95c-.05-.21-.25-.36-.47-.36h-3.98c-.22 0-.42.15-.47.36l-.36 1.95c-.6.24-1.14.56-1.64.94l-2.39-.96c-.21-.08-.46 0-.57.2L2.71 8.88c-.11.2-.06.47.12.61l2.03 1.58c-.04.3-.06.61-.06.94s.02.64.06.94L2.83 14.5c-.18.14-.23.41-.12.61l1.92 3.32c.11.2.36.28.57.2l2.39-.96c.5.38 1.04.7 1.64.94l.36 1.95c.05.21.25.36.47.36h3.98c.22 0 .42-.15.47-.36l.36-1.95c.6-.24 1.14-.56 1.64-.94l2.39.96c.21.08.46 0 .57-.2l1.92-3.32c.11-.2.06-.47-.12-.61l-2.03-1.58z">
-                </path>
-                <circle cx="12" cy="12" r="3"></circle>
-            </svg>
-        </button>
-
-
-
-
-        <!-- Left Panel (Slideover) -->
-        <nav id="leftPanel" class="left-panel" aria-hidden="true">
-            <div class="left-panel-header">
-                <h3>@SharedLocalizer["Menu"]</h3>
-                <button id="closeLeftPanel" class="close-left-panel" title="@SharedLocalizer["CloseMenu"]" aria-label="@SharedLocalizer["CloseMenu"]">×</button>
-            </div>
-            <div class="left-panel-body" id="leftPanelBody">
-                <button class="lp-btn" id="lp_themeToggle">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"></circle><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
-                    <span>@SharedLocalizer["ChangeTheme"]</span>
-                </button>
-                <button class="lp-btn" id="lp_settingsButton">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19.14 12.94c.04-.31.06-.63.06-.94s-.02-.64-.06-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.11-.2-.36-.28-.57-.2l-2.39.96c-.5-.38-1.04-.7-1.64-.94l-.36-1.95c-.05-.21-.25-.36-.47-.36h-3.98c-.22 0-.42.15-.47.36l-.36 1.95c-.6.24-1.14.56-1.64.94l-2.39-.96c-.21-.08-.46 0-.57.2L2.71 8.88c-.11.2-.06.47.12.61l2.03 1.58c-.04.3-.06.61-.06.94s.02.64.06.94L2.83 14.5c-.18.14-.23.41-.12.61l1.92 3.32c.11.2.36.28.57.2l2.39-.96c.5.38 1.04.7 1.64.94l.36 1.95c.05.21.25.36.47.36h3.98c.22 0 .42-.15.47-.36l.36-1.95c.6-.24 1.14-.56 1.64-.94l2.39.96c.21.08.46 0 .57-.2l1.92-3.32c.11-.2.06-.47-.12-.61l-2.03-1.58z"></path><circle cx="12" cy="12" r="3"></circle></svg>
-                    <span>@SharedLocalizer["Settings"]</span>
-                </button>
-                @if (User.IsInRole("Admin"))
-                {
-                    <a href="/Admin/CallMonitoring" class="lp-btn">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-                        <span>@SharedLocalizer["CallMonitoringDashboard"]</span>
-                    </a>
-                }
-                <a href="/Logout" class="lp-btn">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" stroke-linecap="round" stroke-linejoin="round"></path><polyline points="16 17 21 12 16 7" stroke-linecap="round" stroke-linejoin="round"></polyline><line x1="21" y1="12" x2="9" y2="12" stroke-linecap="round" stroke-linejoin="round"></line></svg>
-                    <span>@SharedLocalizer["Logout"]</span>
-                </a>
-            </div>
-        </nav>
+        <partial name="_LeftPanel" />
 
         <!-- Settings Modal -->
         <div id="settingsModal" class="settings-modal">
             <div class="settings-content">
-                <div class="settings-header">
-                    <h2>@SharedLocalizer["Settings"]</h2>
-                    <button id="closeSettingsButton" class="close-settings-btn" title="@SharedLocalizer["Close"]" aria-label="@SharedLocalizer["Close"]">×</button>
-                </div>
+                <partial name="_SettingsHeader" />
                 <div class="settings-body">
                     <!-- Language Selector -->
-                    <div class="setting-group">
-                        <label for="languageSelect">@SharedLocalizer["Language"]:</label>
-                        <select id="languageSelect" class="form-control">
-                            <option value="it-IT" data-current="@(currentCulture == "it-IT")">@SharedLocalizer["Italian"]</option>
-                            <option value="en-US" data-current="@(currentCulture == "en-US")">@SharedLocalizer["English"]</option>
-                        </select>
-                        <span class="setting-hint">@SharedLocalizer["SelectLanguage"]</span>
-                    </div>
+                    <partial name="_LanguageSelector" />
 
                     <!-- Theme Selector -->
                     <div class="setting-group">
-                        <label for="themeSelect">@SharedLocalizer["Theme"]:</label>
+                        <label for="themeSelect">@Localizer["Theme"]:</label>
                         <select id="themeSelect" class="form-control">
-                            <option value="light">@SharedLocalizer["Light"]</option>
-                            <option value="dark" selected>@SharedLocalizer["Dark"]</option>
+                            <option value="light">@Localizer["Light"]</option>
+                            <option value="dark" selected>@Localizer["Dark"]</option>
                         </select>
-                        <span class="setting-hint">@SharedLocalizer["SelectTheme"]</span>
+                        <span class="setting-hint">@Localizer["SelectTheme"]</span>
                     </div>
 
                     <!-- Visualizer Selector -->
                     <div class="setting-group">
-                        <label for="visualizerSelect">@SharedLocalizer["Visualizer"]:</label>
+                        <label for="visualizerSelect">@Localizer["Visualizer"]:</label>
                         <select id="visualizerSelect" class="form-control">
-                            <option value="oscilloscope">@SharedLocalizer["Oscilloscope"]</option>
-                            <option value="wave" selected>@SharedLocalizer["Wave"]</option>
-                            <option value="equalizer">@SharedLocalizer["Equalizer"]</option>
-                            <option value="cardio">@SharedLocalizer["Cardio"]</option>
-                            <option value="lines">@SharedLocalizer["Lines"]</option>
-                            <option value="holographic">@SharedLocalizer["Holographic"]</option>
-                            <option value="vortex">@SharedLocalizer["Vortex"]</option>
-                            <option value="tesseract">@SharedLocalizer["Tesseract"]</option>
-                            <option value="cortana">@SharedLocalizer["Cortana"]</option>
+                            <option value="oscilloscope">@Localizer["Oscilloscope"]</option>
+                            <option value="wave" selected>@Localizer["Wave"]</option>
+                            <option value="equalizer">@Localizer["Equalizer"]</option>
+                            <option value="cardio">@Localizer["Cardio"]</option>
+                            <option value="lines">@Localizer["Lines"]</option>
+                            <option value="holographic">@Localizer["Holographic"]</option>
+                            <option value="vortex">@Localizer["Vortex"]</option>
+                            <option value="tesseract">@Localizer["Tesseract"]</option>
+                            <option value="cortana">@Localizer["Cortana"]</option>
                         </select>
-                        <span class="setting-hint">@SharedLocalizer["SelectVisualizer"]</span>
+                        <span class="setting-hint">@Localizer["SelectVisualizer"]</span>
                     </div>
                 </div>
-                <div class="settings-footer">
-                    <button id="saveSettingsButton" class="save-settings-btn" title="@SharedLocalizer["Save"]">@SharedLocalizer["Save"]</button>
-                </div>
+                <partial name="_SettingsFooter" />
             </div>
         </div>
 
@@ -210,9 +100,9 @@
     <!-- Error Boundary -->
     <div id="errorBoundary" class="error-boundary">
         <div class="error-content">
-            <h2>@SharedLocalizer["ApplicationError"]</h2>
+            <h2>@Localizer["ApplicationError"]</h2>
             <p id="errorMessage"></p>
-            <button id="reloadButton" title="@SharedLocalizer["ReloadPageTitle"]">@SharedLocalizer["ReloadPage"]</button>
+            <button id="reloadButton" title="@Localizer["ReloadPageTitle"]">@Localizer["ReloadPage"]</button>
         </div>
     </div>
 
@@ -221,6 +111,7 @@
 
     <!-- (Developer features panel removed) -->
 
+@section Scripts {
     <!-- Lightweight theme toggle for Index (does not load full app) -->
     <script type="module" src="~/js/ui/index-theme.js" asp-append-version="true"></script>
     
@@ -234,5 +125,4 @@
             initHamburgerMenu();
         });
     </script>
-</body>
-</html>
+}

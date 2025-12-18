@@ -1,4 +1,4 @@
-namespace VoiceAgentCSharp;
+namespace VoiceAgentCSharp.Resources;
 
 /// <summary>
 /// Shared resource class for localization strings.

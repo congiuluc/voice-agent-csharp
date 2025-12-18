@@ -6,6 +6,7 @@
  * Based on Azure Voice Live API avatar implementation.
  */
 
+import { BaseVoiceApp } from '../core/base-voice-app.js';
 import { 
     showToast, 
     addTranscript, 
@@ -24,7 +25,7 @@ import {
     validateModelVoiceCompatibility,
     updateWelcomeMessageInput,
     autoResizeTextarea
-} from '/js/ui/ui-utils.js';
+} from '../ui/ui-utils.js';
 
 import { 
     DEFAULT_SETTINGS, 
@@ -32,12 +33,14 @@ import {
     VOICES, 
     AUDIO_CONFIG 
 } from '../core/config.js';
-import { getSavedTheme, applyThemeMode, toggleTheme as themeToggle, listenForExternalChanges } from '/js/ui/theme-sync.js';
+import { getSavedTheme, applyThemeMode, toggleTheme as themeToggle, listenForExternalChanges } from '../ui/theme-sync.js';
 import { SettingsManager } from '../modules/settings-manager.js';
-import { initHamburgerMenu } from '/js/ui/hamburger-menu.js';
+import { initHamburgerMenu } from '../ui/hamburger-menu.js';
 
-class VoiceAvatarApp {
+class VoiceAvatarApp extends BaseVoiceApp {
     constructor() {
+        super('VoiceAvatar');
+
         // Configuration
         this.config = {
             SAMPLE_RATE: 24000,
@@ -53,7 +56,7 @@ class VoiceAvatarApp {
             mediaStream: null,
             audioContext: null,
             scriptProcessor: null,
-            isMuted: false, // Start unmuted usually, but let's check UI
+            isMuted: false,
             isAvatarConnected: false,
             isAvatarPaused: false,
             avatarIceServers: [],
@@ -61,38 +64,17 @@ class VoiceAvatarApp {
             avatarConnectionId: null,
             playbackQueue: [],
             isPlaying: false,
-            currentPlaybackSource: null,
-            settings: { ...DEFAULT_SETTINGS }
+            currentPlaybackSource: null
         };
-
-        // DOM Elements Cache
-        this.elements = {};
     }
 
     /**
      * Initialize the application
      */
-    init() {
-        this.cacheElements();
-        this.loadAppSettings();
-        this.populateSettingsUI();
+    async init() {
+        await super.init();
         this.initializeAvatarUI();
-        this.setupEventListeners();
-        initHamburgerMenu();
-        // Apply the saved theme on init and start listening for external changes
-        try {
-            applyThemeMode(getSavedTheme());
-            listenForExternalChanges((mode) => {
-                // Ensure the theme is applied when changed in another tab/window
-                applyThemeMode(mode);
-            });
-        } catch (err) {
-            // If theme-sync isn't available for some reason, fail silently
-            console.warn('Theme sync initialization failed', err);
-        }
-        // Initial UI state
         this.updateMuteButtonState();
-        
         addTraceEntry('system', window.APP_RESOURCES?.VoiceAvatarInitialized || 'Voice Avatar initialized');
     }
 
@@ -156,11 +138,11 @@ class VoiceAvatarApp {
         if (!charSelect || !styleSelect) return;
 
         // Ensure character list is in sync with catalog (only update styles here)
-        const selectedCharacter = charSelect.value || this.state.settings.avatarCharacter || Object.keys(catalog)[0];
+        const selectedCharacter = charSelect.value || this.currentSettings.avatarCharacter || Object.keys(catalog)[0];
         this.populateStylesForCharacter(selectedCharacter);
 
         // Restore previous selection if available
-        const savedStyle = this.state.settings.avatarStyle;
+        const savedStyle = this.currentSettings.avatarStyle;
         if (savedStyle) {
             styleSelect.value = savedStyle;
         }
@@ -221,9 +203,9 @@ class VoiceAvatarApp {
     }
 
     /**
-     * Cache DOM elements
+     * Initialize DOM element references
      */
-    cacheElements() {
+    initDOMReferences() {
         this.elements = {
             // Avatar Container Elements
             avatarContainer: document.getElementById('avatarContainer'),
@@ -236,7 +218,6 @@ class VoiceAvatarApp {
 
             // Controls
             startButton: document.getElementById('startButton'),
-            stopButton: document.getElementById('stopButton'), // Might need to toggle visibility/state
             muteButton: document.getElementById('muteButton'),
             chatToggle: document.getElementById('chatToggle'),
             traceToggle: document.getElementById('traceToggle'),
@@ -280,98 +261,33 @@ class VoiceAvatarApp {
             hamburgerButton: document.getElementById('hamburgerButton'),
             leftPanel: document.getElementById('leftPanel'),
             closeLeftPanel: document.getElementById('closeLeftPanel'),
-            lp_home: document.getElementById('lp_home'),
-            lp_settingsButton: document.getElementById('lp_settingsButton'),
-            lp_themeToggle: document.getElementById('lp_themeToggle'),
-            lp_chatToggle: document.getElementById('lp_chatToggle'),
+            lp_startButton: document.getElementById('lp_startButton'),
+            lp_muteButton: document.getElementById('lp_muteButton'),
             lp_traceToggle: document.getElementById('lp_traceToggle'),
-            lp_logout: document.getElementById('lp_logout')
+            lp_settingsButton: document.getElementById('lp_settingsButton'),
+            lp_chatToggle: document.getElementById('lp_chatToggle')
         };
-    }
-
-    /**
-     * Load settings
-     */
-    loadAppSettings() {
-        this.state.settings = loadSettings('VoiceAvatar');
+        return !!(this.elements.avatarVideo && this.elements.startButton);
     }
 
     /**
      * Populate settings dropdowns
      */
-    populateSettingsUI() {
-        // Populate Voice Models
-        if (this.elements.voiceModelSelect) {
-            this.elements.voiceModelSelect.innerHTML = '';
-            VOICE_MODELS.forEach(model => {
-                const option = document.createElement('option');
-                option.value = model.id;
-                option.textContent = model.name;
-                option.title = model.description;
-                if (model.id === this.state.settings.voiceModel) {
-                    option.selected = true;
-                }
-                this.elements.voiceModelSelect.appendChild(option);
-            });
-        }
+    async populateSettings() {
+        await super.populateSettings();
 
-        // Populate Voices
-        if (this.elements.voiceSelect) {
-            this.elements.voiceSelect.innerHTML = '';
-            VOICES.forEach(voice => {
-                const option = document.createElement('option');
-                option.value = voice.id;
-                option.textContent = voice.displayName;
-                option.title = voice.description;
-                if (voice.id === this.state.settings.voice) {
-                    option.selected = true;
-                }
-                this.elements.voiceSelect.appendChild(option);
-            });
-        }
-
-        // Set other inputs
-        if (this.elements.welcomeMessageInput) this.elements.welcomeMessageInput.value = this.state.settings.welcomeMessage || '';
-        if (this.elements.modelInstructionsInput) this.elements.modelInstructionsInput.value = this.state.settings.modelInstructions || '';
-        if (this.elements.voiceLiveEndpointInput) this.elements.voiceLiveEndpointInput.value = this.state.settings.voiceLiveEndpoint || '';
-        if (this.elements.voiceLiveApiKeyInput) this.elements.voiceLiveApiKeyInput.value = this.state.settings.voiceLiveApiKey || '';
-        if (this.elements.avatarCharacterSelect) this.elements.avatarCharacterSelect.value = this.state.settings.avatarCharacter || 'lisa';
-        if (this.elements.avatarStyleSelect) this.elements.avatarStyleSelect.value = this.state.settings.avatarStyle || 'casual-sitting';
-        if (this.elements.toastNotificationsToggle) this.elements.toastNotificationsToggle.checked = this.state.settings.showToastNotifications;
+        // Avatar specific
+        if (this.elements.avatarCharacterSelect) this.elements.avatarCharacterSelect.value = this.currentSettings.avatarCharacter || 'lisa';
+        if (this.elements.avatarStyleSelect) this.elements.avatarStyleSelect.value = this.currentSettings.avatarStyle || 'casual-sitting';
     }
 
     /**
      * Setup event listeners
      */
     setupEventListeners() {
-        // Main Controls
-        this.elements.startButton?.addEventListener('click', () => this.toggleSession());
-        this.elements.muteButton?.addEventListener('click', () => this.toggleMute());
-        this.elements.chatToggle?.addEventListener('click', () => toggleTranscriptPanel());
-        this.elements.traceToggle?.addEventListener('click', () => toggleTracePanel());
-        this.elements.settingsButton?.addEventListener('click', () => showSettingsModal());
-        this.elements.themeToggleButton?.addEventListener('click', () => this.toggleTheme());
+        super.setupEventListeners();
 
-        // Hamburger Menu - Handled by initHamburgerMenu()
-        
-        // Left Panel Actions
-        this.elements.lp_settingsButton?.addEventListener('click', () => {
-            document.body.classList.remove('menu-open');
-            showSettingsModal();
-        });
-        
-        // lp_themeToggle is handled by initHamburgerMenu (proxies to themeToggleButton)
-
-        this.elements.lp_chatToggle?.addEventListener('click', () => {
-            document.body.classList.remove('menu-open');
-            toggleTranscriptPanel();
-        });
-        this.elements.lp_traceToggle?.addEventListener('click', () => {
-            document.body.classList.remove('menu-open');
-            toggleTracePanel();
-        });
-
-        // Chat & Trace
+        // Chat & Trace specific
         this.elements.sendTextButton?.addEventListener('click', () => this.sendTextMessage());
         this.elements.textInput?.addEventListener('keypress', (e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
@@ -382,10 +298,6 @@ class VoiceAvatarApp {
         this.elements.textInput?.addEventListener('input', () => autoResizeTextarea(this.elements.textInput));
         this.elements.clearChatButton?.addEventListener('click', () => clearTranscripts());
         this.elements.clearTraceButton?.addEventListener('click', () => clearTraceEntries());
-
-        // Settings Modal
-        this.elements.closeSettingsButton?.addEventListener('click', () => hideSettingsModal());
-        this.elements.saveSettingsButton?.addEventListener('click', () => this.saveAppSettings());
         
         // Settings Logic
         this.elements.voiceSelect?.addEventListener('change', (e) => {
@@ -409,41 +321,7 @@ class VoiceAvatarApp {
             const char = this.elements.avatarCharacterSelect?.value;
             this.updateAvatarPreview(char, style);
         });
-
-        // Close modal on outside click
-        this.elements.settingsModal?.addEventListener('click', (e) => {
-            if (e.target === this.elements.settingsModal) {
-                hideSettingsModal();
-            }
-        });
     }
-
-    /**
-     * Toggle Theme
-     */
-    toggleTheme() {
-        // Delegate theme toggle to centralized theme-sync module
-        try {
-            themeToggle();
-        } catch (err) {
-            // Fallback: toggle data-theme attribute and use SettingsManager if theme-sync fails
-            const html = document.documentElement;
-            const currentTheme = html.getAttribute('data-theme');
-            const newTheme = currentTheme === 'light' ? 'dark' : 'light';
-            html.setAttribute('data-theme', newTheme);
-            
-            try {
-                const themeManager = new SettingsManager('voiceAgent_theme', { theme: 'dark' });
-                themeManager.set({ theme: newTheme });
-                themeManager.save();
-            } catch (e) {
-                console.error('Error saving theme:', e);
-            }
-        }
-    }
-
-
-
 
     /**
      * Toggle Session (Start/Stop)
@@ -478,10 +356,11 @@ class VoiceAvatarApp {
         try {
             await this.connectWebSocket();
             this.sendConfig();
+            this.isSessionActive = true;
             addTraceEntry('system', window.APP_RESOURCES?.WaitingForSessionToBeReady || 'Waiting for session to be ready...');
         } catch (error) {
             addTraceEntry('error', (window.APP_RESOURCES?.AvatarStartError || 'Failed to start avatar: {0}').replace('{0}', error.message));
-            showToast(`${window.APP_RESOURCES?.AvatarStartError || 'Avatar start error'}: ` + error.message, 'error');
+            this.conditionalShowToast(`${window.APP_RESOURCES?.AvatarStartError || 'Avatar start error'}: ` + error.message, 'error');
             this.stopSession();
         }
     }
@@ -525,6 +404,7 @@ class VoiceAvatarApp {
         this.state.isAvatarConnected = false;
         this.state.avatarConnectionId = null;
         this.state.avatarIceServers = [];
+        this.isSessionActive = false;
 
         // Reset UI
         this.showAvatarLoading(false);
@@ -671,7 +551,7 @@ class VoiceAvatarApp {
             case 'Error':
                 const errorMsg = payload?.Message || payload?.message || window.APP_RESOURCES?.UnknownError || 'Unknown error';
                 addTraceEntry('error', (window.APP_RESOURCES?.SessionError || 'Session error: {0}').replace('{0}', errorMsg));
-                showToast(errorMsg, 'error');
+                this.conditionalShowToast(errorMsg, 'error');
                 break;
         }
     }
@@ -797,7 +677,7 @@ class VoiceAvatarApp {
         this.updateAvatarStatus('connected', window.APP_RESOURCES?.Connected || 'Connected');
         this.elements.avatarOverlay?.classList.add('hidden');
         this.startMicrophone();
-        showToast(window.APP_RESOURCES?.AvatarConnected || 'Avatar connected', 'success');
+        this.conditionalShowToast(window.APP_RESOURCES?.AvatarConnected || 'Avatar connected', 'success');
     }
 
     /**
@@ -852,7 +732,7 @@ class VoiceAvatarApp {
 
         } catch (error) {
             addTraceEntry('error', (window.APP_RESOURCES?.MicrophoneError || 'Microphone error: {0}').replace('{0}', error.message));
-            showToast(window.APP_RESOURCES?.MicrophoneError || 'Microphone error', 'error');
+            this.conditionalShowToast(window.APP_RESOURCES?.MicrophoneError || 'Microphone error', 'error');
         }
     }
 
@@ -934,13 +814,13 @@ class VoiceAvatarApp {
         const config = {
             Kind: 'Config',
             SessionType: 'Avatar',
-            VoiceModel: this.state.settings.voiceModel,
-            Voice: this.state.settings.voice,
-            VoiceLiveEndpoint: this.state.settings.voiceLiveEndpoint,
-            VoiceLiveApiKey: this.state.settings.voiceLiveApiKey,
-            VoiceModelInstructions: this.state.settings.modelInstructions,
-            AvatarCharacter: this.state.settings.avatarCharacter,
-            AvatarStyle: this.state.settings.avatarStyle,
+            VoiceModel: this.currentSettings.voiceModel,
+            Voice: this.currentSettings.voice,
+            VoiceLiveEndpoint: this.currentSettings.voiceLiveEndpoint,
+            VoiceLiveApiKey: this.currentSettings.voiceLiveApiKey,
+            VoiceModelInstructions: this.currentSettings.modelInstructions,
+            AvatarCharacter: this.currentSettings.avatarCharacter,
+            AvatarStyle: this.currentSettings.avatarStyle,
             Locale: document.documentElement.lang || 'en-US'
         };
         this.state.websocket.send(JSON.stringify(config));
@@ -955,7 +835,7 @@ class VoiceAvatarApp {
         if (!text) return;
 
         if (!this.state.websocket || this.state.websocket.readyState !== WebSocket.OPEN) {
-            showToast(window.APP_RESOURCES?.NotConnected || 'Not connected', 'error');
+            this.conditionalShowToast(window.APP_RESOURCES?.NotConnected || 'Not connected', 'error');
             return;
         }
 
@@ -1086,7 +966,7 @@ class VoiceAvatarApp {
     handleError(message) {
         const errorText = message.Message || message.message || window.APP_RESOURCES?.UnknownError || 'Unknown error';
         addTraceEntry('error', errorText);
-        showToast(errorText, 'error');
+        this.conditionalShowToast(errorText, 'error');
     }
 
     /**
@@ -1131,20 +1011,33 @@ class VoiceAvatarApp {
     /**
      * Save Settings
      */
-    saveAppSettings() {
-        this.state.settings.voiceModel = this.elements.voiceModelSelect?.value;
-        this.state.settings.voice = this.elements.voiceSelect?.value;
-        this.state.settings.welcomeMessage = this.elements.welcomeMessageInput?.value;
-        this.state.settings.modelInstructions = this.elements.modelInstructionsInput?.value;
-        this.state.settings.voiceLiveEndpoint = this.elements.voiceLiveEndpointInput?.value;
-        this.state.settings.voiceLiveApiKey = this.elements.voiceLiveApiKeyInput?.value;
-        this.state.settings.avatarCharacter = this.elements.avatarCharacterSelect?.value;
-        this.state.settings.avatarStyle = this.elements.avatarStyleSelect?.value;
-        this.state.settings.showToastNotifications = this.elements.toastNotificationsToggle?.checked;
+    saveSettingsFromModal() {
+        const newSettings = {
+            voiceModel: this.elements.voiceModelSelect?.value,
+            voice: this.elements.voiceSelect?.value,
+            welcomeMessage: this.elements.welcomeMessageInput?.value,
+            modelInstructions: this.elements.modelInstructionsInput?.value,
+            voiceLiveEndpoint: this.elements.voiceLiveEndpointInput?.value,
+            voiceLiveApiKey: this.elements.voiceLiveApiKeyInput?.value,
+            avatarCharacter: this.elements.avatarCharacterSelect?.value,
+            avatarStyle: this.elements.avatarStyleSelect?.value,
+            showToastNotifications: this.elements.toastNotificationsToggle?.checked
+        };
 
-        if (saveSettings(this.state.settings, 'VoiceAvatar')) {
-            showToast(window.APP_RESOURCES?.SettingsSaved || 'Settings saved', 'success');
+        const validation = validateModelVoiceCompatibility(newSettings.voiceModel, newSettings.voice);
+        if (!validation.valid) {
+            this.conditionalShowToast(validation.message, 'error');
+            return;
+        }
+
+        if (saveSettings(newSettings, this.pageName)) {
+            this.currentSettings = newSettings;
+            addTraceEntry('system', window.APP_RESOURCES?.SettingsSaved || 'Settings saved');
+            this.conditionalShowToast(window.APP_RESOURCES?.SettingsSaved || 'Settings saved', 'success');
             hideSettingsModal();
+            if (this.state.sessionId || this.state.isAvatarConnected) {
+                this.conditionalShowToast(window.APP_RESOURCES?.RestartSessionForChanges || 'Restart the session to apply changes', 'info');
+            }
         }
     }
 }
@@ -1153,4 +1046,10 @@ class VoiceAvatarApp {
 document.addEventListener('DOMContentLoaded', () => {
     const app = new VoiceAvatarApp();
     app.init();
+    window.voiceAvatarApp = app;
+    
+    // Cleanup event listeners on unload
+    window.addEventListener('beforeunload', () => {
+        app.cleanup();
+    });
 });

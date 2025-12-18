@@ -1,26 +1,15 @@
 @page
 @model VoiceAgentCSharp.Pages.LoginModel
-@using Microsoft.Extensions.Localization
-@using System.Globalization
-@inject IStringLocalizer<SharedResource> Localizer
 @{
+    Layout = "_Layout";
     ViewData["Title"] = Localizer["LoginTitle"];
-    var currentCulture = CultureInfo.CurrentCulture.Name;
 }
 
-<!DOCTYPE html>
-<html lang="@currentCulture.Replace("-", "-").ToLowerInvariant()">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>@ViewData["Title"]</title>
-    <link rel="icon" type="image/svg+xml" href="~/favicon.svg">
-    <link rel="stylesheet" href="~/theme.css" asp-append-version="true">
-    <link rel="stylesheet" href="~/styles.css" asp-append-version="true">
+@section Styles {
     <link rel="stylesheet" href="~/login.css" asp-append-version="true">
-</head>
-<body>
-    <div class="login-container">
+}
+
+<div class="login-container">
         <div class="login-box">
             <h1>@Localizer["LoginTitle"]</h1>
             <p style="margin-bottom: 20px; opacity: 0.8;">@Localizer["LoginMessage"]</p>
@@ -42,5 +31,4 @@
             </form>
         </div>
     </div>
-</body>
-</html>
+

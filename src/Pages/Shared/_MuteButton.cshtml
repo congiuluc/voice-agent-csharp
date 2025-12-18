@@ -1,0 +1,19 @@
+@inject IStringLocalizer<SharedResource> Localizer
+<!-- Mute Button (Bottom Center) -->
+<button id="muteButton" title="@Localizer["ToggleMicrophone"]" aria-label="@Localizer["ToggleMicrophone"]">
+    <!-- Active mic icon (filled for emphasis) -->
+    <svg id="micIcon" width="30" height="30" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <!-- Filled microphone -->
+        <path d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3z"></path>
+        <path d="M19 11v1a7 7 0 0 1-14 0v-1H5a7 7 0 0 0 14 0h-0z" opacity="0.9"></path>
+        <rect x="11" y="17" width="2" height="3" rx="1"></rect>
+    </svg>
+    <!-- Muted mic icon (outline with red slash) -->
+    <svg id="micOffIcon" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-hidden" aria-hidden="true">
+        <!-- Microphone outline -->
+        <path d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3z"></path>
+        <path d="M19 11v1a7 7 0 0 1-14 0v-1"></path>
+        <!-- Red slash (uses currentColor, CSS will tint this icon when visible) -->
+        <line x1="3" y1="3" x2="21" y2="21" stroke="currentColor" stroke-width="2"></line>
+    </svg>
+</button>

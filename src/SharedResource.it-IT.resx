@@ -1,6 +1,6 @@
-<?xml version="1.0" encoding="utf-8"?>
-<root>
-  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+<?xml version='1.0' encoding='utf-8'?>
+<root xmlns:msdata="urn:schemas-microsoft-com:xml-msdata" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <xsd:schema id="root">
     <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
     <xsd:element name="root" msdata:IsDataSet="true">
       <xsd:complexType>
@@ -94,6 +94,9 @@
   <data name="Logout">
     <value>Esci</value>
   </data>
+  <data name="AllProjects">
+    <value>Tutti i Progetti</value>
+  </data>
   <data name="Light">
     <value>Chiaro</value>
   </data>
@@ -123,9 +126,6 @@
   </data>
   <data name="Cortana">
     <value>Cortana</value>
-  </data>
-  <data name="Equalizer">
-    <value>Equalizzatore</value>
   </data>
   <data name="Equalizer">
     <value>Equalizzatore</value>
@@ -171,6 +171,15 @@
   </data>
   <data name="Italian">
     <value>Italiano</value>
+  </data>
+  <data name="French">
+    <value>Francese</value>
+  </data>
+  <data name="Spanish">
+    <value>Spagnolo</value>
+  </data>
+  <data name="German">
+    <value>Tedesco</value>
   </data>
   <data name="GeneralSettings">
     <value>Impostazioni Generali</value>
@@ -547,20 +556,8 @@
   <data name="UnableToSaveSettings">
     <value>Impossibile salvare le impostazioni</value>
   </data>
-  <data name="Disconnected">
-    <value>Disconnesso</value>
-  </data>
   <data name="Connected">
     <value>Connesso</value>
-  </data>
-  <data name="CloseMenu">
-    <value>Chiudi Menu</value>
-  </data>
-  <data name="ClearChat">
-    <value>Cancella Chat</value>
-  </data>
-  <data name="ClearTrace">
-    <value>Cancella Trace</value>
   </data>
   <data name="TraceMessages">
     <value>Trace Messaggi</value>
@@ -570,9 +567,6 @@
   </data>
   <data name="WriteMessage">
     <value>Scrivi un messaggio...</value>
-  </data>
-  <data name="SendMessage">
-    <value>Invia Messaggio</value>
   </data>
   <data name="VoiceLiveEndpoint">
     <value>Voice Live Endpoint</value>
@@ -607,9 +601,7 @@
   <data name="ModelInstructionsHint">
     <value>Testo opzionale che verrà inviato al modello come prompt di sistema (breve, per la voce preferisci frasi concise).</value>
   </data>
-  <data name="ShowNotifications">
-    <value>Mostra Notifiche (Toast)</value>
-  </data>  <data name="ConsumptionDashboard">
+  <data name="ConsumptionDashboard">
     <value>Dashboard Consumo</value>
   </data>
   <data name="CloseDashboard">
@@ -623,9 +615,6 @@
   </data>
   <data name="SessionID">
     <value>ID Sessione:</value>
-  </data>
-  <data name="Model">
-    <value>Modello:</value>
   </data>
   <data name="Status">
     <value>Stato:</value>
@@ -647,12 +636,6 @@
   </data>
   <data name="TokenUsage">
     <value>Utilizzo Token</value>
-  </data>
-  <data name="InputTokens">
-    <value>Token Input:</value>
-  </data>
-  <data name="OutputTokens">
-    <value>Token Output:</value>
   </data>
   <data name="TotalTokens">
     <value>Token Totali:</value>
@@ -692,9 +675,6 @@
   </data>
   <data name="RateLimits">
     <value>Limiti Velocità</value>
-  </data>
-  <data name="TokenConsumptionPerModel">
-    <value>Consumo Token per Modello</value>
   </data>
   <data name="CostsPerModel">
     <value>Costi per Modello</value>
@@ -771,9 +751,6 @@
   <data name="SessionStartError">
     <value>Errore di avvio sessione: {0}</value>
   </data>
-  <data name="SessionEnded">
-    <value>Sessione terminata</value>
-  </data>
   <data name="VoiceAvatarInitialized">
     <value>Voice Avatar inizializzato</value>
   </data>
@@ -786,14 +763,8 @@
   <data name="WaitingForSessionToBeReady">
     <value>In attesa che la sessione sia pronta...</value>
   </data>
-  <data name="AvatarStartError">
-    <value>Errore di avvio avatar</value>
-  </data>
   <data name="StoppingAvatar">
     <value>Arresto avatar...</value>
-  </data>
-  <data name="Disconnected">
-    <value>Disconnesso</value>
   </data>
   <data name="AvatarStopped">
     <value>Avatar arrestato</value>
@@ -831,17 +802,11 @@
   <data name="SessionStartedWithId" xml:space="preserve">
     <value>Sessione avviata: {0}</value>
   </data>
-  <data name="AvatarConnected" xml:space="preserve">
-    <value>Avatar connesso</value>
-  </data>
   <data name="AvatarError" xml:space="preserve">
     <value>Errore avatar: {0}</value>
   </data>
   <data name="MicrophoneStarted" xml:space="preserve">
     <value>Microfono avviato</value>
-  </data>
-  <data name="MicrophoneError" xml:space="preserve">
-    <value>Errore microfono: {0}</value>
   </data>
   <data name="ReceivedAudioData" xml:space="preserve">
     <value>Ricevuti dati audio: {0} byte</value>
@@ -882,12 +847,6 @@
   <data name="ErrorStoppingMicrophone" xml:space="preserve">
     <value>Errore durante l'arresto del microfono: {0}</value>
   </data>
-  <data name="MicrophoneMuted" xml:space="preserve">
-    <value>Microfono silenziato</value>
-  </data>
-  <data name="MicrophoneUnmuted" xml:space="preserve">
-    <value>Microfono riattivato</value>
-  </data>
   <data name="ConfigurationSent" xml:space="preserve">
     <value>Configurazione inviata</value>
   </data>
@@ -903,9 +862,6 @@
   <data name="VoiceNotCompatible" xml:space="preserve">
     <value>La voce selezionata non è compatibile con il modello {0}</value>
   </data>
-  <data name="MicrophoneAccessDenied" xml:space="preserve">
-    <value>Impossibile accedere al microfono</value>
-  </data>
   <data name="UnnamedAgent" xml:space="preserve">
     <value>Agente senza nome</value>
   </data>
@@ -914,9 +870,6 @@
   </data>
   <data name="GeneratingResponse" xml:space="preserve">
     <value>Generazione risposta...</value>
-  </data>
-  <data name="SessionActive" xml:space="preserve">
-    <value>Sessione attiva</value>
   </data>
   <data name="UserSpeaking" xml:space="preserve">
     <value>L'utente sta parlando...</value>
@@ -927,14 +880,8 @@
   <data name="AssistantSpeaking" xml:space="preserve">
     <value>L'assistente sta parlando...</value>
   </data>
-  <data name="SessionError" xml:space="preserve">
-    <value>Errore di sessione</value>
-  </data>
   <data name="Information" xml:space="preserve">
     <value>Informazione</value>
-  </data>
-  <data name="WebSocketConnected" xml:space="preserve">
-    <value>WebSocket connesso</value>
   </data>
   <data name="Speaking" xml:space="preserve">
     <value>Parlando...</value>
@@ -954,9 +901,6 @@
   <data name="CasualSitting" xml:space="preserve">
     <value>Casual Sitting</value>
   </data>
-  <data name="MicrophoneMuted" xml:space="preserve">
-    <value>Microfono disattivato</value>
-  </data>
   <data name="ApplicationInitialized" xml:space="preserve">
     <value>Applicazione inizializzata</value>
   </data>
@@ -968,9 +912,6 @@
   </data>
   <data name="Warning" xml:space="preserve">
     <value>Attenzione</value>
-  </data>
-  <data name="Error" xml:space="preserve">
-    <value>Errore</value>
   </data>
   <data name="Notification" xml:space="preserve">
     <value>Notifica</value>
@@ -987,9 +928,6 @@
   <data name="FailedToObtainLocalSdp" xml:space="preserve">
     <value>Impossibile ottenere SDP locale</value>
   </data>
-  <data name="WebSocketError" xml:space="preserve">
-    <value>Errore WebSocket</value>
-  </data>
   <data name="WebSocketConnectionLost" xml:space="preserve">
     <value>Connessione WebSocket persa</value>
   </data>
@@ -1005,116 +943,8 @@
   <data name="CriticalError" xml:space="preserve">
     <value>Errore critico</value>
   </data>
-  <data name="MessageSent" xml:space="preserve">
-    <value>Messaggio inviato: {0}</value>
-  </data>
-  <data name="SessionId" xml:space="preserve">
-    <value>Sessione: {0}...</value>
-  </data>
-  <data name="NoGesturesAvailable" xml:space="preserve">
-    <value>Nessun gesto disponibile per questa combinazione.</value>
-  </data>
-  <data name="AudioOnlyMode" xml:space="preserve">
-    <value>Modalità solo audio</value>
-  </data>
-  <data name="DisconnectedFromServer" xml:space="preserve">
-    <value>Disconnesso dal server</value>
-  </data>
-  <data name="SettingsSaved" xml:space="preserve">
-    <value>Impostazioni salvate</value>
-  </data>
-  <data name="AvatarStartError" xml:space="preserve">
-    <value>Errore di avvio avatar</value>
-  </data>
-  <data name="AvatarStopped" xml:space="preserve">
-    <value>Avatar fermato</value>
-  </data>
-  <data name="SessionEnded" xml:space="preserve">
-    <value>Sessione terminata</value>
-  </data>
-  <data name="WebSocketClosed" xml:space="preserve">
-    <value>WebSocket chiuso: {0}</value>
-  </data>
-  <data name="FailedToParseMessage" xml:space="preserve">
-    <value>Impossibile analizzare il messaggio: {0}</value>
-  </data>
-  <data name="ReceivedKind" xml:space="preserve">
-    <value>Ricevuto: {0}</value>
-  </data>
-  <data name="SessionEvent" xml:space="preserve">
-    <value>Evento sessione: {0}</value>
-  </data>
-  <data name="SessionConnected" xml:space="preserve">
-    <value>Sessione connessa</value>
-  </data>
-  <data name="SessionError" xml:space="preserve">
-    <value>Errore sessione: {0}</value>
-  </data>
-  <data name="StartingWebRtc" xml:space="preserve">
-    <value>Avvio connessione WebRTC...</value>
-  </data>
-  <data name="UsingDefaultStun" xml:space="preserve">
-    <value>Utilizzo del server STUN predefinito</value>
-  </data>
-  <data name="WebRtcState" xml:space="preserve">
-    <value>Stato WebRTC: {0}</value>
-  </data>
-  <data name="SentSdpOffer" xml:space="preserve">
-    <value>Offerta SDP inviata tramite WebSocket</value>
-  </data>
   <data name="WebRtcError" xml:space="preserve">
     <value>Errore WebRTC: {0}</value>
-  </data>
-  <data name="WebRtcHandshakeCompleted" xml:space="preserve">
-    <value>Handshake WebRTC completato</value>
-  </data>
-  <data name="AvatarConnected" xml:space="preserve">
-    <value>Avatar connesso</value>
-  </data>
-  <data name="EnteringAudioOnlyMode" xml:space="preserve">
-    <value>Entrata in modalità solo audio</value>
-  </data>
-  <data name="MicrophoneStarted" xml:space="preserve">
-    <value>Microfono avviato</value>
-  </data>
-  <data name="MicrophoneError" xml:space="preserve">
-    <value>Errore microfono: {0}</value>
-  </data>
-  <data name="MicrophoneStopped" xml:space="preserve">
-    <value>Microfono fermato</value>
-  </data>
-  <data name="ErrorStoppingMicrophone" xml:space="preserve">
-    <value>Errore durante l'arresto del microfono: {0}</value>
-  </data>
-  <data name="MicrophoneUnmuted" xml:space="preserve">
-    <value>Microfono riattivato</value>
-  </data>
-  <data name="ConfigurationSent" xml:space="preserve">
-    <value>Configurazione inviata</value>
-  </data>
-  <data name="NotConnected" xml:space="preserve">
-    <value>Non connesso</value>
-  </data>
-  <data name="StartingAvatarSession" xml:space="preserve">
-    <value>Avvio sessione avatar...</value>
-  </data>
-  <data name="WaitingForSessionToBeReady" xml:space="preserve">
-    <value>In attesa che la sessione sia pronta...</value>
-  </data>
-  <data name="ConnectingTo" xml:space="preserve">
-    <value>Connessione a {0}</value>
-  </data>
-  <data name="WebSocketConnected" xml:space="preserve">
-    <value>WebSocket connesso</value>
-  </data>
-  <data name="AudioOnly" xml:space="preserve">
-    <value>Solo Audio</value>
-  </data>
-  <data name="Speaking" xml:space="preserve">
-    <value>Parlando...</value>
-  </data>
-  <data name="Connecting" xml:space="preserve">
-    <value>Connessione in corso...</value>
   </data>
   <data name="AvatarHarry" xml:space="preserve">
     <value>Harry</value>
@@ -1134,45 +964,6 @@
   <data name="AvatarMeg" xml:space="preserve">
     <value>Meg</value>
   </data>
-  <data name="ConversationCleared" xml:space="preserve">
-    <value>Conversazione cancellata</value>
-  </data>
-  <data name="TraceCleared" xml:space="preserve">
-    <value>Trace cancellato</value>
-  </data>
-  <data name="SessionStarted" xml:space="preserve">
-    <value>Sessione avviata</value>
-  </data>
-  <data name="SessionActive" xml:space="preserve">
-    <value>Sessione attiva</value>
-  </data>
-  <data name="SessionStartedWith" xml:space="preserve">
-    <value>Sessione avviata con {0}</value>
-  </data>
-  <data name="SessionStartFailed" xml:space="preserve">
-    <value>Impossibile avviare la sessione</value>
-  </data>
-  <data name="SessionStartError" xml:space="preserve">
-    <value>Errore di avvio sessione: {0}</value>
-  </data>
-  <data name="StartSessionBeforeMessage" xml:space="preserve">
-    <value>Avvia una sessione per inviare messaggi</value>
-  </data>
-  <data name="ConnectionLost" xml:space="preserve">
-    <value>Connessione persa</value>
-  </data>
-  <data name="AssistantSpeaking" xml:space="preserve">
-    <value>L'assistente sta parlando...</value>
-  </data>
-  <data name="GeneratingResponse" xml:space="preserve">
-    <value>Generazione risposta...</value>
-  </data>
-  <data name="UserSpeaking" xml:space="preserve">
-    <value>L'utente sta parlando...</value>
-  </data>
-  <data name="Processing" xml:space="preserve">
-    <value>Elaborazione...</value>
-  </data>
   <data name="InputCostChart" xml:space="preserve">
     <value>Costo Input ($)</value>
   </data>
@@ -1185,38 +976,14 @@
   <data name="NoData" xml:space="preserve">
     <value>Nessun Dato</value>
   </data>
-  <data name="NoActiveModels" xml:space="preserve">
-    <value>Nessun modello attivo</value>
-  </data>
-  <data name="NoTokenConsumptionRecorded" xml:space="preserve">
-    <value>Nessun consumo di token registrato</value>
-  </data>
-  <data name="Model" xml:space="preserve">
-    <value>Modello</value>
-  </data>
-  <data name="InputTokens" xml:space="preserve">
-    <value>Token Input</value>
-  </data>
-  <data name="OutputTokens" xml:space="preserve">
-    <value>Token Output</value>
-  </data>
   <data name="CacheTokens" xml:space="preserve">
     <value>Token Cache</value>
-  </data>
-  <data name="Total" xml:space="preserve">
-    <value>Totale</value>
   </data>
   <data name="Sessions" xml:space="preserve">
     <value>Sessioni</value>
   </data>
-  <data name="ReloadPage" xml:space="preserve">
-    <value>Ricarica Pagina</value>
-  </data>
   <data name="ReloadPageTitle" xml:space="preserve">
     <value>Ricarica pagina</value>
-  </data>
-  <data name="ApplicationError" xml:space="preserve">
-    <value>⚠️ Errore Applicazione</value>
   </data>
   <data name="CostLabel" xml:space="preserve">
     <value>Costo ($)</value>
@@ -1230,32 +997,14 @@
   <data name="LightThemeActive" xml:space="preserve">
     <value>Tema chiaro attivo. Premi per cambiare.</value>
   </data>
-  <data name="NotConnected" xml:space="preserve">
-    <value>Non connesso</value>
-  </data>
   <data name="ClickStartToBegin" xml:space="preserve">
     <value>Clicca "Avvia" per iniziare</value>
-  </data>
-  <data name="Connecting" xml:space="preserve">
-    <value>Connessione in corso...</value>
-  </data>
-  <data name="TraceMessages" xml:space="preserve">
-    <value>Trace Messaggi</value>
-  </data>
-  <data name="Chat" xml:space="preserve">
-    <value>Chat</value>
   </data>
   <data name="VoiceAvatarSettings" xml:space="preserve">
     <value>Impostazioni Voice Avatar</value>
   </data>
   <data name="WriteAMessage" xml:space="preserve">
     <value>Scrivi un messaggio...</value>
-  </data>
-  <data name="VoiceLiveEndpoint" xml:space="preserve">
-    <value>Voice Live Endpoint:</value>
-  </data>
-  <data name="VoiceLiveApiKey" xml:space="preserve">
-    <value>Voice Live API Key:</value>
   </data>
   <data name="AvatarCharacter" xml:space="preserve">
     <value>Personaggio Avatar:</value>
@@ -1275,21 +1024,6 @@
   <data name="ModelInstructions" xml:space="preserve">
     <value>Istruzioni per il modello (opzionale):</value>
   </data>
-  <data name="ShowNotifications" xml:space="preserve">
-    <value>Mostra notifiche (Toast):</value>
-  </data>
-  <data name="SaveSettings" xml:space="preserve">
-    <value>Salva Impostazioni</value>
-  </data>
-  <data name="EnterApiKey" xml:space="preserve">
-    <value>Inserisci la API Key</value>
-  </data>
-  <data name="SelectVoiceModel" xml:space="preserve">
-    <value>Seleziona il modello vocale preferito</value>
-  </data>
-  <data name="SelectVoice" xml:space="preserve">
-    <value>Seleziona la voce dell'assistente</value>
-  </data>
   <data name="SelectAvatarCharacter" xml:space="preserve">
     <value>Seleziona il personaggio dell'avatar</value>
   </data>
@@ -1305,16 +1039,4 @@
   <data name="GesturesHint" xml:space="preserve">
     <value>Seleziona un personaggio e uno stile per vedere i gesti disponibili.</value>
   </data>
-  <data name="WelcomeMessageHint" xml:space="preserve">
-    <value>Il messaggio personalizzato per la sessione</value>
-  </data>
-  <data name="ModelInstructionsHint" xml:space="preserve">
-    <value>Testo opzionale che verrà inviato al modello come prompt di sistema (breve, per la voce preferisci frasi concise).</value>
-  </data>
-  <data name="VoiceLiveEndpointHint" xml:space="preserve">
-    <value>URL del servizio Voice Live (es. https://*.cognitiveservices.azure.com)</value>
-  </data>
-  <data name="VoiceLiveApiKeyHint" xml:space="preserve">
-    <value>Chiave API per l'autenticazione verso Voice Live</value>
-  </data>
-</root>
+  </root>

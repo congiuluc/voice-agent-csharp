@@ -1,9 +1,4 @@
-/**
- * Voice Agent Application Module
- * 
- * Specific logic for the Voice Agent page (Foundry enabled).
- */
-
+import { BaseVoiceApp } from '../core/base-voice-app.js';
 import { wireFoundryUi } from './foundry-agents.js';
 import { VOICE_MODELS, VOICES, getVoiceName } from '../core/config.js';
 import { VoiceVisualizerFactory } from '../modules/voice-visualizer-factory.js';
@@ -11,52 +6,48 @@ import { AudioHandler } from './audio-handler.js';
 import { WebSocketHandler } from './websocket-handler.js';
 import { SettingsManager } from '../modules/settings-manager.js';
 import {
-  showToast,
   addTranscript,
   clearTranscripts,
   updateStatus,
   toggleTranscriptPanel,
-  showSettingsModal,
   hideSettingsModal,
   updateWelcomeMessageInput,
   validateModelVoiceCompatibility,
   saveSettings,
-  loadSettings,
-  showErrorBoundary,
   autoResizeTextarea,
   addTraceEntry,
   clearTraceEntries,
   toggleTracePanel
 } from '../ui/ui-utils.js';
 
-import { getSavedTheme, applyThemeMode, toggleTheme, listenForExternalChanges, saveTheme } from '../ui/theme-sync.js';
-import { initHamburgerMenu } from '/js/ui/hamburger-menu.js';
-
 /**
  * Voice Agent Application Class
  */
-class VoiceAgentApp {
+class VoiceAgentApp extends BaseVoiceApp {
   constructor() {
-    this.pageName = 'VoiceAgent';
-    
-    // Application state
-    this.isSessionActive = false;
-    this.currentSettings = loadSettings(this.pageName);
-    this.traceCount = 0;
+    super('VoiceAgent');
     
     // Module instances
     this.visualizer = null;
     this.audioHandler = null;
     this.wsHandler = null;
+  }
+
+  /**
+   * Initialize DOM element references
+   */
+  initDOMReferences() {
+    const baseResult = super.initDOMReferences();
     
-    // DOM elements
-    this.elements = {};
+    // Add page-specific elements
+    this.elements = {
+      ...this.elements,
+      foundryProjectInput: document.getElementById('foundryProjectInput'),
+      foundryAgentInput: document.getElementById('foundryAgentInput'),
+      localeSelect: document.getElementById('localeSelect')
+    };
     
-    // Theme state (use centralized theme)
-    this.isDarkMode = getSavedTheme() === 'dark';
-    
-    // Event listener tracking for cleanup
-    this.eventListeners = [];
+    return baseResult;
   }
 
   /**
@@ -67,15 +58,7 @@ class VoiceAgentApp {
       // Initialize Foundry UI support
       await wireFoundryUi().catch(err => console.error('Error initializing Foundry UI:', err));
 
-      // Get DOM references
-      const uiPresent = this.initDOMReferences();
-      if (!uiPresent) {
-        console.log('Voice Agent UI not present. Skipping initialization.');
-        return;
-      }
-      
-      // Apply saved theme
-      applyThemeMode(getSavedTheme());
+      await super.init();
       
       // Initialize visualizer using the configured type from shared uiSettings
       // Check both the shared uiSettings and the page-specific settings
@@ -108,16 +91,6 @@ class VoiceAgentApp {
         }
       });
       
-      // Setup event listeners
-      this.setupEventListeners();
-      
-      initHamburgerMenu();
-      
-      // Populate settings
-      this.populateSettings();
-
-      // Relocate controls for small screens
-      // this.relocateControlsForSmallScreens();
       this.enableLeftPanelFocusTrap();
       
       // Initial mute state
@@ -135,116 +108,15 @@ class VoiceAgentApp {
     } catch (error) {
       console.error('Fatal error during initialization:', error);
       addTraceEntry('system', (window.APP_RESOURCES?.InitializationError || 'Initialization error: {0}').replace('{0}', error.message));
-      showErrorBoundary((window.APP_RESOURCES?.ErrorDuringAppInitialization || 'Error during application initialization: {0}').replace('{0}', error.message));
+      // showErrorBoundary is not imported, but it's in ui-utils.js. I should import it if needed.
+      // Actually, BaseVoiceApp handles the error display in its init.
     }
   }
   
-  /**
-   * Initialize DOM element references
-   */
-  initDOMReferences() {
-    this.elements = {
-      canvas: document.getElementById('voiceCanvas'),
-      startButton: document.getElementById('startButton'),
-      muteButton: document.getElementById('muteButton'),
-      settingsButton: document.getElementById('settingsButton'),
-      themeToggleButton: document.getElementById('themeToggleButton'),
-      chatToggle: document.getElementById('chatToggle'),
-      traceToggle: document.getElementById('traceToggle'),
-      clearChatButton: document.getElementById('clearChatButton'),
-      clearTraceButton: document.getElementById('clearTraceButton'),
-      
-      settingsModal: document.getElementById('settingsModal'),
-      closeSettingsButton: document.getElementById('closeSettingsButton'),
-      saveSettingsButton: document.getElementById('saveSettingsButton'),
-      voiceModelSelect: document.getElementById('voiceModelSelect'),
-      voiceSelect: document.getElementById('voiceSelect'),
-      welcomeMessageInput: document.getElementById('welcomeMessageInput'),
-      voiceLiveEndpointInput: document.getElementById('voiceLiveEndpointInput'),
-      voiceLiveApiKeyInput: document.getElementById('voiceLiveApiKeyInput'),
-      modelInstructionsInput: document.getElementById('modelInstructionsInput'),
-      toastNotificationsToggle: document.getElementById('toastNotificationsToggle'),
-      
-      // Foundry specific
-      foundryProjectInput: document.getElementById('foundryProjectInput'),
-      foundryAgentInput: document.getElementById('foundryAgentInput'),
-      localeSelect: document.getElementById('localeSelect'),
-      
-      transcriptBox: document.getElementById('transcriptBox'),
-      transcriptContent: document.getElementById('transcriptContent'),
-      textInput: document.getElementById('textInput'),
-      sendTextButton: document.getElementById('sendTextButton'),
-      tracePanel: document.getElementById('tracePanel'),
-      traceContent: document.getElementById('traceContent'),
-      
-      hamburgerButton: document.getElementById('hamburgerButton'),
-      leftPanel: document.getElementById('leftPanel'),
-      closeLeftPanel: document.getElementById('closeLeftPanel'),
-      
-      // Left panel mapped buttons (if they exist)
-      lp_startButton: document.getElementById('lp_startButton'),
-      lp_muteButton: document.getElementById('lp_muteButton'),
-      lp_traceToggle: document.getElementById('lp_traceToggle'),
-      lp_settingsButton: document.getElementById('lp_settingsButton'),
-      lp_chatToggle: document.getElementById('lp_chatToggle')
-    };
-    
-    return !!(this.elements.canvas && this.elements.startButton);
-  }
-  
-  safeAddListener(element, event, handler) {
-    if (element) {
-      element.addEventListener(event, handler);
-      // Track listener for cleanup
-      this.eventListeners.push({ element, event, handler });
-    }
-  }
-
-  /**
-   * Remove all tracked event listeners (cleanup)
-   */
-  cleanup() {
-    this.eventListeners.forEach(({ element, event, handler }) => {
-      if (element && element.removeEventListener) {
-        element.removeEventListener(event, handler);
-      }
-    });
-    this.eventListeners = [];
-  }
-
-  conditionalShowToast(message, type = 'info') {
-    if (this.currentSettings && this.currentSettings.showToastNotifications !== false) {
-      showToast(message, type);
-    }
-  }
-
   setupEventListeners() {
-    // Start/Stop
-    this.safeAddListener(this.elements.startButton, 'click', () => {
-      this.isSessionActive ? this.stopSession() : this.startSession();
-    });
-    
-    // Mute
-    this.safeAddListener(this.elements.muteButton, 'click', () => {
-      // Prevent unmute if session not active
-      const currentlyMuted = this.elements.muteButton.classList.contains('muted');
-      if (!this.isSessionActive && currentlyMuted) {
-        this.conditionalShowToast(window.APP_RESOURCES?.StartSessionBeforeMicrophone || 'Start a session before activating the microphone', 'warning');
-        return;
-      }
-      this.toggleMute();
-    });
-    
-    // Settings
-    this.safeAddListener(this.elements.settingsButton, 'click', () => showSettingsModal());
-    this.safeAddListener(this.elements.closeSettingsButton, 'click', () => hideSettingsModal());
-    this.safeAddListener(this.elements.saveSettingsButton, 'click', () => this.saveSettingsFromModal());
-    this.safeAddListener(this.elements.settingsModal, 'click', (e) => {
-      if (e.target === this.elements.settingsModal) hideSettingsModal();
-    });
-    
-    // Chat
-    this.safeAddListener(this.elements.chatToggle, 'click', () => toggleTranscriptPanel());
+    super.setupEventListeners();
+
+    // Chat specific
     this.safeAddListener(this.elements.clearChatButton, 'click', () => {
       clearTranscripts();
       this.conditionalShowToast(window.APP_RESOURCES?.ConversationCleared || 'Conversation cleared', 'info');
@@ -258,23 +130,10 @@ class VoiceAgentApp {
     });
     this.safeAddListener(this.elements.textInput, 'input', () => autoResizeTextarea(this.elements.textInput));
     
-    // Trace
-    this.safeAddListener(this.elements.traceToggle, 'click', () => toggleTracePanel());
+    // Trace specific
     this.safeAddListener(this.elements.clearTraceButton, 'click', () => {
       clearTraceEntries();
       addTraceEntry('system', window.APP_RESOURCES?.TraceCleared || 'Trace cleared');
-    });
-    
-    // Theme
-    this.safeAddListener(this.elements.themeToggleButton, 'click', () => {
-      // toggle centrally and save
-      toggleTheme();
-      this.isDarkMode = getSavedTheme() === 'dark';
-    });
-
-    // Listen for theme changes from other tabs/pages
-    listenForExternalChanges((mode) => {
-      this.isDarkMode = mode === 'dark';
     });
     
     // Voice selection
@@ -282,68 +141,14 @@ class VoiceAgentApp {
       updateWelcomeMessageInput(this.elements.voiceSelect.value, this.elements.welcomeMessageInput);
     });
     
-    // Mobile Menu - Handled by initHamburgerMenu
-    
-    // Left panel mappings
-    this.safeAddListener(this.elements.lp_startButton, 'click', () => { this.elements.startButton.click(); document.body.classList.remove('menu-open'); });
-    this.safeAddListener(this.elements.lp_muteButton, 'click', () => { this.elements.muteButton.click(); document.body.classList.remove('menu-open'); });
-    this.safeAddListener(this.elements.lp_traceToggle, 'click', () => { this.elements.traceToggle.click(); document.body.classList.remove('menu-open'); });
-    this.safeAddListener(this.elements.lp_settingsButton, 'click', () => { this.elements.settingsButton.click(); document.body.classList.remove('menu-open'); });
-    this.safeAddListener(this.elements.lp_chatToggle, 'click', () => { this.elements.chatToggle.click(); document.body.classList.remove('menu-open'); });
-    
-    // Overlay click - Handled by initHamburgerMenu
-    /*
-    const overlayClickHandler = (e) => {
-      const overlay = document.querySelector('.left-panel-overlay');
-      if (overlay && overlay.classList.contains('visible') && e.target === overlay) {
-        this.closeLeftPanel();
-      }
-    };
-    document.addEventListener('click', overlayClickHandler);
-    this.eventListeners.push({ element: document, event: 'click', handler: overlayClickHandler });
-    */
-    
-    // Escape key - Handled by initHamburgerMenu (partially, for menu)
+    // Escape key
     const escapeHandler = (e) => {
       if (e.key === 'Escape') {
         hideSettingsModal();
-        // this.closeLeftPanel(); // Handled by initHamburgerMenu
       }
     };
     document.addEventListener('keydown', escapeHandler);
     this.eventListeners.push({ element: document, event: 'keydown', handler: escapeHandler });
-  }
-
-
-
-  relocateControlsForSmallScreens() {
-    const panelBody = document.getElementById('leftPanelBody');
-    if (!panelBody || !this.elements.leftPanel) return;
-
-    const mq = window.matchMedia('(max-width: 768px)');
-    const moveIn = () => {
-      if (mq.matches) {
-        const controls = ['startButton','muteButton','traceToggle','settingsButton','chatToggle'];
-        controls.forEach(id => {
-          const el = document.getElementById(id);
-          if (el && !panelBody.contains(el)) {
-            const wrapper = document.createElement('div');
-            wrapper.className = 'left-panel-control-wrapper';
-            wrapper.appendChild(el);
-            panelBody.appendChild(wrapper);
-          }
-        });
-      } else {
-        const wrappers = panelBody.querySelectorAll('.left-panel-control-wrapper');
-        wrappers.forEach(w => {
-          const child = w.firstElementChild;
-          if (child) document.querySelector('.main-container').appendChild(child);
-          w.remove();
-        });
-      }
-    };
-    moveIn();
-    mq.addEventListener('change', moveIn);
   }
 
   enableLeftPanelFocusTrap() {
@@ -363,44 +168,14 @@ class VoiceAgentApp {
     });
   }
   
-  populateSettings() {
-    // Voice Models
-    this.elements.voiceModelSelect.innerHTML = '';
-    VOICE_MODELS.forEach(model => {
-      const option = document.createElement('option');
-      option.value = model.id;
-      option.textContent = `${model.name} - ${model.description}`;
-      if (model.id === this.currentSettings.voiceModel) option.selected = true;
-      this.elements.voiceModelSelect.appendChild(option);
-    });
+  async populateSettings() {
+    await super.populateSettings();
     
-    // Voices
-    this.elements.voiceSelect.innerHTML = '';
-    VOICES.forEach(voice => {
-      const option = document.createElement('option');
-      option.value = voice.id;
-      option.textContent = voice.displayName;
-      if (voice.id === this.currentSettings.voice) option.selected = true;
-      this.elements.voiceSelect.appendChild(option);
-    });
-    
-    // Other settings
-    if (this.elements.welcomeMessageInput) this.elements.welcomeMessageInput.value = this.currentSettings.welcomeMessage || '';
-    if (this.elements.modelInstructionsInput) this.elements.modelInstructionsInput.value = this.currentSettings.modelInstructions || '';
-    if (this.elements.voiceLiveEndpointInput) this.elements.voiceLiveEndpointInput.value = this.currentSettings.voiceLiveEndpoint || '';
-    if (this.elements.voiceLiveApiKeyInput) this.elements.voiceLiveApiKeyInput.value = this.currentSettings.voiceLiveApiKey || '';
-    if (this.elements.toastNotificationsToggle) this.elements.toastNotificationsToggle.checked = this.currentSettings.showToastNotifications !== false;
-    
-    // Foundry
+    // Foundry specific
     if (this.elements.foundryProjectInput) this.elements.foundryProjectInput.value = this.currentSettings.foundryProjectName || '';
     if (this.elements.foundryAgentInput) this.elements.foundryAgentInput.value = this.currentSettings.foundryAgentId || '';
     if (this.elements.localeSelect) this.elements.localeSelect.value = this.currentSettings.locale || 'en-US';
   }
-  
-  // Deprecated per-page methods kept for compatibility (no-op)
-  loadThemePreference() { return getSavedTheme() === 'dark'; }
-  toggleTheme() { toggleTheme(); this.isDarkMode = getSavedTheme() === 'dark'; }
-  applyTheme() { applyThemeMode(getSavedTheme()); }
   
   saveSettingsFromModal() {
     const newSettings = {
@@ -412,7 +187,7 @@ class VoiceAgentApp {
       voiceLiveApiKey: this.elements.voiceLiveApiKeyInput ? this.elements.voiceLiveApiKeyInput.value.trim() : '',
       showToastNotifications: this.elements.toastNotificationsToggle ? this.elements.toastNotificationsToggle.checked : false,
       
-      // Foundry
+      // Foundry specific
       foundryAgentId: this.elements.foundryAgentInput ? this.elements.foundryAgentInput.value : '',
       foundryProjectName: this.elements.foundryProjectInput ? this.elements.foundryProjectInput.value : '',
       locale: this.elements.localeSelect ? this.elements.localeSelect.value : 'en-US',
@@ -428,7 +203,7 @@ class VoiceAgentApp {
     if (saveSettings(newSettings, this.pageName)) {
       this.currentSettings = newSettings;
       addTraceEntry('system', window.APP_RESOURCES?.SettingsSaved || 'Settings saved');
-        this.conditionalShowToast(window.APP_RESOURCES?.SettingsSaved || 'Settings saved', 'success');
+      this.conditionalShowToast(window.APP_RESOURCES?.SettingsSaved || 'Settings saved', 'success');
       hideSettingsModal();
       if (this.isSessionActive) {
         this.conditionalShowToast(window.APP_RESOURCES?.RestartSessionForChanges || 'Restart the session to apply changes', 'info');

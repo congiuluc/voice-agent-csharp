@@ -1,24 +1,15 @@
 @page
 @model VoiceAgentCSharp.Pages.Admin.CallMonitoringModel
-@using Microsoft.Extensions.Localization
-@inject IStringLocalizer<SharedResource> Localizer
 @{
+    Layout = "_Layout";
     ViewData["Title"] = Localizer["CallMonitoringTitle"];
 }
 
-<!DOCTYPE html>
-<html lang="@System.Globalization.CultureInfo.CurrentCulture.TwoLetterISOLanguageName">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>@ViewData["Title"]</title>
-    <link rel="icon" type="image/svg+xml" href="~/favicon.svg">
-    <link rel="stylesheet" href="~/theme.css" asp-append-version="true">
-    <link rel="stylesheet" href="~/styles.css" asp-append-version="true">
+@section Styles {
     <script src="~/js/ui/chart.js" asp-append-version="true"></script>
-</head>
-<body>
-    <div class="main-container">
+}
+
+<div class="main-container">
         <!-- Main Title -->
         <h1><span class="brand-l">Call</span> <span class="brand-ia">Monitoring</span></h1>
 
@@ -349,18 +340,7 @@
         </div>
     </div>
 
-    <!-- Error Boundary -->
-    <div id="errorBoundary" class="error-boundary">
-        <div class="error-content">
-            <h2>⚠️ @Localizer["ApplicationError"]</h2>
-            <p id="errorMessage"></p>
-            <button id="reloadButton" title="@Localizer["ReloadPage"]">@Localizer["ReloadPage"]</button>
-        </div>
-    </div>
-
-    <!-- Toast Notification Container -->
-    <div id="toastContainer" class="toast-container"></div>
-
+@section Scripts {
     <!-- Theme toggle script -->
     <script type="module" src="~/js/ui/index-theme.js" asp-append-version="true"></script>
     
@@ -379,5 +359,4 @@
         import { initHamburgerMenu } from '/js/ui/hamburger-menu.js';
         document.addEventListener('DOMContentLoaded', initHamburgerMenu);
     </script>
-</body>
-</html>
+}

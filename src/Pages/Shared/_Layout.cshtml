@@ -1,0 +1,47 @@
+@{
+    var currentCulture = CultureInfo.CurrentCulture.Name;
+}
+<!DOCTYPE html>
+<html lang="@currentCulture.Replace("-", "-").ToLowerInvariant()">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>@ViewData["Title"]</title>
+    <link rel="icon" type="image/svg+xml" href="~/favicon.svg">
+    <link rel="stylesheet" href="~/theme.css" asp-append-version="true">
+    <link rel="stylesheet" href="~/styles.css" asp-append-version="true">
+    @RenderSection("Styles", required: false)
+    
+    <script>
+        @{
+            var resources = new Dictionary<string, string>();
+            try {
+                resources = Localizer.GetAllStrings().ToDictionary(x => x.Name, x => x.Value);
+            } catch {
+                // Fallback if manifest is missing
+            }
+        }
+        window.APP_RESOURCES = @Html.Raw(JsonSerializer.Serialize(resources));
+    </script>
+</head>
+<body>
+    <div class="sun-flares">
+        <div class="flare"></div>
+        <div class="flare two"></div>
+        <div class="flare three"></div>
+    </div>
+    @RenderBody()
+
+    <div id="errorBoundary" class="error-boundary hidden">
+        <div class="error-content">
+            <h2 data-localize="ErrorOccurred">An error occurred</h2>
+            <p id="errorMessage"></p>
+            <button onclick="location.reload()" data-localize="ReloadPage">Reload Page</button>
+        </div>
+    </div>
+
+    <div id="toastContainer" class="toast-container"></div>
+
+    @RenderSection("Scripts", required: false)
+</body>
+</html>

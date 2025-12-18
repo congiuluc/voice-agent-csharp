@@ -1,0 +1,38 @@
+@using System.Globalization
+@{
+    var currentCulture = CultureInfo.CurrentCulture.Name;
+}
+
+<div class="setting-group">
+    <label>@Localizer["Language"]:</label>
+    <div class="custom-dropdown" id="languageDropdown">
+        <div class="dropdown-selected" id="languageSelected">
+            <img src="https://flagcdn.com/w40/us.png" class="flag-icon" alt="US">
+            <span>@Localizer["English"]</span>
+        </div>
+        <div class="dropdown-options" id="languageOptions">
+            <div class="dropdown-option" data-value="en-US" data-flag="us">
+                <img src="https://flagcdn.com/w40/us.png" class="flag-icon" alt="US">
+                <span>@Localizer["English"]</span>
+            </div>
+            <div class="dropdown-option" data-value="it-IT" data-flag="it">
+                <img src="https://flagcdn.com/w40/it.png" class="flag-icon" alt="IT">
+                <span>@Localizer["Italian"]</span>
+            </div>
+            <div class="dropdown-option" data-value="fr-FR" data-flag="fr">
+                <img src="https://flagcdn.com/w40/fr.png" class="flag-icon" alt="FR">
+                <span>@Localizer["French"]</span>
+            </div>
+            <div class="dropdown-option" data-value="es-ES" data-flag="es">
+                <img src="https://flagcdn.com/w40/es.png" class="flag-icon" alt="ES">
+                <span>@Localizer["Spanish"]</span>
+            </div>
+            <div class="dropdown-option" data-value="de-DE" data-flag="de">
+                <img src="https://flagcdn.com/w40/de.png" class="flag-icon" alt="DE">
+                <span>@Localizer["German"]</span>
+            </div>
+        </div>
+    </div>
+    <input type="hidden" id="languageSelect" value="@currentCulture">
+    <span class="setting-hint">@Localizer["SelectLanguage"]</span>
+</div>

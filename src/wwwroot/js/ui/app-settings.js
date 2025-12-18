@@ -27,6 +27,9 @@ function initializeSettingsModal() {
   const closeButton = document.getElementById('closeSettingsButton');
   const saveButton = document.getElementById('saveSettingsButton');
 
+  // Initialize custom dropdowns
+  initCustomDropdowns();
+
   // Load settings
   loadSettings();
 
@@ -71,6 +74,52 @@ function initializeSettingsModal() {
   console.log('✓ App settings module initialized');
 }
 
+/**
+ * Initialize custom dropdowns (like the language selector with flags)
+ */
+function initCustomDropdowns() {
+  const dropdowns = document.querySelectorAll('.custom-dropdown');
+  
+  dropdowns.forEach(dropdown => {
+    const selected = dropdown.querySelector('.dropdown-selected');
+    const options = dropdown.querySelector('.dropdown-options');
+    const hiddenInput = dropdown.nextElementSibling; // Assuming hidden input follows dropdown
+
+    if (!selected || !options) return;
+
+    selected.addEventListener('click', (e) => {
+      e.stopPropagation();
+      options.classList.toggle('show');
+    });
+
+    options.querySelectorAll('.dropdown-option').forEach(option => {
+      option.addEventListener('click', () => {
+        const value = option.getAttribute('data-value');
+        const flag = option.getAttribute('data-flag');
+        const text = option.querySelector('span').textContent;
+
+        // Update selected view
+        selected.innerHTML = `
+          <img src="https://flagcdn.com/w40/${flag}.png" class="flag-icon" alt="${flag}">
+          <span>${text}</span>
+        `;
+
+        // Update hidden input
+        if (hiddenInput && hiddenInput.id === 'languageSelect') {
+          hiddenInput.value = value;
+        }
+
+        options.classList.remove('show');
+      });
+    });
+  });
+
+  // Close dropdowns when clicking outside
+  document.addEventListener('click', () => {
+    document.querySelectorAll('.dropdown-options').forEach(opt => opt.classList.remove('show'));
+  });
+}
+
 function openModal() {
   const modal = document.getElementById('settingsModal');
   if (modal) {
@@ -104,33 +153,28 @@ function loadSettings() {
     themeSelect.value = getSavedTheme();
   }
 
-  // Load current language from document html lang attribute or saved value
+  // Load current language
   const languageSelect = document.getElementById('languageSelect');
-  if (languageSelect) {
-    // Prefer server-marked data-current attribute on options (avoids Razor attribute expressions)
-    const options = Array.from(languageSelect.querySelectorAll('option'));
-    const serverMarked = options.find(opt => opt.getAttribute('data-current') === 'True' || opt.getAttribute('data-current') === 'true');
-    if (serverMarked) {
-      serverMarked.selected = true;
-      console.log('✓ Language selected from data-current attribute:', serverMarked.value);
-    } else {
-      // Try to get current language from document html lang attribute
-      let currentLang = document.documentElement.lang || 'en-US';
-      // Normalize to canonical casing: xx-XX (e.g. it-IT, en-US)
-      if (currentLang && currentLang.includes('-')) {
-        const parts = currentLang.split('-');
-        if (parts.length >= 2) {
-          currentLang = parts[0].toLowerCase() + '-' + parts[1].toUpperCase();
-        }
-      } else if (currentLang) {
-        // Map short codes to full form
-        currentLang = currentLang.toLowerCase() === 'it' ? 'it-IT' : 'en-US';
-      } else {
-        currentLang = 'en-US';
-      }
-
+  const languageDropdown = document.getElementById('languageDropdown');
+  
+  if (languageSelect && languageDropdown) {
+    const currentLang = languageSelect.value || document.documentElement.lang || 'en-US';
+    
+    // Find the option in the custom dropdown
+    const options = languageDropdown.querySelectorAll('.dropdown-option');
+    const currentOption = Array.from(options).find(opt => opt.getAttribute('data-value') === currentLang);
+    
+    if (currentOption) {
+      const flag = currentOption.getAttribute('data-flag');
+      const text = currentOption.querySelector('span').textContent;
+      const selected = languageDropdown.querySelector('.dropdown-selected');
+      
+      selected.innerHTML = `
+        <img src="https://flagcdn.com/w40/${flag}.png" class="flag-icon" alt="${flag}">
+        <span>${text}</span>
+      `;
+      
       languageSelect.value = currentLang;
-      console.log('✓ Current language set to:', currentLang);
     }
   }
 
@@ -149,9 +193,9 @@ function loadSettings() {
  */
 async function saveSettings() {
   try {
-    const selectedTheme = document.getElementById('themeSelect').value;
-    const selectedVisualizer = document.getElementById('visualizerSelect').value;
-    const selectedLanguage = document.getElementById('languageSelect').value;
+    const selectedTheme = document.getElementById('themeSelect')?.value || 'dark';
+    const selectedVisualizer = document.getElementById('visualizerSelect')?.value || 'wave';
+    const selectedLanguage = document.getElementById('languageSelect')?.value;
     
     // Save theme and visualizer settings
     uiSettingsManager.set('theme', selectedTheme);
@@ -169,10 +213,7 @@ async function saveSettings() {
       // Submit via fetch API to /Language/SetLanguage
       const params = new URLSearchParams();
       params.append('culture', selectedLanguage);
-      params.append('returnUrl', '/');
-      
-      console.log('📤 Sending POST to /Language/SetLanguage');
-      console.log('📊 Form data:', { culture: selectedLanguage, returnUrl: '/' });
+      params.append('returnUrl', window.location.pathname);
       
       const response = await fetch('/Language/SetLanguage', {
         method: 'POST',
@@ -182,37 +223,20 @@ async function saveSettings() {
         }
       });
       
-      console.log('✓ Response status:', response.status);
-      console.log('✓ Response OK:', response.ok);
-      
       if (response.ok || response.status === 302 || response.status === 301) {
-        // Save to localStorage as backup
         localStorage.setItem('voiceAgent_language', selectedLanguage);
-        console.log('✓ Language saved to localStorage:', selectedLanguage);
-        
-        // Redirect to home page to reload with new language
-        console.log('🔄 Redirecting to / to reload with new language...');
-        window.location.href = '/';
-        return; // Exit early since we're redirecting
+        window.location.reload();
+        return;
       } else {
-        const errorText = await response.text();
-        console.error('❌ Error response:', errorText);
         showToast(window.APP_RESOURCES?.LanguageChangeError || 'Error changing language', 'error');
       }
     }
     
-    // Verify settings are saved
-    const savedSettings = uiSettingsManager.getAll();
-    console.log('✓ Settings saved to localStorage:', savedSettings);
-    console.log('✓ localStorage content:', localStorage.getItem('uiSettings'));
-
     showToast(window.APP_RESOURCES?.SettingsSaved || 'Settings saved', 'success');
-    console.log('✓ Settings saved successfully');
     
     // Notify voice assistant that visualizer changed (via localStorage)
     window.dispatchEvent(new CustomEvent('settingsChanged', { detail: { visualizer: selectedVisualizer } }));
 
-    // Auto-close after 1.5 seconds
     setTimeout(() => {
       if (isModalVisible()) {
         closeModal();

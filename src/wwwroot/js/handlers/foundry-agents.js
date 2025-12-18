@@ -11,28 +11,40 @@ async function fetchAgentsForProject(projectId) {
     }
 }
 
-export async function wireFoundryUi() {
+export async function refreshAgents() {
     const projectSelect = document.getElementById('foundryProjectSelect');
     const agentSelect = document.getElementById('foundryAgentSelect');
 
     if (!projectSelect || !agentSelect) return;
 
-    async function loadAgentsForCurrentProject() {
-        const projectId = projectSelect.value || 'all';
-        const agents = await fetchAgentsForProject(projectId);
-        agentSelect.innerHTML = '';
-        agents.forEach(a => {
-            const opt = document.createElement('option');
-            opt.value = a.id || a.Id || '';
-            opt.textContent = a.name || a.Name || (window.APP_RESOURCES?.UnnamedAgent || 'Unnamed agent');
-            agentSelect.appendChild(opt);
-        });
+    const projectId = projectSelect.value || 'all';
+    const agents = await fetchAgentsForProject(projectId);
+    
+    // Store current selection to try and restore it
+    const currentAgentId = agentSelect.value;
+    
+    agentSelect.innerHTML = '';
+    agents.forEach(a => {
+        const opt = document.createElement('option');
+        opt.value = a.id || a.Id || '';
+        opt.textContent = a.name || a.Name || (window.APP_RESOURCES?.UnnamedAgent || 'Unnamed agent');
+        agentSelect.appendChild(opt);
+    });
+    
+    // Restore selection if it still exists in the new list
+    if (currentAgentId) {
+        agentSelect.value = currentAgentId;
     }
+}
 
-    projectSelect.addEventListener('change', loadAgentsForCurrentProject);
+export async function wireFoundryUi() {
+    const projectSelect = document.getElementById('foundryProjectSelect');
+    if (!projectSelect) return;
+
+    projectSelect.addEventListener('change', refreshAgents);
 
     // initial load
-    await loadAgentsForCurrentProject();
+    await refreshAgents();
 }
 
 // Auto-wire when module loaded by the main app
