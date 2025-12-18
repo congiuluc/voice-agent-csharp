@@ -206,7 +206,16 @@ export function getVoiceName(voiceId) {
  * @param {string} voiceId - Voice identifier
  * @returns {Object} - {valid: boolean, message: string}
  */
+let _validateCompatibilityDeprecationWarned = false;
+
 export function validateCompatibility(modelId, voiceId) {
+  if (!_validateCompatibilityDeprecationWarned) {
+    console.warn(
+      "Deprecated: 'validateCompatibility' from 'core/config.js' is deprecated. " +
+      "Please use 'validateModelVoiceCompatibility' from 'ui-utils.js' instead."
+    );
+    _validateCompatibilityDeprecationWarned = true;
+  }
   // TODO: Refactor consumers to import { validateModelVoiceCompatibility } from './ui-utils.js'
   try {
     const compatibility = MODEL_VOICE_COMPATIBILITY[modelId];
