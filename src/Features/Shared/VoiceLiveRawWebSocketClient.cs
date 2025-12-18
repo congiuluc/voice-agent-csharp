@@ -190,6 +190,13 @@ public class VoiceLiveSessionConfig
     public TranscriptionConfig InputAudioTranscription { get; set; } = new();
 
     /// <summary>
+    /// Gets or sets whether to enable output audio timestamps.
+    /// When enabled, the API sends response.audio_timestamp.delta events with word-level timing.
+    /// </summary>
+    //[JsonPropertyName("output_audio_timestamps")]
+    //public bool OutputAudioTimestamps { get; set; } = true;
+
+    /// <summary>
     /// Gets or sets the avatar configuration.
     /// </summary>
     [JsonPropertyName("avatar")]
@@ -304,6 +311,61 @@ public class RtcConfiguration
     public string BundlePolicy { get; set; } = "max-bundle";
 }
 
+/// <summary>
+/// Payload for response.audio_timestamp.delta events.
+/// Contains word-level timing information for streaming text to transcript.
+/// </summary>
+public class AudioTimestampDeltaPayload
+{
+    /// <summary>
+    /// Gets or sets the response ID this timestamp belongs to.
+    /// </summary>
+    [JsonPropertyName("response_id")]
+    public string? ResponseId { get; set; }
+
+    /// <summary>
+    /// Gets or sets the item ID within the response.
+    /// </summary>
+    [JsonPropertyName("item_id")]
+    public string? ItemId { get; set; }
+
+    /// <summary>
+    /// Gets or sets the output index.
+    /// </summary>
+    [JsonPropertyName("output_index")]
+    public int OutputIndex { get; set; }
+
+    /// <summary>
+    /// Gets or sets the content index.
+    /// </summary>
+    [JsonPropertyName("content_index")]
+    public int ContentIndex { get; set; }
+
+    /// <summary>
+    /// Gets or sets the audio offset in milliseconds from the start of the audio.
+    /// </summary>
+    [JsonPropertyName("audio_offset_ms")]
+    public int AudioOffsetMs { get; set; }
+
+    /// <summary>
+    /// Gets or sets the duration of this audio segment in milliseconds.
+    /// </summary>
+    [JsonPropertyName("audio_duration_ms")]
+    public int AudioDurationMs { get; set; }
+
+    /// <summary>
+    /// Gets or sets the text segment (word) for this timestamp.
+    /// </summary>
+    [JsonPropertyName("text")]
+    public string? Text { get; set; }
+
+    /// <summary>
+    /// Gets or sets the timestamp type (currently only "word").
+    /// </summary>
+    [JsonPropertyName("timestamp_type")]
+    public string? TimestampType { get; set; }
+}
+
 #endregion
 
 /// <summary>
@@ -384,6 +446,11 @@ public class VoiceLiveRawWebSocketClient : IAsyncDisposable
     /// </summary>
     public event Func<List<IceServerConfig>, Task>? OnIceServers;
 
+    /// <summary>
+    /// Raised when audio timestamp delta is received (for tracking output audio duration and word-level text streaming).
+    /// </summary>
+    public event Func<AudioTimestampDeltaPayload, Task>? OnAudioTimestampDelta;
+
     #endregion
 
     #region Constructor
@@ -430,14 +497,27 @@ public class VoiceLiveRawWebSocketClient : IAsyncDisposable
     /// <returns>The WebSocket URL.</returns>
     private string BuildWebSocketUrl(string? agentToken = null)
     {
-        var wsEndpoint = _endpoint.Replace("https://", "wss://");
-        var baseUrl = $"{wsEndpoint}/voice-live/realtime?api-version={_apiVersion}&model={_model}";
-        
+        // Support endpoints that may use https:// or http:// and convert to wss/ws accordingly
+        var wsEndpoint = _endpoint;
+        if (wsEndpoint.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+        {
+            wsEndpoint = wsEndpoint.Replace("https://", "wss://");
+        }
+        else if (wsEndpoint.StartsWith("http://", StringComparison.OrdinalIgnoreCase))
+        {
+            wsEndpoint = wsEndpoint.Replace("http://", "ws://");
+        }
+
+        // Ensure model is safely encoded for a query string
+        var encodedModel = Uri.EscapeDataString(_model ?? string.Empty);
+
+        var baseUrl = $"{wsEndpoint}/voice-live/realtime?api-version={Uri.EscapeDataString(_apiVersion)}&model={encodedModel}";
+
         if (!string.IsNullOrEmpty(agentToken))
         {
             baseUrl += $"&agent-access-token={Uri.EscapeDataString(agentToken)}";
         }
-        
+
         return baseUrl;
     }
 
@@ -494,7 +574,18 @@ public class VoiceLiveRawWebSocketClient : IAsyncDisposable
             _webSocket.Options.SetRequestHeader("x-ms-client-request-id", Guid.NewGuid().ToString());
 
             _logger.LogInformation("Connecting to Voice Live WebSocket: {Url}", wsUrl);
-            await _webSocket.ConnectAsync(new Uri(wsUrl), cancellationToken).ConfigureAwait(false);
+            try
+            {
+                await _webSocket.ConnectAsync(new Uri(wsUrl), cancellationToken).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                // Surface additional context to help troubleshooting: which auth method and url
+                var authMethod = string.IsNullOrEmpty(_apiKey) ? "AzureAD/Bearer" : "ApiKey";
+                _logger.LogError(ex, "Failed to connect to WebSocket (Url={Url}, AuthMethod={AuthMethod})", wsUrl, authMethod);
+                // Re-throw to preserve stack but augment message for logs
+                throw new InvalidOperationException($"WebSocket Connect failed. Url={wsUrl}, AuthMethod={authMethod}: {ex.Message}", ex);
+            }
             
             _isConnected = true;
             _logger.LogInformation("Connected to Azure Voice Live WebSocket");
@@ -604,6 +695,12 @@ public class VoiceLiveRawWebSocketClient : IAsyncDisposable
         {
             ["session"] = config
         };
+
+        // Log the session configuration being sent (including InputAudioTranscription)
+        var sessionJson = JsonSerializer.Serialize(config, _jsonOptions);
+        _logger.LogInformation("Sending session.update - InputAudioTranscription: {HasTranscription}, Full config: {Config}", 
+            config.InputAudioTranscription != null ? $"Model={config.InputAudioTranscription.Model}" : "null",
+            sessionJson);
 
         await SendAsync("session.update", sessionData, cancellationToken).ConfigureAwait(false);
         _logger.LogInformation("Sent session.update with avatar configuration");
@@ -826,7 +923,22 @@ public class VoiceLiveRawWebSocketClient : IAsyncDisposable
                     break;
 
                 case "session.updated":
-                    _logger.LogInformation("Session updated");
+                    _logger.LogInformation("Session updated - checking for input_audio_transcription config");
+                    
+                    // Log if input_audio_transcription is present in the response
+                    if (root.TryGetProperty("session", out var sessionProp))
+                    {
+                        if (sessionProp.TryGetProperty("input_audio_transcription", out var transcriptionProp))
+                        {
+                            var transcriptionJson = transcriptionProp.ToString();
+                            _logger.LogInformation("Session has input_audio_transcription configured: {Config}", transcriptionJson);
+                        }
+                        else
+                        {
+                            _logger.LogWarning("Session updated but NO input_audio_transcription property found in session config!");
+                        }
+                    }
+                    
                     await HandleSessionUpdatedAsync(root).ConfigureAwait(false);
                     if (OnSessionUpdated != null)
                     {
@@ -848,14 +960,19 @@ public class VoiceLiveRawWebSocketClient : IAsyncDisposable
                     break;
 
                 case "conversation.item.input_audio_transcription.completed":
+                    _logger.LogInformation("Received conversation.item.input_audio_transcription.completed event");
                     if (root.TryGetProperty("transcript", out var userTranscript))
                     {
                         var text = userTranscript.GetString() ?? string.Empty;
-                        _logger.LogDebug("User transcription: {Transcript}", text);
+                        _logger.LogInformation("User transcription completed: '{Transcript}' (Length: {Length})", text, text.Length);
                         if (OnUserTranscription != null && !string.IsNullOrEmpty(text))
                         {
                             await OnUserTranscription(text).ConfigureAwait(false);
                         }
+                    }
+                    else
+                    {
+                        _logger.LogWarning("conversation.item.input_audio_transcription.completed event received but no 'transcript' property found");
                     }
                     break;
 
@@ -883,6 +1000,26 @@ public class VoiceLiveRawWebSocketClient : IAsyncDisposable
                                 await OnAudioDelta(audioBytes).ConfigureAwait(false);
                             }
                         }
+                    }
+                    break;
+
+                case "response.audio_timestamp.delta":
+                    if (OnAudioTimestampDelta != null)
+                    {
+                        var payload = new AudioTimestampDeltaPayload
+                        {
+                            ResponseId = root.TryGetProperty("response_id", out var respId) ? respId.GetString() : null,
+                            ItemId = root.TryGetProperty("item_id", out var itemId) ? itemId.GetString() : null,
+                            OutputIndex = root.TryGetProperty("output_index", out var outIdx) ? outIdx.GetInt32() : 0,
+                            ContentIndex = root.TryGetProperty("content_index", out var contIdx) ? contIdx.GetInt32() : 0,
+                            AudioOffsetMs = root.TryGetProperty("audio_offset_ms", out var offsetMs) ? offsetMs.GetInt32() : 0,
+                            AudioDurationMs = root.TryGetProperty("audio_duration_ms", out var durationMs) ? durationMs.GetInt32() : 0,
+                            Text = root.TryGetProperty("text", out var textProp) ? textProp.GetString() : null,
+                            TimestampType = root.TryGetProperty("timestamp_type", out var tsType) ? tsType.GetString() : null
+                        };
+                        _logger.LogDebug("Audio timestamp delta: offset={OffsetMs}ms, duration={DurationMs}ms, text='{Text}'",
+                            payload.AudioOffsetMs, payload.AudioDurationMs, payload.Text);
+                        await OnAudioTimestampDelta(payload).ConfigureAwait(false);
                     }
                     break;
 

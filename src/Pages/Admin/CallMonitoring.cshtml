@@ -1,0 +1,362 @@
+@page
+@model VoiceAgentCSharp.Pages.Admin.CallMonitoringModel
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = Localizer["CallMonitoringTitle"];
+}
+
+@section Styles {
+    <script src="~/js/ui/chart.js" asp-append-version="true"></script>
+}
+
+<div class="main-container">
+        <!-- Main Title -->
+        <h1><span class="brand-l">Call</span> <span class="brand-ia">Monitoring</span></h1>
+
+        <!-- Voice Visualizer Canvas (hidden, for consistency) -->
+        <canvas id="voiceCanvas" style="display: none;"></canvas>
+
+        <!-- Hamburger (Left) for mobile/compact menu -->
+        <button id="hamburgerButton" class="hamburger-btn" title="@Localizer["OpenMenu"]" aria-label="@Localizer["OpenMenu"]">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M3 6h18M3 12h18M3 18h18" stroke="currentColor" stroke-linecap="round"/>
+            </svg>
+        </button>
+
+        <!-- Home Button -->
+        <a href="/" class="home-btn" title="@Localizer["Home"]" aria-label="@Localizer["Home"]">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20" xmlns="http://www.w3.org/2000/svg">
+                <path d="M3 11.5L12 4l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1v-8.5z" stroke-linecap="round" stroke-linejoin="round"></path>
+            </svg>
+        </a>
+
+        <!-- Theme toggle button -->
+        <button id="themeToggleButton" title="@Localizer["ToggleTheme"]" aria-label="@Localizer["ChangeTheme"]" class="theme-toggle-btn">
+            <svg id="sunIcon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="5"></circle>
+                <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+            </svg>
+            <svg id="moonIcon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+            </svg>
+        </button>
+
+        <!-- Logout button -->
+        <a href="/Logout" class="logout-btn" title="@Localizer["Logout"]" aria-label="@Localizer["Logout"]">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" stroke-linecap="round" stroke-linejoin="round"></path>
+                <polyline points="16 17 21 12 16 7" stroke-linecap="round" stroke-linejoin="round"></polyline>
+                <line x1="21" y1="12" x2="9" y2="12" stroke-linecap="round" stroke-linejoin="round"></line>
+            </svg>
+        </a>
+
+        <!-- Refresh Button -->
+        <button id="refreshButton" class="refresh-btn" title="@Localizer["RefreshData"]" aria-label="@Localizer["RefreshData"]" onclick="refreshData()">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+        </button>
+
+        <!-- Reload Database Button -->
+        <button class="btn-reload" onclick="reloadPricing()" title="@Localizer["ReloadDatabase"]" aria-label="@Localizer["ReloadDatabase"]">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <ellipse cx="12" cy="6" rx="8" ry="3"/>
+                <path d="M4 6v6c0 1.66 3.58 3 8 3s8-1.34 8-3V6" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M4 12v6c0 1.66 3.58 3 8 3s8-1.34 8-3v-6" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+        </button>
+
+        <!-- Left Panel (Slideover) -->
+        <nav id="leftPanel" class="left-panel" aria-hidden="true">
+            <div class="left-panel-header">
+                <h3>@Localizer["Menu"]</h3>
+                <button id="closeLeftPanel" class="close-left-panel" title="@Localizer["CloseMenu"]" aria-label="@Localizer["CloseMenu"]">×</button>
+            </div>
+            <div class="left-panel-body" id="leftPanelBody">
+                <a href="/" class="lp-btn">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><path d="M3 11.5L12 4l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1v-8.5z" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+                    <span>@Localizer["Home"]</span>
+                </a>
+                <button class="lp-btn" id="lp_themeToggle">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"></circle><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+                    <span>@Localizer["ChangeTheme"]</span>
+                </button>
+                <a href="/Logout" class="lp-btn">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" stroke-linecap="round" stroke-linejoin="round"></path><polyline points="16 17 21 12 16 7" stroke-linecap="round" stroke-linejoin="round"></polyline><line x1="21" y1="12" x2="9" y2="12" stroke-linecap="round" stroke-linejoin="round"></line></svg>
+                    <span>@Localizer["Logout"]</span>
+                </a>
+            </div>
+        </nav>
+
+        <!-- Dashboard Content -->
+        <div class="dashboard-content">
+            <!-- Token Usage Section -->
+            <div class="token-metrics-section">
+                <h2 class="section-title">
+                    <span class="section-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="6"></circle><circle cx="12" cy="12" r="2"></circle></svg></span>
+                    @Localizer["TokenUsageAndInteractions"]
+                </h2>
+                <div class="token-metrics-grid">
+                    <!-- Input Tokens Card -->
+                    <div class="token-card input-tokens">
+                        <div class="token-card-header">
+                            <div class="token-icon">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                    <polyline points="17 8 12 3 7 8"/>
+                                    <line x1="12" y1="3" x2="12" y2="15"/>
+                                </svg>
+                            </div>
+                            <span class="token-label">@Localizer["InputTokens"]</span>
+                        </div>
+                        <div class="token-value" id="inputTokens">@Model.TotalInputTokens.ToString("N0")</div>
+                        <div class="token-sublabel">@Localizer["TokensConsumedForPrompts"]</div>
+                        <div class="token-trend positive">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/>
+                                <polyline points="16 7 22 7 22 13"/>
+                            </svg>
+                            <span>@Localizer["RealTime"]</span>
+                        </div>
+                    </div>
+
+                    <!-- Output Tokens Card -->
+                    <div class="token-card output-tokens">
+                        <div class="token-card-header">
+                            <div class="token-icon">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                    <polyline points="7 10 12 15 17 10"/>
+                                    <line x1="12" y1="15" x2="12" y2="3"/>
+                                </svg>
+                            </div>
+                            <span class="token-label">@Localizer["OutputTokens"]</span>
+                        </div>
+                        <div class="token-value" id="outputTokens">@Model.TotalOutputTokens.ToString("N0")</div>
+                        <div class="token-sublabel">@Localizer["TokensGeneratedByModel"]</div>
+                        <div class="token-trend positive">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/>
+                                <polyline points="16 7 22 7 22 13"/>
+                            </svg>
+                            <span>@Localizer["RealTime"]</span>
+                        </div>
+                    </div>
+
+                    <!-- Cached Tokens Card -->
+                    <div class="token-card cached-tokens">
+                        <div class="token-card-header">
+                            <div class="token-icon">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                                    <path d="M2 17l10 5 10-5"/>
+                                    <path d="M2 12l10 5 10-5"/>
+                                </svg>
+                            </div>
+                            <span class="token-label">@Localizer["CachedTokens"]</span>
+                        </div>
+                        <div class="token-value" id="cachedTokens">@Model.TotalCachedTokens.ToString("N0")</div>
+                        <div class="token-sublabel">@Localizer["TokensServedFromCache"]</div>
+                        <div class="token-trend savings">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"/>
+                                <path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/>
+                                <path d="M12 18V6"/>
+                            </svg>
+                            <span>@Localizer["CostSavings"]</span>
+                        </div>
+                    </div>
+
+                    <!-- Interactions Card -->
+                    <div class="token-card interactions">
+                        <div class="token-card-header">
+                            <div class="token-icon">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
+                                </svg>
+                            </div>
+                            <span class="token-label">@Localizer["Interactions"]</span>
+                        </div>
+                        <div class="token-value" id="interactions">@Model.TotalInteractions.ToString("N0")</div>
+                        <div class="token-sublabel">@Localizer["UserAssistantExchanges"]</div>
+                        <div class="token-trend neutral">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"/>
+                                <polyline points="12 6 12 12 16 14"/>
+                            </svg>
+                            <span>@Localizer["Active"]</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Used Models Section -->
+            <div class="models-section">
+                <h2 class="section-title">
+                    <span class="section-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="10" rx="2"></rect><circle cx="12" cy="5" r="3"></circle><path d="M12 8v3"></path><circle cx="8" cy="16" r="1"></circle><circle cx="16" cy="16" r="1"></circle></svg></span>
+                    @Localizer["ActiveModels"]
+                </h2>
+                <div class="models-grid" id="usedModelsGrid">
+                    @if (Model.UsedModels.Any())
+                    {
+                        foreach (var modelName in Model.UsedModels)
+                        {
+                            <div class="model-badge">
+                                <div class="model-indicator"></div>
+                                <span class="model-name">@modelName</span>
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <div class="no-models">
+                            <span class="no-models-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg></span>
+                            <span>@Localizer["NoActiveModels"]</span>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- Summary Cards -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"></path><path d="M7 16l4-4 4 4 5-6"></path></svg></div>
+                    <div class="stat-info">
+                        <div class="stat-label">@Localizer["ActiveSessions"]</div>
+                        <div class="stat-value" id="activeSessions">@Model.ActiveSessions.ToString()</div>
+                        <div style="font-size: 0.85em; color: var(--color-text-secondary); margin-top: 4px;">@Localizer["Total"]: @Model.TotalSessions.ToString()</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg></div>
+                    <div class="stat-info">
+                        <div class="stat-label">@Localizer["TotalCost"]</div>
+                        <div class="stat-value" id="totalCost">$@Model.TotalEstimatedCost.ToString("F4", System.Globalization.CultureInfo.InvariantCulture)</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg></div>
+                    <div class="stat-info">
+                        <div class="stat-label">@Localizer["QueueSize"]</div>
+                        <div class="stat-value" id="queueSize">0</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="10" rx="2"></rect><circle cx="12" cy="5" r="3"></circle><path d="M12 8v3"></path><circle cx="8" cy="16" r="1"></circle><circle cx="16" cy="16" r="1"></circle></svg></div>
+                    <div class="stat-info">
+                        <div class="stat-label">@Localizer["TotalModels"]</div>
+                        <div class="stat-value" id="pricingModels">@Model.PricingModels</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg></div>
+                    <div class="stat-info">
+                        <div class="stat-label">@Localizer["LastUpdate"]</div>
+                        <div class="stat-value stat-value-small" id="lastUpdate">@DateTime.UtcNow.ToString("HH:mm:ss")</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Token Consumption per Model (Active + Completed Sessions) -->
+            <div class="table-card">
+                <div class="table-header">
+                    <h3>@Localizer["TokenConsumptionPerModel"]</h3>
+                </div>
+                <div class="table-wrapper" id="tokenConsumptionByModelContainer">
+                    <div class="no-data-message">
+                        <p>@Localizer["NoTokenConsumptionRecorded"]</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts Section -->
+            <div class="charts-grid">
+                <div class="chart-card">
+                    <h3>@Localizer["CostPerModel"]</h3>
+                    <canvas id="pricingChart"></canvas>
+                </div>
+                <div class="chart-card">
+                    <h3>@Localizer["CostDistribution"]</h3>
+                    <canvas id="costDistributionChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Pricing Table -->
+            <div class="table-card">
+                <div class="table-header">
+                    <h3>@Localizer["PricingConfiguration"]</h3>
+                </div>
+                <div class="table-wrapper">
+                    <table class="pricing-table">
+                        <thead>
+                            <tr>
+                                <th>@Localizer["Model"]</th>
+                                <th>@Localizer["InputCost"]</th>
+                                <th>@Localizer["OutputCost"]</th>
+                                <th>@Localizer["AvatarCost"]</th>
+                                <th>@Localizer["TTSCost"]</th>
+                                <th>@Localizer["Updated"]</th>
+                            </tr>
+                        </thead>
+                        <tbody id="pricingTable">
+                            @foreach (var pricing in Model.Pricing)
+                            {
+                                <tr data-model="@pricing.ModelName"
+                                    data-input="@pricing.InputTokenCost.ToString("F4", System.Globalization.CultureInfo.InvariantCulture)"
+                                    data-output="@pricing.OutputTokenCost.ToString("F4", System.Globalization.CultureInfo.InvariantCulture)"
+                                    data-avatar="@pricing.AvatarCostPerMin.ToString("F2", System.Globalization.CultureInfo.InvariantCulture)"
+                                    data-tts="@pricing.TtsCostPer1MChars.ToString("F2", System.Globalization.CultureInfo.InvariantCulture)"
+                                    data-cached="@(pricing.CachedInputTokenCost != 0 ? pricing.CachedInputTokenCost.ToString("F4", System.Globalization.CultureInfo.InvariantCulture) : String.Empty)">
+                                    <td><strong>@pricing.ModelName</strong></td>
+                                    <td>$@pricing.InputTokenCost.ToString("F4", System.Globalization.CultureInfo.InvariantCulture)</td>
+                                    <td>$@pricing.OutputTokenCost.ToString("F4", System.Globalization.CultureInfo.InvariantCulture)</td>
+                                    <td>$@pricing.AvatarCostPerMin.ToString("F2", System.Globalization.CultureInfo.InvariantCulture)</td>
+                                    <td>$@pricing.TtsCostPer1MChars.ToString("F2", System.Globalization.CultureInfo.InvariantCulture)</td>
+                                    <td>@pricing.UpdatedAt.ToString("yyyy-MM-dd HH:mm")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- External Dashboards -->
+            <div class="links-grid">
+                <a href="https://portal.azure.com" target="_blank" class="link-card">
+                    <div class="link-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"></path></svg></div>
+                    <div class="link-info">
+                        <div class="link-title">@Localizer["AzurePortal"]</div>
+                        <div class="link-desc">@Localizer["ViewHistoricalAnalytics"]</div>
+                    </div>
+                </a>
+                <a href="http://localhost:18888" target="_blank" class="link-card">
+                    <div class="link-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg></div>
+                    <div class="link-info">
+                        <div class="link-title">@Localizer["AspireDashboard"]</div>
+                        <div class="link-desc">@Localizer["ViewMetricsAndTraces"]</div>
+                    </div>
+                </a>
+            </div>
+        </div>
+    </div>
+
+@section Scripts {
+    <!-- Theme toggle script -->
+    <script type="module" src="~/js/ui/index-theme.js" asp-append-version="true"></script>
+    
+    <!-- Runtime checks -->
+    <script>
+        // Ensure Chart.js is loaded; give a clear console error if not
+        if (typeof Chart === 'undefined') {
+            console.error('Chart.js not loaded. Ensure ~/js/ui/chart.js is included and accessible. Charts will not render.');
+        }
+    </script>
+
+    <!-- Dashboard script -->
+    <script type="module" src="~/js/ui/admin-dashboard.js" asp-append-version="true"></script>
+
+    <script type="module">
+        import { initHamburgerMenu } from '/js/ui/hamburger-menu.js';
+        document.addEventListener('DOMContentLoaded', initHamburgerMenu);
+    </script>
+}

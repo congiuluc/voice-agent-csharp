@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Azure.AI.VoiceLive;
 using Microsoft.Extensions.Logging;
+using VoiceAgentCSharp.Features.Monitoring;
 
 namespace VoiceAgentCSharp.Features.Shared;
 
@@ -20,6 +21,8 @@ public abstract class VoiceSessionBase : IVoiceSession
     protected bool _disposed;
     protected Task? _eventProcessingTask;
     protected CancellationTokenSource? _cancellationTokenSource;
+    protected CallMonitoringService? _monitoringService;
+    protected string? _sessionId;
 
     #endregion
 
@@ -52,6 +55,16 @@ public abstract class VoiceSessionBase : IVoiceSession
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _toolHandler = new VoiceToolHandler(logger, httpClient);
         _cancellationTokenSource = new CancellationTokenSource();
+    }
+
+    /// <summary>
+    /// Sets the monitoring service and session ID for tracking metrics.
+    /// Should be called after session construction.
+    /// </summary>
+    public void SetMonitoring(CallMonitoringService monitoringService, string sessionId)
+    {
+        _monitoringService = monitoringService;
+        _sessionId = sessionId;
     }
 
     #endregion
@@ -180,10 +193,24 @@ public abstract class VoiceSessionBase : IVoiceSession
 
     /// <summary>
     /// Emits session events to subscribers.
+    /// Filters out events that should not be sent to the UI client.
     /// Common implementation for all session types.
     /// </summary>
     protected async Task EmitSessionEventAsync(string eventType, object? payload)
     {
+        // Filter out events that should not be sent to the UI client
+        var eventsToFilter = new[] 
+        { 
+            "ResponseAudioDelta",           // Audio delta events are too frequent and not useful for tracing
+            "ResponseAudioTranscriptDelta"  // Transcript delta events are too frequent, final transcript is sent in ResponseAudioTranscriptDone
+        };
+
+        if (eventsToFilter.Contains(eventType))
+        {
+            _logger.LogDebug("Filtering event {EventType} from UI client", eventType);
+            return;
+        }
+
         try
         {
             if (OnSessionEvent != null)
@@ -370,6 +397,13 @@ public abstract class VoiceSessionBase : IVoiceSession
 
         // Dispose cancellation token source
         _cancellationTokenSource?.Dispose();
+
+        // Log session completion to monitoring service for persistence to CosmosDB
+        if (!string.IsNullOrEmpty(_sessionId) && _monitoringService != null)
+        {
+            _monitoringService.LogSessionCompleted(_sessionId, "completed");
+            _logger.LogInformation("Session {SessionId} completed and enqueued for persistence", _sessionId);
+        }
 
         _disposed = true;
         _logger.LogInformation("{SessionType} session disposed", SessionType);

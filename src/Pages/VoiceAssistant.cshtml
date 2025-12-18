@@ -1,265 +1,114 @@
 @page "/assistant"
 @model VoiceAgentCSharp.Pages.VoiceAssistantModel
 @{
-    ViewData["Title"] = "Voice Assistant";
+    Layout = "_Layout";
+    ViewData["Title"] = Localizer["VoiceAssistant"];
+    var currentCulture = CultureInfo.CurrentCulture.Name;
 }
 
-<!DOCTYPE html>
-<html lang="it">
-
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>@ViewData["Title"]</title>
-    <link rel="icon" type="image/svg+xml" href="~/favicon.svg">
-    <link rel="stylesheet" href="~/theme.css">
-    <link rel="stylesheet" href="~/styles.css">
-</head>
-
-<body>
-    <div class="main-container">
+<div class="main-container">
         <!-- Main Title -->
         <h1><span class="brand-l">Voice</span> <span class="brand-ia">Assistant</span></h1>
 
-        <!-- Voice Visualizer Canvas -->
-        <canvas id="voiceCanvas"></canvas>
+        <partial name="_VoiceVisualizer" />
 
-        <!-- Mute Button (Bottom Center) -->
-        <button id="muteButton" title="Attiva/Disattiva microfono" aria-label="Toggle microphone">
-            <!-- Active mic icon (filled for emphasis) -->
-            <svg id="micIcon" width="30" height="30" viewBox="0 0 24 24" fill="currentColor"
-                xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                <!-- Filled microphone -->
-                <path d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3z"></path>
-                <path d="M19 11v1a7 7 0 0 1-14 0v-1H5a7 7 0 0 0 14 0h-0z" opacity="0.9"></path>
-                <rect x="11" y="17" width="2" height="3" rx="1"></rect>
-            </svg>
-            <!-- Muted mic icon (outline with red slash) -->
-            <svg id="micOffIcon" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-hidden" aria-hidden="true">
-                <!-- Microphone outline -->
-                <path d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3z"></path>
-                <path d="M19 11v1a7 7 0 0 1-14 0v-1"></path>
-                <!-- Red slash (uses currentColor, CSS will tint this icon when visible) -->
-                <line x1="3" y1="3" x2="21" y2="21" stroke="currentColor" stroke-width="2"></line>
-            </svg>
-        </button>
+        <partial name="_MuteButton" />
 
         <!-- Top Right Controls -->
-        <button id="chatToggle" class="chat-toggle" title="Mostra/Nascondi chat" aria-label="Toggle transcript">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-            </svg>
-        </button>
+        <partial name="_CommonControls" />
 
-        <!-- Hamburger (Left) for mobile/compact menu -->
-        <button id="hamburgerButton" class="hamburger-btn" title="Apri menu" aria-label="Apri menu">
-            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M3 6h18M3 12h18M3 18h18" stroke="currentColor" stroke-linecap="round" />
-            </svg>
-        </button>
+        <partial name="_StartButton" />
 
-        <!-- Home Button -->
-        <a href="/" class="home-btn" title="Home" aria-label="Vai alla home">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"
-                xmlns="http://www.w3.org/2000/svg">
-                <path d="M3 11.5L12 4l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1v-8.5z" stroke-linecap="round"
-                    stroke-linejoin="round"></path>
-            </svg>
-        </a>
+        <partial name="_ChatControls" />
 
-        <!-- Theme toggle button -->
-        <button id="themeToggleButton" title="Attiva/Disattiva tema scuro" aria-label="Cambia tema"
-            class="theme-toggle-btn">
-            <svg id="sunIcon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                stroke-width="2">
-                <circle cx="12" cy="12" r="5"></circle>
-                <path
-                    d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
-            </svg>
-            <svg id="moonIcon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                stroke-width="2">
-                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
-            </svg>
-        </button>
+        @if (User.IsInRole("Admin"))
+        {
+            <!-- Admin Dashboard Button -->
+            <a href="/Admin/CallMonitoring" class="admin-btn" title="@Localizer["CallMonitoringDashboard"]" aria-label="@Localizer["CallMonitoringDashboard"]" target="_blank">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+            </a>
+        }
 
-        <!-- Logout button -->
-        <a href="/Logout" class="logout-btn" title="Logout" aria-label="Logout">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" stroke-linecap="round" stroke-linejoin="round"></path>
-                <polyline points="16 17 21 12 16 7" stroke-linecap="round" stroke-linejoin="round"></polyline>
-                <line x1="21" y1="12" x2="9" y2="12" stroke-linecap="round" stroke-linejoin="round"></line>
-            </svg>
-        </a>
+        <partial name="_StatusMonitor" />
 
-        <button id="startButton" title="Avvia/Termina sessione" aria-label="Start session">
-            <svg id="playIcon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M8 5v14l11-7z" />
-            </svg>
-            <svg id="stopIcon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" class="icon-hidden">
-                <path d="M6 4h12v12H6z" />
-            </svg>
-        </button>
+        <partial name="_LeftPanel" />
 
-        <button id="settingsButton" title="Impostazioni" aria-label="Settings">
-            <!-- Gear / settings icon -->
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
-                <path
-                    d="M19.14 12.94c.04-.31.06-.63.06-.94s-.02-.64-.06-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.11-.2-.36-.28-.57-.2l-2.39.96c-.5-.38-1.04-.7-1.64-.94l-.36-1.95c-.05-.21-.25-.36-.47-.36h-3.98c-.22 0-.42.15-.47.36l-.36 1.95c-.6.24-1.14.56-1.64.94l-2.39-.96c-.21-.08-.46 0-.57.2L2.71 8.88c-.11.2-.06.47.12.61l2.03 1.58c-.04.3-.06.61-.06.94s.02.64.06.94L2.83 14.5c-.18.14-.23.41-.12.61l1.92 3.32c.11.2.36.28.57.2l2.39-.96c.5.38 1.04.7 1.64.94l.36 1.95c.05.21.25.36.47.36h3.98c.22 0 .42-.15.47-.36l.36-1.95c.6-.24 1.14-.56 1.64-.94l2.39.96c.21.08.46 0 .57-.2l1.92-3.32c.11-.2.06-.47-.12-.61l-2.03-1.58z">
-                </path>
-                <circle cx="12" cy="12" r="3"></circle>
-            </svg>
-        </button>
+        <partial name="_TracePanel" />
 
-        <!-- Trace toggle (below chat button) -->
-        <button id="traceToggle" class="trace-toggle-btn" title="Mostra/Nascondi trace"
-            aria-label="Mostra o nascondi trace dei messaggi">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M3 3h18v18H3z" stroke="currentColor" stroke-width="2" fill="none" />
-                <path d="M7 8h10M7 12h10M7 16h6" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-            </svg>
-            <span class="trace-badge" id="traceBadge">0</span>
-        </button>
-
-        <!-- Status Monitor (Bottom Right) -->
-        <div class="status-monitor">
-            <span id="statusIndicator" class="status-indicator disconnected"></span>
-            <span id="statusText">Disconnesso</span>
-        </div>
-
-        <!-- Left Panel (Slideover) -->
-        <nav id="leftPanel" class="left-panel" aria-hidden="true">
-            <div class="left-panel-header">
-                <h3>Menu</h3>
-                <button id="closeLeftPanel" class="close-left-panel" title="Chiudi menu"
-                    aria-label="Chiudi menu">×</button>
-            </div>
-            <div class="left-panel-body" id="leftPanelBody">
-                <!-- Primary controls will be moved here dynamically on small viewports -->
-            </div>
-        </nav>
-
-        <!-- Trace panel (bottom left) -->
-        <div class="trace-panel" id="tracePanel">
-            <div class="trace-header">
-                <h3>Trace Messaggi</h3>
-                <button id="clearTraceButton" class="clear-trace-btn" title="Cancella trace">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path
-                            d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6h14z"
-                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-                    </svg>
-                </button>
-            </div>
-            <div id="traceContent" class="trace-content"></div>
-        </div>
-        <!-- Transcript Panel (Sliding from right) -->
-        <div id="transcriptBox" class="transcript-box">
-            <div class="transcript-header">
-                <h3>Chat</h3>
-                <button id="clearChatButton" class="clear-chat-btn" title="Cancella conversazione"
-                    aria-label="Clear chat">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path
-                            d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6h14z"
-                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        </path>
-                    </svg></button>
-            </div>
-            <div id="transcriptContent"></div>
-            <div class="text-input-row">
-                <textarea id="textInput" placeholder="Scrivi un messaggio..." rows="1"></textarea>
-                <button id="sendTextButton" title="Invia messaggio" aria-label="Send message">
-                    <!-- Paper plane icon (send) - uses currentColor so theme controls color -->
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"
-                        xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                        <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"></path>
-                    </svg>
-                </button>
-            </div>
-        </div>
+        <partial name="_TranscriptPanel" />
     </div>
 
     <!-- Settings Modal -->
     <div id="settingsModal" class="settings-modal">
         <div class="settings-content">
-            <div class="settings-header">
-                <h2>Impostazioni Voice Agent</h2>
-                <button id="closeSettingsButton" class="close-settings-btn" title="Chiudi impostazioni"
-                    aria-label="Close settings">×</button>
-            </div>
+            <partial name="_SettingsHeader" />
             <div class="settings-body">
+                <partial name="_LanguageSelector" />
+
+                <!-- Voice Live Endpoint -->
                 <div class="setting-group">
-                    <label for="voiceLiveEndpointInput">Voice Live Endpoint:</label>
+                    <label for="voiceLiveEndpointInput">@Localizer["VoiceLiveEndpoint"]:</label>
                     <div class="input-group">
                         <input id="voiceLiveEndpointInput" class="form-control" type="url" inputmode="url"
-                            placeholder="https://*.cognitiveservices.azure.com" aria-label="Voice Live endpoint URL" />
+                            placeholder="https://*.cognitiveservices.azure.com" aria-label="@Localizer["VoiceLiveEndpoint"]" />
                     </div>
-                    <span class="setting-hint">URL del servizio Voice Live (es.
-                        https://*.cognitiveservices.azure.com)</span>
+                    <span class="setting-hint">@Localizer["VoiceLiveEndpointHint"]</span>
                 </div>
+
+                <!-- Voice Live API Key -->
                 <div class="setting-group">
-                    <label for="voiceLiveApiKeyInput">Voice Live API Key:</label>
+                    <label for="voiceLiveApiKeyInput">@Localizer["VoiceLiveApiKey"]:</label>
                     <div class="input-group">
                         <input id="voiceLiveApiKeyInput" class="form-control" type="password"
-                            placeholder="Inserisci la API Key" />
+                            placeholder="@Localizer["EnterApiKey"]" aria-label="@Localizer["VoiceLiveApiKey"]" />
                     </div>
-                    <span class="setting-hint">Chiave API per l'autenticazione verso Voice Live</span>
+                    <span class="setting-hint">@Localizer["VoiceLiveApiKeyHint"]</span>
                 </div>
+
+                <!-- Voice Model Selection -->
                 <div class="setting-group">
-                    <label for="voiceModelSelect">Modello Voice:</label>
-                    <select id="voiceModelSelect" class="form-control"></select>
-                    <span class="setting-hint">Seleziona il modello vocale preferito</span>
+                    <label for="voiceModelSelect">@Localizer["VoiceModel"]:</label>
+                    <select id="voiceModelSelect" class="form-control" aria-label="@Localizer["VoiceModel"]"></select>
+                    <span class="setting-hint">@Localizer["SelectVoiceModel"]</span>
                 </div>
+
+                <!-- Voice Selection -->
                 <div class="setting-group">
-                    <label for="voiceSelect">Voce:</label>
-                    <select id="voiceSelect" class="form-control"></select>
-                    <span class="setting-hint">Seleziona la voce dell'assistente</span>
+                    <label for="voiceSelect">@Localizer["Voice"]:</label>
+                    <select id="voiceSelect" class="form-control" aria-label="@Localizer["Voice"]"></select>
+                    <span class="setting-hint">@Localizer["SelectVoice"]</span>
                 </div>
+
+                <!-- Welcome Message -->
                 <div class="setting-group">
-                    <label for="welcomeMessageInput">Messaggio di Benvenuto:</label>
+                    <label for="welcomeMessageInput">@Localizer["GreetingMessage"]:</label>
                     <textarea id="welcomeMessageInput" class="form-control" rows="3"
-                        placeholder="Inserisci un messaggio di benvenuto personalizzato..."></textarea>
-                    <span class="setting-hint">Il messaggio personalizzato per la sessione</span>
+                        placeholder="@Localizer["EnterWelcomeMessage"]" aria-label="@Localizer["GreetingMessage"]"></textarea>
+                    <span class="setting-hint">@Localizer["WelcomeMessageHint"]</span>
                 </div>
+
+                <!-- Model Instructions -->
                 <div class="setting-group">
-                    <label for="modelInstructionsInput">Istruzioni per il modello (opzionale):</label>
+                    <label for="modelInstructionsInput">@Localizer["SystemInstructions"] (@Localizer["Optional"]):</label>
                     <textarea id="modelInstructionsInput" class="form-control" rows="5"
-                        placeholder="Inserisci istruzioni che saranno passate al modello come system prompt..."></textarea>
-                    <span class="setting-hint">Testo opzionale che verrà inviato al modello come prompt di sistema
-                        (breve, per la voce preferisci frasi concise).</span>
+                        placeholder="@Localizer["EnterModelInstructions"]" aria-label="@Localizer["SystemInstructions"]"></textarea>
+                    <span class="setting-hint">@Localizer["ModelInstructionsHint"]</span>
                 </div>
 
+                <!-- Toast Notifications Toggle -->
                 <div class="setting-group">
-                    <label for="toastNotificationsToggle"><input id="toastNotificationsToggle" type="checkbox" />Mostra
-                        notifiche (Toast):</label>
-
+                    <label for="toastNotificationsToggle">
+                        <input id="toastNotificationsToggle" type="checkbox" aria-label="@Localizer["ShowNotifications"]" />
+                        @Localizer["ShowNotifications"]
+                    </label>
                 </div>
             </div>
-            <div class="settings-footer">
-                <button id="saveSettingsButton" class="save-settings-btn" title="Salva impostazioni">Salva
-                    Impostazioni</button>
-            </div>
+            <partial name="_SettingsFooter" />
         </div>
     </div>
 
-    <!-- Error Boundary -->
-    <div id="errorBoundary" class="error-boundary">
-        <div class="error-content">
-            <h2>⚠️ Errore Applicazione</h2>
-            <p id="errorMessage"></p>
-            <button id="reloadButton" title="Ricarica pagina">Ricarica Pagina</button>
-        </div>
-    </div>
+@section Scripts {
+    <script type="module" src="~/js/core/app.js?v=1.0.3" asp-append-version="true"></script>
+    <script type="module" src="~/js/ui/app-settings.js" asp-append-version="true"></script>
+}
 
-    <!-- Toast Notification Container -->
-    <div id="toastContainer" class="toast-container"></div>
-
-    <!-- (Developer features panel removed) -->
-
-    <!-- Load ES6 Modules -->
-    <script type="module" src="~/js/app.js?v=1.0.3"></script>
-</body>
-
-</html>

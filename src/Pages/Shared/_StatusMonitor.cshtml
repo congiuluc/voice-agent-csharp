@@ -1,0 +1,6 @@
+@inject IStringLocalizer<SharedResource> Localizer
+
+<div class="status-monitor">
+    <span id="statusIndicator" class="status-indicator disconnected"></span>
+    <span id="statusText" data-disconnected="@Localizer["Disconnected"]" data-connected="@Localizer["Connected"]">@Localizer["Disconnected"]</span>
+</div>

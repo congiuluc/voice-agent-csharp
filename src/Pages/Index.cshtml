@@ -1,27 +1,18 @@
 @page
 @model VoiceAgentCSharp.Pages.IndexModel
 @{
-    ViewData["Title"] = "Voice Agent";
+    Layout = "_Layout";
+    ViewData["Title"] = Localizer["AppTitle"];
+    var currentCulture = CultureInfo.CurrentCulture.Name;
 }
 
-<!DOCTYPE html>
-<html lang="it">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>@ViewData["Title"]</title>
-    <link rel="icon" type="image/svg+xml" href="~/favicon.svg">
-    <link rel="stylesheet" href="~/theme.css">
-    <link rel="stylesheet" href="~/styles.css">
-</head>
-<body>
-    <div class="main-container">
+<div class="main-container">
         <!-- Main Title -->
         <h1><span class="brand-l">Voice</span> <span class="brand-ia">Live</span></h1>
 
         <!-- Feature selection grid: 3 boxes linking to Assistant, Agent (this page), and Avatar -->
-        <div class="feature-grid" role="navigation" aria-label="Feature selection">
-            <a class="feature-card" href="/Assistant" title="Voice Assistant">
+        <div class="feature-grid" role="navigation" aria-label="@Localizer["FeatureSelection"]">
+            <a class="feature-card" href="/Assistant" title="@Localizer["VoiceAssistant"]">
                 <div class="feature-icon" aria-hidden="true">
                     <!-- Chat / assistant icon -->
                     <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" xmlns="http://www.w3.org/2000/svg">
@@ -29,10 +20,10 @@
                         <path d="M7 9h10M7 13h6" stroke-linecap="round" stroke-linejoin="round"></path>
                     </svg>
                 </div>
-                <div class="feature-title">Voice Assistant</div>
+                <div class="feature-title">@Localizer["VoiceAssistant"]</div>
             </a>
 
-            <a class="feature-card" href="/VoiceAgent" title="Voice Agent">
+            <a class="feature-card" href="/VoiceAgent" title="@Localizer["VoiceAgent"]">
                 <div class="feature-icon" aria-hidden="true">
                     <!-- Microphone / agent icon -->
                     <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" xmlns="http://www.w3.org/2000/svg">
@@ -41,10 +32,10 @@
                         <rect x="11" y="17" width="2" height="3" rx="1"></rect>
                     </svg>
                 </div>
-                <div class="feature-title">Voice Agent</div>
+                <div class="feature-title">@Localizer["VoiceAgent"]</div>
             </a>
 
-            <a class="feature-card" href="/VoiceAvatar" title="Voice Avatar">
+            <a class="feature-card" href="/VoiceAvatar" title="@Localizer["VoiceAvatar"]">
                 <div class="feature-icon" aria-hidden="true">
                     <!-- Avatar / user icon -->
                     <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" xmlns="http://www.w3.org/2000/svg">
@@ -52,199 +43,66 @@
                         <path d="M5.5 20a6.5 6.5 0 0 1 13 0" stroke-linecap="round" stroke-linejoin="round"></path>
                     </svg>
                 </div>
-                <div class="feature-title">Voice Avatar</div>
+                <div class="feature-title">@Localizer["VoiceAvatar"]</div>
             </a>
         </div>
 
-        <!-- Voice Visualizer Canvas -->
-        <canvas id="voiceCanvas"></canvas>
+        <partial name="_VoiceVisualizer" />
 
-      
-        <!-- Top Right Controls -->
+        <partial name="_CommonControls" />
 
+        <partial name="_LeftPanel" />
 
-        <!-- Hamburger (Left) for mobile/compact menu -->
-        <button id="hamburgerButton" class="hamburger-btn" title="Apri menu" aria-label="Apri menu">
-            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M3 6h18M3 12h18M3 18h18" stroke="currentColor" stroke-linecap="round"/>
-            </svg>
-        </button>
+        <!-- Settings Modal -->
+        <div id="settingsModal" class="settings-modal">
+            <div class="settings-content">
+                <partial name="_SettingsHeader" />
+                <div class="settings-body">
+                    <!-- Language Selector -->
+                    <partial name="_LanguageSelector" />
 
-        <!-- Incoming Call Settings button 
-        <button id="incomingCallSettingsButton" title="Configurazioni Chiamate in Ingresso" aria-label="Apri impostazioni chiamate in ingresso" class="icon-btn">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" stroke-linecap="round" stroke-linejoin="round"></path>
-            </svg>
-        </button>
--->
-        <!-- Theme toggle button -->
-        <button id="themeToggleButton" title="Attiva/Disattiva tema scuro" aria-label="Cambia tema" class="theme-toggle-btn">
-            <svg id="sunIcon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="12" cy="12" r="5"></circle>
-                <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
-            </svg>
-            <svg id="moonIcon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
-            </svg>
-        </button>
-
-        <!-- Logout button -->
-        <a href="/Logout" class="logout-btn" title="Logout" aria-label="Logout">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" stroke-linecap="round" stroke-linejoin="round"></path>
-                <polyline points="16 17 21 12 16 7" stroke-linecap="round" stroke-linejoin="round"></polyline>
-                <line x1="21" y1="12" x2="9" y2="12" stroke-linecap="round" stroke-linejoin="round"></line>
-            </svg>
-        </a>
-
-
-
-
-        <!-- Left Panel (Slideover) -->
-        <nav id="leftPanel" class="left-panel" aria-hidden="true">
-            <div class="left-panel-header">
-                <h3>Menu</h3>
-                <button id="closeLeftPanel" class="close-left-panel" title="Chiudi menu" aria-label="Chiudi menu">×</button>
-            </div>
-            <div class="left-panel-body" id="leftPanelBody">
-                <!-- Primary controls will be moved here dynamically on small viewports -->
-            </div>
-        </nav>
-
-        <!-- Incoming Call Settings Modal -->
-        <div id="incomingCallSettingsModal" class="modal" role="dialog" aria-hidden="true" aria-labelledby="incomingCallSettingsTitle">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h2 id="incomingCallSettingsTitle">Impostazioni Chiamate in Ingresso</h2>
-                    <button id="closeIncomingCallSettingsModal" class="close-modal-btn" title="Chiudi" aria-label="Chiudi impostazioni">×</button>
-                </div>
-
-                <div class="modal-body">
-                    <!-- Enable Incoming Calls Toggle -->
+                    <!-- Theme Selector -->
                     <div class="setting-group">
-                        <label for="enableIncomingCallsToggle">
-                            <input id="enableIncomingCallsToggle" type="checkbox" />
-                            Abilita Chiamate in Ingresso
-                        </label>
-                        <span class="setting-hint">Attiva la ricezione di chiamate telefoniche in ingresso</span>
-                    </div>
-
-                    <!-- ACS Connection Configuration -->
-                    <div class="setting-group">
-                        <label for="acsResourceInput">Risorsa ACS (Azure Communication Services):</label>
-                        <input id="acsResourceInput" type="text" class="form-control" 
-                            placeholder="Es: my-acs-resource.communication.azure.com"
-                            title="Nome della risorsa ACS">
-                        <span class="setting-hint">Nome della risorsa Azure Communication Services</span>
-                    </div>
-
-                    <!-- ACS Connection String (for testing) -->
-                    <div class="setting-group">
-                        <label for="acsConnectionStringInput">Connection String ACS (opzionale):</label>
-                        <input id="acsConnectionStringInput" type="password" class="form-control" 
-                            placeholder="Incolla connection string (se non usare Managed Identity)"
-                            title="Connection string ACS">
-                        <span class="setting-hint">⚠️ Solo per sviluppo locale. In produzione usare Managed Identity.</span>
-                    </div>
-
-                    <!-- Phone Number Configuration -->
-                    <div class="setting-group">
-                        <label for="phoneNumberInput">Numero Telefonico:</label>
-                        <input id="phoneNumberInput" type="tel" class="form-control" 
-                            placeholder="+39 XXXXXXXXXX"
-                            title="Numero telefonico di ricezione">
-                        <span class="setting-hint">Numero di telefono per ricevere le chiamate</span>
-                    </div>
-
-                    <!-- Note: Webhook and WebSocket URIs are computed by the server during test/answer flow. -->
-                    <div class="setting-group">
-                        <span class="setting-hint">Le URL di callback e WebSocket vengono generate dal server durante l'operazione di test/risposta e non sono persistite lato client.</span>
-                    </div>
-
-                    <!-- Voice Settings for Incoming Calls -->
-                    <div class="setting-group">
-                        <label for="incomingCallVoiceModelSelect">Modello di Voce:</label>
-                        <select id="incomingCallVoiceModelSelect" class="form-control">
-                            <option value="gpt-4o">GPT-4o Mini Realtime (consigliato)</option>
-                            <option value="gpt-4o-realtime-preview">GPT-4o Realtime</option>
-                            <option value="gpt-4o">GPT-4o</option>
-                            <option value="gpt-5-realtime">GPT-5 Realtime</option>
+                        <label for="themeSelect">@Localizer["Theme"]:</label>
+                        <select id="themeSelect" class="form-control">
+                            <option value="light">@Localizer["Light"]</option>
+                            <option value="dark" selected>@Localizer["Dark"]</option>
                         </select>
-                        <span class="setting-hint">Modello di intelligenza artificiale per le risposte</span>
+                        <span class="setting-hint">@Localizer["SelectTheme"]</span>
                     </div>
 
+                    <!-- Visualizer Selector -->
                     <div class="setting-group">
-                        <label for="incomingCallVoiceSelect">Voce (TTS):</label>
-                        <select id="incomingCallVoiceSelect" class="form-control">
-                            <option value="it-IT-IsabellaNeural">Isabella (Femminile)</option>
-                            <option value="it-IT-ElsaNeural">Elsa (Femminile)</option>
-                            <option value="it-IT-DiegoNeural">Diego (Maschile)</option>
-                            <option value="it-IT-GiuseppeNeural">Giuseppe (Maschile)</option>
-                            <option value="it-IT-BenignoNeural">Benigno (Maschile)</option>
-                            <option value="it-IT-CalimeroNeural">Calimero (Maschile)</option>
+                        <label for="visualizerSelect">@Localizer["Visualizer"]:</label>
+                        <select id="visualizerSelect" class="form-control">
+                            <option value="oscilloscope">@Localizer["Oscilloscope"]</option>
+                            <option value="wave" selected>@Localizer["Wave"]</option>
+                            <option value="equalizer">@Localizer["Equalizer"]</option>
+                            <option value="cardio">@Localizer["Cardio"]</option>
+                            <option value="lines">@Localizer["Lines"]</option>
+                            <option value="holographic">@Localizer["Holographic"]</option>
+                            <option value="vortex">@Localizer["Vortex"]</option>
+                            <option value="tesseract">@Localizer["Tesseract"]</option>
+                            <option value="cortana">@Localizer["Cortana"]</option>
                         </select>
-                        <span class="setting-hint">Voce per le risposte audio</span>
+                        <span class="setting-hint">@Localizer["SelectVisualizer"]</span>
                     </div>
-
-                    <!-- Greeting Message -->
-                    <div class="setting-group">
-                        <label for="incomingCallGreetingInput">Messaggio di Benvenuto:</label>
-                        <textarea id="incomingCallGreetingInput" class="form-control" rows="3"
-                            placeholder="Es: Buongiorno! Come posso aiutarti?"
-                            title="Messaggio di benvenuto per le chiamate in ingresso"></textarea>
-                        <span class="setting-hint">Messaggio pronunciato al inizio di ogni chiamata</span>
-                    </div>
-
-                    <!-- System Instructions -->
-                    <div class="setting-group">
-                        <label for="incomingCallInstructionsInput">Istruzioni di Sistema (opzionale):</label>
-                        <textarea id="incomingCallInstructionsInput" class="form-control" rows="5"
-                            placeholder="Descrivi il comportamento dell'assistente..."
-                            title="Istruzioni per il comportamento dell'IA"></textarea>
-                        <span class="setting-hint">Instrizioni che verranno inviate al modello come system prompt</span>
-                    </div>
-
-                    <!-- Call Settings -->
-                    <div class="setting-group">
-                        <label for="callTimeoutInput">Timeout Chiamata (secondi):</label>
-                        <input id="callTimeoutInput" type="number" class="form-control" 
-                            value="300" min="30" max="3600"
-                            title="Tempo massimo di una chiamata">
-                        <span class="setting-hint">Durata massima di una chiamata (30-3600 secondi)</span>
-                    </div>
-
-                    <!-- Test Button -->
-                    <div class="setting-group">
-                        <button id="testIncomingCallButton" class="btn btn-secondary" 
-                            title="Test incoming call configuration">
-                            📞 Testa Configurazione
-                        </button>
-                        <span class="setting-hint">Verifica la connessione ACS e le impostazioni</span>
-                    </div>
-
-                    <!-- Status Message -->
-                    <div id="incomingCallStatusMessage" class="status-message" style="display: none;"></div>
                 </div>
-
-                <div class="modal-footer">
-                    <button id="resetIncomingCallSettingsButton" class="btn btn-secondary" title="Ripristina valori predefiniti">
-                        Ripristina
-                    </button>
-                    <button id="saveIncomingCallSettingsButton" class="btn btn-primary" title="Salva impostazioni">
-                        Salva Impostazioni
-                    </button>
-                </div>
+                <partial name="_SettingsFooter" />
             </div>
         </div>
+
+        <!-- Toast Container (for notifications like in Voice Assistant) -->
+        <div id="toastContainer" class="toast-container"></div>
     </div>
 
 
     <!-- Error Boundary -->
     <div id="errorBoundary" class="error-boundary">
         <div class="error-content">
-            <h2>⚠️ Errore Applicazione</h2>
+            <h2>@Localizer["ApplicationError"]</h2>
             <p id="errorMessage"></p>
-            <button id="reloadButton" title="Ricarica pagina">Ricarica Pagina</button>
+            <button id="reloadButton" title="@Localizer["ReloadPageTitle"]">@Localizer["ReloadPage"]</button>
         </div>
     </div>
 
@@ -253,10 +111,18 @@
 
     <!-- (Developer features panel removed) -->
 
+@section Scripts {
     <!-- Lightweight theme toggle for Index (does not load full app) -->
-    <script type="module" src="~/js/index-theme.js"></script>
+    <script type="module" src="~/js/ui/index-theme.js" asp-append-version="true"></script>
     
-    <!-- Incoming call settings modal handler -->
-    <script type="module" src="~/js/incoming-call-settings.js"></script>
-</body>
-</html>
+    <!-- App settings modal handler -->
+    <script type="module" src="~/js/ui/app-settings.js" asp-append-version="true"></script>
+
+    <!-- Initialize Hamburger Menu -->
+    <script type="module">
+        import { initHamburgerMenu } from '/js/ui/hamburger-menu.js';
+        document.addEventListener('DOMContentLoaded', () => {
+            initHamburgerMenu();
+        });
+    </script>
+}

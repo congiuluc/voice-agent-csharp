@@ -111,9 +111,9 @@ public class VoiceAcsSession : IVoiceSession
 
         var turnDetectionConfig = new ServerVadTurnDetection
         {
-            Threshold = 0.5f,
-            PrefixPadding = TimeSpan.FromMilliseconds(300),
-            SilenceDuration = TimeSpan.FromMilliseconds(500)
+            Threshold = 0.3f,
+            PrefixPadding = TimeSpan.FromMilliseconds(200),
+            SilenceDuration = TimeSpan.FromMilliseconds(300)
         };
 
         var sessionOptions = new VoiceLiveSessionOptions
@@ -122,7 +122,8 @@ public class VoiceAcsSession : IVoiceSession
             Voice = azureVoice,
             InputAudioFormat = InputAudioFormat.Pcm16,
             OutputAudioFormat = OutputAudioFormat.Pcm16,
-            TurnDetection = turnDetectionConfig
+            TurnDetection = turnDetectionConfig,
+            InputAudioTranscription = new AudioInputTranscriptionOptions(AudioInputTranscriptionOptionsModel.Whisper1)
         };
 
         // Configure for model-based or agent-based conversation
@@ -242,16 +243,17 @@ public class VoiceAcsSession : IVoiceSession
 
         var turnDetectionConfig = new ServerVadTurnDetection
         {
-            Threshold = 0.5f,
-            PrefixPadding = TimeSpan.FromMilliseconds(300),
-            SilenceDuration = TimeSpan.FromMilliseconds(500)
+            Threshold = 0.3f,
+            PrefixPadding = TimeSpan.FromMilliseconds(200),
+            SilenceDuration = TimeSpan.FromMilliseconds(300)
         };
 
         var sessionOptions = new VoiceLiveSessionOptions
         {
             Voice = azureVoice,
             InputAudioEchoCancellation = new AudioEchoCancellation(),
-            TurnDetection = turnDetectionConfig
+            TurnDetection = turnDetectionConfig,
+            InputAudioTranscription = new AudioInputTranscriptionOptions(AudioInputTranscriptionOptionsModel.Whisper1)
         };
 
         // Update model/instructions if provided and not using Foundry Agent
@@ -399,9 +401,27 @@ public class VoiceAcsSession : IVoiceSession
                     }
                     break;
 
-                case SessionUpdateResponseDone:
+                case SessionUpdateResponseDone responseDone:
                     _logger.LogInformation("Assistant response complete");
-                    await EmitSessionEventAsync("ResponseDone", null);
+                    var usageData = responseDone.Response?.Usage;
+                    await EmitSessionEventAsync("ResponseDone", new {
+                        ResponseId = responseDone.Response?.Id,
+                        Status = responseDone.Response?.Status?.ToString(),
+                        Usage = usageData != null ? new {
+                            InputTokens = usageData.InputTokens,
+                            OutputTokens = usageData.OutputTokens,
+                            TotalTokens = usageData.TotalTokens,
+                            InputTokenDetails = usageData.InputTokenDetails != null ? new {
+                                CachedTokens = usageData.InputTokenDetails.CachedTokens,
+                                TextTokens = usageData.InputTokenDetails.TextTokens,
+                                AudioTokens = usageData.InputTokenDetails.AudioTokens
+                            } : null,
+                            OutputTokenDetails = usageData.OutputTokenDetails != null ? new {
+                                TextTokens = usageData.OutputTokenDetails.TextTokens,
+                                AudioTokens = usageData.OutputTokenDetails.AudioTokens
+                            } : null
+                        } : null
+                    });
                     break;
 
                 case SessionUpdateResponseFunctionCallArgumentsDone functionCallArgs:

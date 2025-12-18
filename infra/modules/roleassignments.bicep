@@ -2,6 +2,8 @@ param identityPrincipalId string
 param aiServicesId string
 param keyVaultName string
 param acsResourceId string
+param cosmosDbAccountId string
+param currentUserPrincipalId string = ''
 
 resource acsResource 'Microsoft.Communication/communicationServices@2025-05-01-preview' existing = {
   name: last(split(acsResourceId, '/'))
@@ -64,5 +66,31 @@ resource keyVaultRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04
     roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', 'b86a8fe4-44ce-4948-aee5-eccb2c155cd7')
     principalId: identityPrincipalId
     principalType: 'ServicePrincipal'
+  }
+}
+
+// Cosmos DB Data Contributor role for accessing collections and documents
+resource cosmosDbAccount 'Microsoft.DocumentDB/databaseAccounts@2024-05-15' existing = {
+  name: cosmosDbAccountId
+}
+
+resource cosmosDbRoleAssignment 'Microsoft.DocumentDB/databaseAccounts/sqlRoleAssignments@2024-05-15' = {
+  name: guid(cosmosDbAccount.id, identityPrincipalId, 'Cosmos DB Data Contributor')
+  parent: cosmosDbAccount
+  properties: {
+    roleDefinitionId: '${cosmosDbAccount.id}/sqlRoleDefinitions/00000000-0000-0000-0000-000000000002'
+    principalId: identityPrincipalId
+    scope: cosmosDbAccount.id
+  }
+}
+
+// Cosmos DB Data Contributor role for current user (if provided)
+resource cosmosDbUserRoleAssignment 'Microsoft.DocumentDB/databaseAccounts/sqlRoleAssignments@2024-05-15' = if (!empty(currentUserPrincipalId)) {
+  name: guid(cosmosDbAccount.id, currentUserPrincipalId, 'Cosmos DB Data Contributor - User')
+  parent: cosmosDbAccount
+  properties: {
+    roleDefinitionId: '${cosmosDbAccount.id}/sqlRoleDefinitions/00000000-0000-0000-0000-000000000002'
+    principalId: currentUserPrincipalId
+    scope: cosmosDbAccount.id
   }
 }

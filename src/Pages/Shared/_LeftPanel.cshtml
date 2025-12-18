@@ -1,0 +1,29 @@
+@inject IStringLocalizer<SharedResource> Localizer
+<!-- Left Panel (Slideover) -->
+<nav id="leftPanel" class="left-panel" aria-hidden="true">
+    <div class="left-panel-header">
+        <h3>@Localizer["Menu"]</h3>
+        <button id="closeLeftPanel" class="close-left-panel" title="@Localizer["CloseMenu"]" aria-label="@Localizer["CloseMenu"]">×</button>
+    </div>
+    <div class="left-panel-body" id="leftPanelBody">
+        <button class="lp-btn" id="lp_themeToggle">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"></circle><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+            <span>@Localizer["ChangeTheme"]</span>
+        </button>
+        <button class="lp-btn" id="lp_settingsButton">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19.14 12.94c.04-.31.06-.63.06-.94s-.02-.64-.06-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.11-.2-.36-.28-.57-.2l-2.39.96c-.5-.38-1.04-.7-1.64-.94l-.36-1.95c-.05-.21-.25-.36-.47-.36h-3.98c-.22 0-.42.15-.47.36l-.36 1.95c-.6.24-1.14.56-1.64.94l-2.39-.96c-.21-.08-.46 0-.57.2L2.71 8.88c-.11.2-.06.47.12.61l2.03 1.58c-.04.3-.06.61-.06.94s.02.64.06.94L2.83 14.5c-.18.14-.23.41-.12.61l1.92 3.32c.11.2.36.28.57.2l2.39-.96c.5.38 1.04.7 1.64.94l.36 1.95c.05.21.25.36.47.36h3.98c.22 0 .42-.15.47-.36l.36-1.95c.6-.24 1.14-.56 1.64-.94l2.39.96c.21.08.46 0 .57-.2l1.92-3.32c.11-.2.06-.47-.12-.61l-2.03-1.58z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+            <span>@Localizer["Settings"]</span>
+        </button>
+        @if (User.IsInRole("Admin"))
+        {
+            <a href="/Admin/CallMonitoring" class="lp-btn">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+                <span>@Localizer["CallMonitoringDashboard"]</span>
+            </a>
+        }
+        <a href="/Logout" class="lp-btn">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" stroke-linecap="round" stroke-linejoin="round"></path><polyline points="16 17 21 12 16 7" stroke-linecap="round" stroke-linejoin="round"></polyline><line x1="21" y1="12" x2="9" y2="12" stroke-linecap="round" stroke-linejoin="round"></line></svg>
+            <span>@Localizer["Logout"]</span>
+        </a>
+    </div>
+</nav>

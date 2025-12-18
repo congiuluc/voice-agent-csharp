@@ -1,0 +1,1042 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="AppTitle">
+    <value>Aplicación de agente de voz</value>
+  </data>
+  <data name="VoiceAssistant">
+    <value>Asistente de voz</value>
+  </data>
+  <data name="VoiceAgent">
+    <value>Agente de voz</value>
+  </data>
+  <data name="VoiceAvatar">
+    <value>Avatar de voz</value>
+  </data>
+  <data name="Settings">
+    <value>Ajustes</value>
+  </data>
+  <data name="Language">
+    <value>Idioma</value>
+  </data>
+  <data name="Theme">
+    <value>Tema</value>
+  </data>
+  <data name="Visualizer">
+    <value>Visualizador</value>
+  </data>
+  <data name="Save">
+    <value>Guardar</value>
+  </data>
+  <data name="Close">
+    <value>Cerrar</value>
+  </data>
+  <data name="Reset">
+    <value>Restablecer valores predeterminados</value>
+  </data>
+  <data name="Logout">
+    <value>Cerrar sesión</value>
+  </data>
+  <data name="AllProjects">
+    <value>Todos los Proyectos</value>
+  </data>
+  <data name="Light">
+    <value>Claro</value>
+  </data>
+  <data name="Dark">
+    <value>Oscuro</value>
+  </data>
+  <data name="Wave">
+    <value>Ola</value>
+  </data>
+  <data name="Oscilloscope">
+    <value>Osciloscopio</value>
+  </data>
+  <data name="Cardio">
+    <value>Cardio</value>
+  </data>
+  <data name="Vortex">
+    <value>Vórtice</value>
+  </data>
+  <data name="Lines">
+    <value>Líneas</value>
+  </data>
+  <data name="Holographic">
+    <value>Holográfico</value>
+  </data>
+  <data name="Tesseract">
+    <value>Teseracto</value>
+  </data>
+  <data name="Cortana">
+    <value>Cortana</value>
+  </data>
+  <data name="Equalizer">
+    <value>Ecualizador</value>
+  </data>
+  <data name="IncomingCallSettings">
+    <value>Ajustes de llamadas entrantes</value>
+  </data>
+  <data name="EnableIncomingCalls">
+    <value>Habilitar llamadas entrantes</value>
+  </data>
+  <data name="PhoneNumber">
+    <value>Número de teléfono</value>
+  </data>
+  <data name="VoiceModel">
+    <value>Modelo de voz</value>
+  </data>
+  <data name="Voice">
+    <value>Voz</value>
+  </data>
+  <data name="Greeting">
+    <value>Saludo</value>
+  </data>
+  <data name="Instructions">
+    <value>Instrucciones</value>
+  </data>
+  <data name="CallTimeout">
+    <value>Tiempo de espera de llamada (segundos)</value>
+  </data>
+  <data name="InvalidPhoneNumber">
+    <value>Por favor, introduzca un número de teléfono válido</value>
+  </data>
+  <data name="InvalidGreeting">
+    <value>El saludo no puede estar vacío</value>
+  </data>
+  <data name="InvalidInstructions">
+    <value>Las instrucciones no pueden estar vacías</value>
+  </data>
+  <data name="InvalidTimeout">
+    <value>El tiempo de espera debe ser un número válido</value>
+  </data>
+  <data name="English">
+    <value>Inglés</value>
+  </data>
+  <data name="Italian">
+    <value>Italiano</value>
+  </data>
+  <data name="French">
+    <value>Francés</value>
+  </data>
+  <data name="Spanish">
+    <value>Español</value>
+  </data>
+  <data name="German">
+    <value>Alemán</value>
+  </data>
+  <data name="GeneralSettings">
+    <value>Ajustes generales</value>
+  </data>
+  <data name="SelectLanguage">
+    <value>Seleccionar idioma</value>
+  </data>
+  <data name="SelectTheme">
+    <value>Seleccionar tema</value>
+  </data>
+  <data name="SelectVisualizer">
+    <value>Seleccionar visualizador</value>
+  </data>
+  <data name="ACSResource">
+    <value>Recurso ACS</value>
+  </data>
+  <data name="Optional">
+    <value>Opcional</value>
+  </data>
+  <data name="ConnectionString">
+    <value>Cadena de conexión</value>
+  </data>
+  <data name="VoiceModelSelect">
+    <value>Modelo de voz</value>
+  </data>
+  <data name="VoiceSelect">
+    <value>Voz (TTS)</value>
+  </data>
+  <data name="GreetingMessage">
+    <value>Mensaje de saludo</value>
+  </data>
+  <data name="SystemInstructions">
+    <value>Instrucciones del sistema</value>
+  </data>
+  <data name="TestConfiguration">
+    <value>Probar configuración</value>
+  </data>
+  <data name="ToggleMicrophone">
+    <value>Alternar micrófono</value>
+  </data>
+  <data name="ToggleTranscript">
+    <value>Alternar transcripción</value>
+  </data>
+  <data name="ToggleChat">
+    <value>Alternar chat</value>
+  </data>
+  <data name="OpenMenu">
+    <value>Abrir menú</value>
+  </data>
+  <data name="GoHome">
+    <value>Ir al inicio</value>
+  </data>
+  <data name="ToggleTheme">
+    <value>Alternar tema</value>
+  </data>
+  <data name="Home">
+    <value>Inicio</value>
+  </data>
+  <data name="LoginTitle">
+    <value>Iniciar sesión</value>
+  </data>
+  <data name="LoginMessage">
+    <value>Por favor, inicie sesión para acceder a la aplicación.</value>
+  </data>
+  <data name="Username">
+    <value>Nombre de usuario</value>
+  </data>
+  <data name="Password">
+    <value>Contraseña</value>
+  </data>
+  <data name="LoginButton">
+    <value>Iniciar sesión</value>
+  </data>
+  <data name="LogoutTitle">
+    <value>Cerrar sesión</value>
+  </data>
+  <data name="LogoutMessage">
+    <value>Ha cerrado la sesión.</value>
+  </data>
+  <data name="LoginAgain">
+    <value>Iniciar sesión de nuevo</value>
+  </data>
+  <data name="Error">
+    <value>Error</value>
+  </data>
+  <data name="ErrorMessage">
+    <value>Se produjo un error al procesar su solicitud.</value>
+  </data>
+  <data name="TryAgainLater">
+    <value>Por favor, inténtelo de nuevo más tarde o contacte con el soporte si el problema persiste.</value>
+  </data>
+  <data name="CallMonitoringDashboard">
+    <value>Panel de control de monitoreo de llamadas</value>
+  </data>
+  <data name="CallMonitoringTitle">
+    <value>Panel de control de monitoreo de llamadas</value>
+  </data>
+  <data name="RefreshData">
+    <value>Actualizar datos</value>
+  </data>
+  <data name="ReloadDatabase">
+    <value>Recargar desde la base de datos</value>
+  </data>
+  <data name="Menu">
+    <value>Menú</value>
+  </data>
+  <data name="CloseMenu">
+    <value>Cerrar menú</value>
+  </data>
+  <data name="ChangeTheme">
+    <value>Cambiar tema</value>
+  </data>
+  <data name="TokenUsageAndInteractions">
+    <value>Uso de tokens e interacciones</value>
+  </data>
+  <data name="InputTokens">
+    <value>Tokens de entrada</value>
+  </data>
+  <data name="TokensConsumedForPrompts">
+    <value>Tokens consumidos por prompts</value>
+  </data>
+  <data name="RealTime">
+    <value>Tiempo real</value>
+  </data>
+  <data name="OutputTokens">
+    <value>Tokens de salida</value>
+  </data>
+  <data name="TokensGeneratedByModel">
+    <value>Tokens generados por el modelo</value>
+  </data>
+  <data name="CachedTokens">
+    <value>Tokens en caché</value>
+  </data>
+  <data name="TokensServedFromCache">
+    <value>Tokens servidos desde el caché</value>
+  </data>
+  <data name="CostSavings">
+    <value>Ahorro de costes</value>
+  </data>
+  <data name="Interactions">
+    <value>Interacciones</value>
+  </data>
+  <data name="UserAssistantExchanges">
+    <value>Intercambios Usuario/Asistente</value>
+  </data>
+  <data name="Active">
+    <value>Activo</value>
+  </data>
+  <data name="ActiveModels">
+    <value>Modelos activos</value>
+  </data>
+  <data name="NoActiveModels">
+    <value>No hay modelos activos</value>
+  </data>
+  <data name="ActiveSessions">
+    <value>Sesiones activas</value>
+  </data>
+  <data name="Total">
+    <value>Total</value>
+  </data>
+  <data name="TotalCost">
+    <value>Coste total</value>
+  </data>
+  <data name="QueueSize">
+    <value>Tamaño de la cola</value>
+  </data>
+  <data name="TotalModels">
+    <value>Total de modelos</value>
+  </data>
+  <data name="LastUpdate">
+    <value>Última actualización</value>
+  </data>
+  <data name="TokenConsumptionPerModel">
+    <value>Consumo de tokens por modelo (sesiones activas + completadas)</value>
+  </data>
+  <data name="NoTokenConsumptionRecorded">
+    <value>No se ha registrado consumo de tokens</value>
+  </data>
+  <data name="CostPerModel">
+    <value>Costes por modelo</value>
+  </data>
+  <data name="CostDistribution">
+    <value>Distribución de costes</value>
+  </data>
+  <data name="PricingConfiguration">
+    <value>Configuración de precios</value>
+  </data>
+  <data name="Model">
+    <value>Modelo</value>
+  </data>
+  <data name="InputCost">
+    <value>Coste de entrada ($/1K tokens)</value>
+  </data>
+  <data name="OutputCost">
+    <value>Coste de salida ($/1K tokens)</value>
+  </data>
+  <data name="AvatarCost">
+    <value>Avatar ($/min)</value>
+  </data>
+  <data name="TTSCost">
+    <value>TTS ($/1M caract.)</value>
+  </data>
+  <data name="Updated">
+    <value>Actualizado</value>
+  </data>
+  <data name="AzurePortal">
+    <value>Portal de Azure</value>
+  </data>
+  <data name="ViewHistoricalAnalytics">
+    <value>Ver análisis históricos y consultas KQL</value>
+  </data>
+  <data name="AspireDashboard">
+    <value>Panel de Aspire</value>
+  </data>
+  <data name="ViewMetricsAndTraces">
+    <value>Ver métricas y trazas de OpenTelemetry</value>
+  </data>
+  <data name="ApplicationError">
+    <value>Error de aplicación</value>
+  </data>
+  <data name="ReloadPage">
+    <value>Recargar página</value>
+  </data>
+  <data name="ErrorPageTitle">
+    <value>Error</value>
+  </data>
+  <data name="ErrorOccurred">
+    <value>Se produjo un error al procesar su solicitud.</value>
+  </data>
+  <data name="ToggleTrace">
+    <value>Alternar traza</value>
+  </data>
+  <data name="ToggleTraceMessages">
+    <value>Mostrar u ocultar traza de mensajes</value>
+  </data>
+  <data name="StartSession">
+    <value>Iniciar sesión</value>
+  </data>
+  <data name="ClearTrace">
+    <value>Limpiar traza</value>
+  </data>
+  <data name="ClearChat">
+    <value>Limpiar chat</value>
+  </data>
+  <data name="SendMessage">
+    <value>Enviar mensaje</value>
+  </data>
+  <data name="CloseSettings">
+    <value>Cerrar ajustes</value>
+  </data>
+  <data name="ShowNotifications">
+    <value>Mostrar notificaciones</value>
+  </data>
+  <data name="SaveSettings">
+    <value>Guardar ajustes</value>
+  </data>
+  <data name="Disconnected">
+    <value>Desconectado</value>
+  </data>
+  <data name="MessageTrace">
+    <value>Traza de mensajes</value>
+  </data>
+  <data name="SessionStarted">
+    <value>Sesión iniciada</value>
+  </data>
+  <data name="SessionStartFailed">
+    <value>No se pudo iniciar la sesión</value>
+  </data>
+  <data name="SessionEnded">
+    <value>Sesión finalizada</value>
+  </data>
+  <data name="StartSessionBeforeMicrophone">
+    <value>Inicie una sesión antes de habilitar el micrófono</value>
+  </data>
+  <data name="ConversationCleared">
+    <value>Conversación borrada</value>
+  </data>
+  <data name="EndpointCopied">
+    <value>Punto de conexión copiado</value>
+  </data>
+  <data name="EndpointReachable">
+    <value>El punto de conexión es accesible</value>
+  </data>
+  <data name="EndpointNotReachable">
+    <value>El punto de conexión no es accesible</value>
+  </data>
+  <data name="EndpointTestError">
+    <value>Error de prueba del punto de conexión</value>
+  </data>
+  <data name="EndpointTestErrorMessage">
+    <value>Error durante la prueba del punto de conexión</value>
+  </data>
+  <data name="SettingsSavedSuccessfully">
+    <value>Ajustes guardados con éxito</value>
+  </data>
+  <data name="RestartSessionForSettings">
+    <value>Reinicie la sesión para aplicar los nuevos ajustes</value>
+  </data>
+  <data name="WebSocketConnectionError">
+    <value>Error de conexión WebSocket</value>
+  </data>
+  <data name="ServerConnectionFailed">
+    <value>No se pudo conectar al servidor</value>
+  </data>
+  <data name="ConfigurationSendError">
+    <value>Error al enviar la configuración</value>
+  </data>
+  <data name="UnknownMessageTypeReceived">
+    <value>Se recibió un tipo de mensaje desconocido</value>
+  </data>
+  <data name="UnknownMessage">
+    <value>Mensaje desconocido</value>
+  </data>
+  <data name="MessageProcessingError">
+    <value>Error al procesar el mensaje</value>
+  </data>
+  <data name="LanguageChangeError">
+    <value>Error al cambiar el idioma</value>
+  </data>
+  <data name="SettingsSaveError">
+    <value>Error al guardar los ajustes</value>
+  </data>
+  <data name="StartSessionBeforeMessage">
+    <value>Inicie una sesión para enviar mensajes</value>
+  </data>
+  <data name="ErrorSendingMessage">
+    <value>Error al enviar el mensaje</value>
+  </data>
+  <data name="RestartSessionForChanges">
+    <value>Reinicie la sesión para aplicar los cambios</value>
+  </data>
+  <data name="MicrophoneError">
+    <value>Error del micrófono</value>
+  </data>
+  <data name="AvatarStartError">
+    <value>Error al iniciar el avatar</value>
+  </data>
+  <data name="ConnectionError">
+    <value>Error de conexión</value>
+  </data>
+  <data name="PriceReloadError">
+    <value>Error al recargar los precios</value>
+  </data>
+  <data name="MicrophoneMuted">
+    <value>Micrófono silenciado</value>
+  </data>
+  <data name="MicrophoneUnmuted">
+    <value>Micrófono activado</value>
+  </data>
+  <data name="ConnectionLost">
+    <value>Conexión perdida</value>
+  </data>
+  <data name="MicrophoneAccessDenied">
+    <value>No se pudo acceder al micrófono</value>
+  </data>
+  <data name="NoConnectionToSendMessage">
+    <value>Sin conexión: no se pudo enviar el mensaje</value>
+  </data>
+  <data name="PriceReloadedSuccessfully">
+    <value>¡Precios recargados con éxito!</value>
+  </data>
+  <data name="MessageSent">
+    <value>Mensaje enviado</value>
+  </data>
+  <data name="SettingsSaved">
+    <value>Ajustes guardados</value>
+  </data>
+  <data name="AvatarConnected">
+    <value>Avatar conectado</value>
+  </data>
+  <data name="NotConnected">
+    <value>No conectado</value>
+  </data>
+  <data name="UnableToSaveSettings">
+    <value>No se pudieron guardar los ajustes</value>
+  </data>
+  <data name="Connected">
+    <value>Conectado</value>
+  </data>
+  <data name="TraceMessages">
+    <value>Mensajes de traza</value>
+  </data>
+  <data name="Chat">
+    <value>Chat</value>
+  </data>
+  <data name="WriteMessage">
+    <value>Escribir un mensaje...</value>
+  </data>
+  <data name="VoiceLiveEndpoint">
+    <value>Punto de conexión Voice Live</value>
+  </data>
+  <data name="VoiceLiveEndpointHint">
+    <value>URL del servicio Voice Live (ej. https://*.cognitiveservices.azure.com)</value>
+  </data>
+  <data name="VoiceLiveApiKey">
+    <value>Clave API de Voice Live</value>
+  </data>
+  <data name="EnterApiKey">
+    <value>Introducir clave API</value>
+  </data>
+  <data name="VoiceLiveApiKeyHint">
+    <value>Clave API para la autenticación en Voice Live</value>
+  </data>
+  <data name="SelectVoiceModel">
+    <value>Seleccione el modelo de voz preferido</value>
+  </data>
+  <data name="SelectVoice">
+    <value>Seleccione la voz del asistente</value>
+  </data>
+  <data name="EnterWelcomeMessage">
+    <value>Introduzca un mensaje de bienvenida personalizado...</value>
+  </data>
+  <data name="WelcomeMessageHint">
+    <value>El mensaje personalizado para la sesión</value>
+  </data>
+  <data name="EnterModelInstructions">
+    <value>Introduzca las instrucciones que se pasarán al modelo como prompt del sistema...</value>
+  </data>
+  <data name="ModelInstructionsHint">
+    <value>Texto opcional que se enviará al modelo como prompt del sistema (sea breve, prefiera frases concisas para la voz).</value>
+  </data>
+  <data name="ConsumptionDashboard">
+    <value>Panel de consumo</value>
+  </data>
+  <data name="CloseDashboard">
+    <value>Cerrar panel</value>
+  </data>
+  <data name="ToggleConsumptionDashboard">
+    <value>Mostrar/Ocultar panel de consumo</value>
+  </data>
+  <data name="Session">
+    <value>Sesión</value>
+  </data>
+  <data name="SessionID">
+    <value>ID de sesión:</value>
+  </data>
+  <data name="Status">
+    <value>Estado:</value>
+  </data>
+  <data name="Duration">
+    <value>Duración:</value>
+  </data>
+  <data name="Responses">
+    <value>Respuestas</value>
+  </data>
+  <data name="ResponseCount">
+    <value>Recuento de respuestas:</value>
+  </data>
+  <data name="CurrentResponse">
+    <value>Respuesta actual:</value>
+  </data>
+  <data name="ResponseStatus">
+    <value>Estado de la respuesta:</value>
+  </data>
+  <data name="TokenUsage">
+    <value>Uso de tokens</value>
+  </data>
+  <data name="TotalTokens">
+    <value>Tokens totales:</value>
+  </data>
+  <data name="InputDetails">
+    <value>Detalles de entrada</value>
+  </data>
+  <data name="OutputDetails">
+    <value>Detalles de salida</value>
+  </data>
+  <data name="Text">
+    <value>Texto:</value>
+  </data>
+  <data name="Audio">
+    <value>Audio:</value>
+  </data>
+  <data name="Cached">
+    <value>En caché:</value>
+  </data>
+  <data name="AudioDuration">
+    <value>Duración del audio</value>
+  </data>
+  <data name="InputAudio">
+    <value>Audio de entrada:</value>
+  </data>
+  <data name="OutputAudio">
+    <value>Audio de salida:</value>
+  </data>
+  <data name="TotalAudio">
+    <value>Audio total:</value>
+  </data>
+  <data name="Format">
+    <value>Formato:</value>
+  </data>
+  <data name="SampleRate">
+    <value>Frecuencia de muestreo:</value>
+  </data>
+  <data name="RateLimits">
+    <value>Límites de velocidad</value>
+  </data>
+  <data name="CostsPerModel">
+    <value>Costes por modelo</value>
+  </data>
+  <data name="FeatureSelection">
+    <value>Selección de funciones</value>
+  </data>
+  <data name="OpenIncomingCallSettings">
+    <value>Abrir ajustes de llamadas entrantes</value>
+  </data>
+  <data name="ToggleDarkTheme">
+    <value>Alternar tema oscuro</value>
+  </data>
+  <data name="VoiceLiveEndpointURL">
+    <value>URL del punto de conexión Voice Live</value>
+  </data>
+  <data name="EditPricing">
+    <value>Editar precios</value>
+  </data>
+  <data name="InputCostLabel">
+    <value>Entrada ($):</value>
+  </data>
+  <data name="OutputCostLabel">
+    <value>Salida ($):</value>
+  </data>
+  <data name="CachedCostLabel">
+    <value>En caché ($):</value>
+  </data>
+  <data name="AvatarCostLabel">
+    <value>Avatar ($/min):</value>
+  </data>
+  <data name="TtsCostLabel">
+    <value>TTS ($/1M caract.):</value>
+  </data>
+  <data name="Units">
+    <value>Unidades:</value>
+  </data>
+  <data name="Per1KTokens">
+    <value>Por 1K tokens</value>
+  </data>
+  <data name="Per1MTokens">
+    <value>Por 1M tokens</value>
+  </data>
+  <data name="ValuesMustBeNonNegative">
+    <value>Los valores deben ser no negativos</value>
+  </data>
+  <data name="WelcomeMessageTemplate">
+    <value>¡Hola! Soy {0}, ¿cómo puedo ayudarte hoy?</value>
+  </data>
+  <data name="WaitingForConnection">
+    <value>Esperando conexión...</value>
+  </data>
+  <data name="VoiceAgentAppInitialized">
+    <value>Aplicación Voice Agent inicializada</value>
+  </data>
+  <data name="InitializationError">
+    <value>Error de inicialización: {0}</value>
+  </data>
+  <data name="ErrorDuringAppInitialization">
+    <value>Error durante la inicialización de la aplicación: {0}</value>
+  </data>
+  <data name="TraceCleared">
+    <value>Traza borrada</value>
+  </data>
+  <data name="Connecting">
+    <value>Conectando...</value>
+  </data>
+  <data name="SessionActive">
+    <value>Sesión activa</value>
+  </data>
+  <data name="SessionStartedWith">
+    <value>Sesión iniciada con {0}</value>
+  </data>
+  <data name="SessionStartError">
+    <value>Error al iniciar sesión: {0}</value>
+  </data>
+  <data name="VoiceAvatarInitialized">
+    <value>Avatar de voz inicializado</value>
+  </data>
+  <data name="NoGesturesAvailable">
+    <value>No hay gestos disponibles para esta combinación.</value>
+  </data>
+  <data name="StartingAvatarSession">
+    <value>Iniciando sesión de avatar...</value>
+  </data>
+  <data name="WaitingForSessionToBeReady">
+    <value>Esperando a que la sesión esté lista...</value>
+  </data>
+  <data name="StoppingAvatar">
+    <value>Deteniendo avatar...</value>
+  </data>
+  <data name="AvatarStopped">
+    <value>Avatar detenido</value>
+  </data>
+  <data name="ConnectingTo">
+    <value>Conectando a {0}</value>
+  </data>
+  <data name="WebSocketConnected">
+    <value>WebSocket conectado</value>
+  </data>
+  <data name="WebSocketClosed">
+    <value>WebSocket cerrado: {0}</value>
+  </data>
+  <data name="WebSocketError">
+    <value>Error de WebSocket</value>
+  </data>
+  <data name="FailedToParseMessage">
+    <value>Error al analizar el mensaje: {0}</value>
+  </data>
+  <data name="Received">
+    <value>Recibido: {0}</value>
+  </data>
+  <data name="ReceivedMessage" xml:space="preserve">
+    <value>Mensaje recibido: {0}</value>
+  </data>
+  <data name="SendingIceCandidate" xml:space="preserve">
+    <value>Enviando candidato ICE</value>
+  </data>
+  <data name="ReceivedSdpAnswer" xml:space="preserve">
+    <value>Respuesta SDP recibida</value>
+  </data>
+  <data name="SdpAnswerSet" xml:space="preserve">
+    <value>Respuesta SDP establecida con éxito</value>
+  </data>
+  <data name="SessionStartedWithId" xml:space="preserve">
+    <value>Sesión iniciada: {0}</value>
+  </data>
+  <data name="AvatarError" xml:space="preserve">
+    <value>Error del avatar: {0}</value>
+  </data>
+  <data name="MicrophoneStarted" xml:space="preserve">
+    <value>Micrófono iniciado</value>
+  </data>
+  <data name="ReceivedAudioData" xml:space="preserve">
+    <value>Datos de audio recibidos: {0} bytes</value>
+  </data>
+  <data name="ReceivedKind" xml:space="preserve">
+    <value>Recibido: {0}</value>
+  </data>
+  <data name="SessionEvent" xml:space="preserve">
+    <value>Evento de sesión: {0}</value>
+  </data>
+  <data name="SessionConnected" xml:space="preserve">
+    <value>Sesión conectada</value>
+  </data>
+  <data name="SessionError" xml:space="preserve">
+    <value>Error de sesión: {0}</value>
+  </data>
+  <data name="StartingWebRtc" xml:space="preserve">
+    <value>Iniciando conexión WebRTC...</value>
+  </data>
+  <data name="UsingDefaultStun" xml:space="preserve">
+    <value>Usando servidor STUN predeterminado</value>
+  </data>
+  <data name="WebRtcState" xml:space="preserve">
+    <value>Estado de WebRTC: {0}</value>
+  </data>
+  <data name="SentSdpOffer" xml:space="preserve">
+    <value>Oferta SDP enviada vía WebSocket</value>
+  </data>
+  <data name="WebRtcHandshakeCompleted" xml:space="preserve">
+    <value>Handshake de WebRTC completado</value>
+  </data>
+  <data name="EnteringAudioOnlyMode" xml:space="preserve">
+    <value>Entrando en modo de solo audio</value>
+  </data>
+  <data name="MicrophoneStopped" xml:space="preserve">
+    <value>Micrófono detenido</value>
+  </data>
+  <data name="ErrorStoppingMicrophone" xml:space="preserve">
+    <value>Error al detener el micrófono: {0}</value>
+  </data>
+  <data name="ConfigurationSent" xml:space="preserve">
+    <value>Configuración enviada</value>
+  </data>
+  <data name="DisconnectedFromServer" xml:space="preserve">
+    <value>Desconectado del servidor</value>
+  </data>
+  <data name="ModelNotRecognized" xml:space="preserve">
+    <value>Modelo "{0}" no reconocido</value>
+  </data>
+  <data name="CompatibilityVerified" xml:space="preserve">
+    <value>Compatibilidad verificada</value>
+  </data>
+  <data name="VoiceNotCompatible" xml:space="preserve">
+    <value>La voz seleccionada no es compatible con el modelo {0}</value>
+  </data>
+  <data name="UnnamedAgent" xml:space="preserve">
+    <value>Agente sin nombre</value>
+  </data>
+  <data name="FailedToFetchAgents" xml:space="preserve">
+    <value>Error al obtener agentes</value>
+  </data>
+  <data name="GeneratingResponse" xml:space="preserve">
+    <value>Generando respuesta...</value>
+  </data>
+  <data name="UserSpeaking" xml:space="preserve">
+    <value>Usuario hablando...</value>
+  </data>
+  <data name="Processing" xml:space="preserve">
+    <value>Procesando...</value>
+  </data>
+  <data name="AssistantSpeaking" xml:space="preserve">
+    <value>Asistente hablando...</value>
+  </data>
+  <data name="Information" xml:space="preserve">
+    <value>Información</value>
+  </data>
+  <data name="Speaking" xml:space="preserve">
+    <value>Hablando...</value>
+  </data>
+  <data name="AudioOnly" xml:space="preserve">
+    <value>Solo audio</value>
+  </data>
+  <data name="AudioOnlyMode" xml:space="preserve">
+    <value>Modo de solo audio</value>
+  </data>
+  <data name="Business" xml:space="preserve">
+    <value>Negocios</value>
+  </data>
+  <data name="Casual" xml:space="preserve">
+    <value>Informal</value>
+  </data>
+  <data name="CasualSitting" xml:space="preserve">
+    <value>Informal sentado</value>
+  </data>
+  <data name="ApplicationInitialized" xml:space="preserve">
+    <value>Aplicación inicializada</value>
+  </data>
+  <data name="CloseNotification" xml:space="preserve">
+    <value>Cerrar notificación</value>
+  </data>
+  <data name="Success" xml:space="preserve">
+    <value>Éxito</value>
+  </data>
+  <data name="Warning" xml:space="preserve">
+    <value>Advertencia</value>
+  </data>
+  <data name="Notification" xml:space="preserve">
+    <value>Notificación</value>
+  </data>
+  <data name="Assistant" xml:space="preserve">
+    <value>Asistente</value>
+  </data>
+  <data name="UnknownError" xml:space="preserve">
+    <value>Error desconocido</value>
+  </data>
+  <data name="WebSocketConnectionFailed" xml:space="preserve">
+    <value>Error de conexión WebSocket</value>
+  </data>
+  <data name="FailedToObtainLocalSdp" xml:space="preserve">
+    <value>Error al obtener SDP local</value>
+  </data>
+  <data name="WebSocketConnectionLost" xml:space="preserve">
+    <value>Conexión WebSocket perdida</value>
+  </data>
+  <data name="UnableToCopyEndpoint" xml:space="preserve">
+    <value>No se pudo copiar el punto de conexión</value>
+  </data>
+  <data name="EnterValidUrl" xml:space="preserve">
+    <value>Introduzca una URL válida antes de probar</value>
+  </data>
+  <data name="TestingEndpoint" xml:space="preserve">
+    <value>Probando punto de conexión...</value>
+  </data>
+  <data name="CriticalError" xml:space="preserve">
+    <value>Error crítico</value>
+  </data>
+  <data name="WebRtcError" xml:space="preserve">
+    <value>Error de WebRTC: {0}</value>
+  </data>
+  <data name="AvatarHarry" xml:space="preserve">
+    <value>Harry</value>
+  </data>
+  <data name="AvatarJeff" xml:space="preserve">
+    <value>Jeff</value>
+  </data>
+  <data name="AvatarLisa" xml:space="preserve">
+    <value>Lisa</value>
+  </data>
+  <data name="AvatarLori" xml:space="preserve">
+    <value>Lori</value>
+  </data>
+  <data name="AvatarMax" xml:space="preserve">
+    <value>Max</value>
+  </data>
+  <data name="AvatarMeg" xml:space="preserve">
+    <value>Meg</value>
+  </data>
+  <data name="InputCostChart" xml:space="preserve">
+    <value>Coste de entrada ($)</value>
+  </data>
+  <data name="OutputCostChart" xml:space="preserve">
+    <value>Coste de salida ($)</value>
+  </data>
+  <data name="CachedCostChart" xml:space="preserve">
+    <value>Coste en caché ($)</value>
+  </data>
+  <data name="NoData" xml:space="preserve">
+    <value>Sin datos</value>
+  </data>
+  <data name="CacheTokens" xml:space="preserve">
+    <value>Tokens de caché</value>
+  </data>
+  <data name="Sessions" xml:space="preserve">
+    <value>Sesiones</value>
+  </data>
+  <data name="ReloadPageTitle" xml:space="preserve">
+    <value>Recargar página</value>
+  </data>
+  <data name="CostLabel" xml:space="preserve">
+    <value>Coste ($)</value>
+  </data>
+  <data name="TokensLabel" xml:space="preserve">
+    <value>Tokens</value>
+  </data>
+  <data name="DarkThemeActive" xml:space="preserve">
+    <value>Tema oscuro activo. Pulse para cambiar.</value>
+  </data>
+  <data name="LightThemeActive" xml:space="preserve">
+    <value>Tema claro activo. Pulse para cambiar.</value>
+  </data>
+  <data name="ClickStartToBegin" xml:space="preserve">
+    <value>Haga clic en "Iniciar" para comenzar</value>
+  </data>
+  <data name="VoiceAvatarSettings" xml:space="preserve">
+    <value>Ajustes del avatar de voz</value>
+  </data>
+  <data name="WriteAMessage" xml:space="preserve">
+    <value>Escribir un mensaje...</value>
+  </data>
+  <data name="AvatarCharacter" xml:space="preserve">
+    <value>Personaje del avatar:</value>
+  </data>
+  <data name="AvatarStyle" xml:space="preserve">
+    <value>Estilo del avatar:</value>
+  </data>
+  <data name="Preview" xml:space="preserve">
+    <value>Vista previa:</value>
+  </data>
+  <data name="AvailableGestures" xml:space="preserve">
+    <value>Gestes disponibles:</value>
+  </data>
+  <data name="WelcomeMessage" xml:space="preserve">
+    <value>Mensaje de bienvenida:</value>
+  </data>
+  <data name="ModelInstructions" xml:space="preserve">
+    <value>Instrucciones del modelo (opcional):</value>
+  </data>
+  <data name="SelectAvatarCharacter" xml:space="preserve">
+    <value>Seleccionar personaje del avatar</value>
+  </data>
+  <data name="SelectAvatarStyle" xml:space="preserve">
+    <value>Seleccionar estilo del avatar</value>
+  </data>
+  <data name="AvatarPreviewAlt" xml:space="preserve">
+    <value>Vista previa del avatar</value>
+  </data>
+  <data name="AvatarPreviewHint" xml:space="preserve">
+    <value>Vista previa del personaje y estilo seleccionados</value>
+  </data>
+  <data name="GesturesHint" xml:space="preserve">
+    <value>Seleccione un personaje y estilo para ver los gestos disponibles.</value>
+  </data>
+  <data name="FoundryAgentIDHint" xml:space="preserve"><value>Ingrese su ID de agente Foundry</value></data>  <data name="FoundryProjectHint" xml:space="preserve"><value>Ingrese el nombre de su proyecto Foundry o déjelo vacío para el uso directo del modelo</value></data>  <data name="EnterAgentID" xml:space="preserve"><value>Ingrese el ID del agente (ej. asst_123)</value></data>  <data name="EnterProjectName" xml:space="preserve"><value>Ingrese el nombre del proyecto (o déjelo vacío)</value></data>  <data name="FoundryAgentID" xml:space="preserve"><value>ID del agente Foundry</value></data>  <data name="FoundryProject" xml:space="preserve"><value>Proyecto Foundry</value></data>  <data name="FoundryAgentIDHint" xml:space="preserve"><value>Ingrese su ID de agente Foundry</value></data>  <data name="FoundryProjectHint" xml:space="preserve"><value>Ingrese el nombre de su proyecto Foundry o déjelo vacío para el uso directo del modelo</value></data>  <data name="EnterAgentID" xml:space="preserve"><value>Ingrese el ID del agente (ej. asst_123)</value></data>  <data name="EnterProjectName" xml:space="preserve"><value>Ingrese el nombre del proyecto (o déjelo vacío)</value></data>  <data name="FoundryAgentID" xml:space="preserve"><value>ID del agente Foundry</value></data>  <data name="FoundryProject" xml:space="preserve"><value>Proyecto Foundry</value></data></root>

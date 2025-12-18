@@ -32,14 +32,15 @@ public class VoiceLiveService
         {
             Threshold = 0.3f,
             PrefixPadding = TimeSpan.FromMilliseconds(200),
-            SilenceDuration = TimeSpan.FromMilliseconds(200)
+            SilenceDuration = TimeSpan.FromMilliseconds(300)
         };
 
         var sessionOptions = new VoiceLiveSessionOptions
         {
             Instructions = instructions ?? "You are a helpful AI assistant responding in natural, engaging language.",
             Voice = azureVoice,
-            TurnDetection = turnDetectionConfig
+            TurnDetection = turnDetectionConfig,
+            InputAudioTranscription = new AudioInputTranscriptionOptions(AudioInputTranscriptionOptionsModel.Whisper1)
         };
 
         // Set modalities

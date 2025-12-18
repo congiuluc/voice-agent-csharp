@@ -1,8 +1,12 @@
 @page
 @model VoiceAgentCSharp.Pages.LogoutModel
 @{
-    ViewData["Title"] = "Logout";
+    Layout = "_Layout";
+    ViewData["Title"] = Localizer["LogoutTitle"];
 }
-<h1>Logout</h1>
-<p>You have been logged out.</p>
-<a href="/Login">Login again</a>
+
+<div class="main-container" style="text-align: center; padding-top: 100px;">
+    <h1>@Localizer["LogoutTitle"]</h1>
+    <p>@Localizer["LogoutMessage"]</p>
+    <a href="/Login" class="btn-primary" style="display: inline-block; margin-top: 20px; text-decoration: none;">@Localizer["LoginAgain"]</a>
+</div>

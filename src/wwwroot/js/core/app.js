@@ -1,0 +1,994 @@
+/**
+ * Main Application Module
+ * 
+ * Coordinates all application modules and manages the voice agent lifecycle.
+ * This is the entry point for the ES6 modular application.
+ */
+
+import { VOICE_MODELS, VOICES, getVoiceName } from './config.js';
+import { VoiceVisualizerFactory } from '../modules/voice-visualizer-factory.js';
+import { AudioHandler } from '../handlers/audio-handler.js';
+import { WebSocketHandler } from '../handlers/websocket-handler.js';
+import { consumptionTracker } from '../managers/consumption-tracker.js';
+import { SettingsManager } from '../modules/settings-manager.js';
+import {
+  showToast,
+  addTranscript,
+  clearTranscripts,
+  updateStatus,
+  toggleTranscriptPanel,
+  showSettingsModal,
+  hideSettingsModal,
+  updateWelcomeMessageInput,
+  validateModelVoiceCompatibility,
+  saveSettings,
+  loadSettings,
+  showErrorBoundary,
+  autoResizeTextarea,
+  addTraceEntry,
+  clearTraceEntries,
+  toggleTracePanel
+} from '../ui/ui-utils.js';
+import { getSavedTheme, applyThemeMode, toggleTheme, listenForExternalChanges } from '../ui/theme-sync.js';
+import { initHamburgerMenu } from '/js/ui/hamburger-menu.js';
+
+/**
+ * Main application class
+ */
+class VoiceAgentApp {
+  constructor() {
+    // Detect page name from title or URL
+    this.pageName = this.detectPageName();
+    
+    // Application state
+    this.isSessionActive = false;
+    this.currentSettings = loadSettings(this.pageName);
+    this.traceCount = 0;
+    
+    // Module instances
+    this.visualizer = null;
+    this.audioHandler = null;
+    this.wsHandler = null;
+    
+    // DOM elements (will be initialized in init())
+    this.elements = {};
+    
+    // Theme state (centralized)
+    this.isDarkMode = getSavedTheme() === 'dark';
+    
+    // Event listener tracking for cleanup
+    this.eventListeners = [];
+  }
+
+  /**
+   * Detect the current page name from document title or URL
+   * @returns {string} - Page name (VoiceAgent, VoiceAssistant, VoiceAvatar, or 'default')
+   */
+  detectPageName() {
+    const title = document.title.toLowerCase();
+    const url = window.location.pathname.toLowerCase();
+    
+    if (title.includes('agent') || url.includes('agent')) return 'VoiceAgent';
+    if (title.includes('assistant') || url.includes('assistant')) return 'VoiceAssistant';
+    if (title.includes('avatar') || url.includes('avatar')) return 'VoiceAvatar';
+    
+    return 'default';
+  }
+
+
+  
+  /**
+   * Initialize the application
+   */
+  async init() {
+    try {
+      // Apply saved theme
+      this.applyTheme();
+      
+      initHamburgerMenu();
+
+      // Get DOM references
+      const uiPresent = this.initDOMReferences();
+      if (!uiPresent) {
+        console.log('Voice Agent UI not present on this page. Skipping full app initialization.');
+        return;
+      }
+      
+      // Initialize visualizer using the configured type from shared uiSettings
+      // Check both the shared uiSettings and the page-specific settings
+      const sharedUISettings = new SettingsManager('uiSettings', {}).getAll();
+      const visualizerType = sharedUISettings.visualizerType || this.currentSettings.visualizerType || 'wave';
+      console.log('📊 Initializing visualizer with type:', visualizerType);
+      this.visualizer = await VoiceVisualizerFactory.createVisualizer(visualizerType, this.elements.canvas);
+      
+      // Initialize audio handler with RMS callback for visualizer
+      this.audioHandler = new AudioHandler((rms, source) => {
+        if (this.visualizer) {
+          this.visualizer.ingestRMS(rms, source);
+        }
+      });
+      
+      // Initialize WebSocket handler
+      this.wsHandler = new WebSocketHandler({
+        onOpen: () => this.handleWebSocketOpen(),
+        onClose: () => this.handleWebSocketClose(),
+        onAudio: (arrayBuffer) => this.handleIncomingAudio(arrayBuffer),
+        onTranscription: (text, role) => this.handleTranscription(text, role),
+        onStopAudio: () => this.handleStopAudio(),
+        onError: (error) => this.handleWebSocketError(error)
+      });
+      
+      // Setup audio data callback for WebSocket transmission
+      this.audioHandler.setAudioDataCallback((audioBuffer) => {
+        if (this.wsHandler && this.wsHandler.isSocketConnected()) {
+          this.wsHandler.sendAudio(audioBuffer);
+        }
+      });
+      
+      // Setup event listeners
+      this.setupEventListeners();
+      
+      // Populate settings modal with current settings
+      this.populateSettings();
+
+      // Relocate controls for small screens and enable focus trap
+      // this.relocateControlsForSmallScreens();
+      this.enableLeftPanelFocusTrap();
+      
+      // Ensure initial mute UI state reflects audio handler (muted by default)
+      if (this.elements.muteButton) {
+        this.elements.muteButton.classList.add('muted');
+        try { this.elements.muteButton.setAttribute('aria-pressed', 'true'); } catch(e) {}
+        try { this.elements.muteButton.setAttribute('aria-label', window.APP_RESOURCES?.MicrophoneMuted || 'Microphone muted'); } catch(e) {}
+      }
+
+      // Initial status
+      updateStatus(window.APP_RESOURCES?.WaitingForConnection || 'Waiting for connection...', 'disconnected');
+      addTraceEntry('system', window.APP_RESOURCES?.ApplicationInitialized || 'Application initialized');
+      
+      console.log('Voice Agent App initialized');
+      
+    } catch (error) {
+      console.error('Fatal error during initialization:', error);
+      addTraceEntry('system', `${window.APP_RESOURCES?.Error || 'Error'} during initialization: ${error.message}`);
+      showErrorBoundary(`${window.APP_RESOURCES?.ApplicationError || 'Application Initialization Error'}: ${error.message}`);
+    }
+  }
+  
+  /**
+   * Initialize DOM element references
+   */
+  initDOMReferences() {
+    this.elements = {
+      // Canvas
+      canvas: document.getElementById('voiceCanvas'),
+      
+      // Buttons
+      startButton: document.getElementById('startButton'),
+      muteButton: document.getElementById('muteButton'),
+      settingsButton: document.getElementById('settingsButton'),
+      themeToggleButton: document.getElementById('themeToggleButton'),
+      chatToggle: document.getElementById('chatToggle'),
+      traceToggle: document.getElementById('traceToggle'),
+      clearChatButton: document.getElementById('clearChatButton'),
+      clearTraceButton: document.getElementById('clearTraceButton'),
+      
+      // Settings modal
+      settingsModal: document.getElementById('settingsModal'),
+      closeSettingsButton: document.getElementById('closeSettingsButton'),
+      saveSettingsButton: document.getElementById('saveSettingsButton'),
+      voiceModelSelect: document.getElementById('voiceModelSelect'),
+      voiceSelect: document.getElementById('voiceSelect'),
+      welcomeMessageInput: document.getElementById('welcomeMessageInput'),
+      voiceLiveEndpointInput: document.getElementById('voiceLiveEndpointInput'),
+      voiceLiveEndpointCopy: document.getElementById('voiceLiveEndpointCopy'),
+      voiceLiveEndpointTest: document.getElementById('voiceLiveEndpointTest'),
+      voiceLiveEndpointFeedback: document.getElementById('voiceLiveEndpointFeedback'),
+      voiceLiveApiKeyInput: document.getElementById('voiceLiveApiKeyInput'),
+      modelInstructionsInput: document.getElementById('modelInstructionsInput'),
+      toastNotificationsToggle: document.getElementById('toastNotificationsToggle'),
+      // Foundry Agent settings
+      foundryProjectInput: document.getElementById('foundryProjectInput'),
+      foundryAgentInput: document.getElementById('foundryAgentInput'),
+      localeSelect: document.getElementById('localeSelect'),
+      
+      // Transcript and trace
+      transcriptBox: document.getElementById('transcriptBox'),
+      transcriptContent: document.getElementById('transcriptContent'),
+      textInput: document.getElementById('textInput'),
+      sendTextButton: document.getElementById('sendTextButton'),
+      tracePanel: document.getElementById('tracePanel'),
+      traceContent: document.getElementById('traceContent')
+      ,
+      // Left panel elements (may not exist on desktop)
+      hamburgerButton: document.getElementById('hamburgerButton'),
+      leftPanel: document.getElementById('leftPanel'),
+      closeLeftPanel: document.getElementById('closeLeftPanel'),
+      lp_traceToggle: document.getElementById('lp_traceToggle'),
+      lp_settingsButton: document.getElementById('lp_settingsButton'),
+      lp_chatToggle: document.getElementById('lp_chatToggle'),
+      lp_themeToggle: document.getElementById('lp_themeToggle')
+    };
+    // Verify critical elements exist. Return true if present, false otherwise.
+    const criticalElements = ['canvas', 'startButton', 'muteButton'];
+    for (const key of criticalElements) {
+      if (!this.elements[key]) {
+        return false;
+      }
+    }
+    return true;
+  }
+  
+  /**
+   * Helper to safely add event listener with null check and tracking for cleanup
+   */
+  safeAddListener(element, event, handler) {
+    if (element) {
+      element.addEventListener(event, handler);
+      // Track listener for cleanup
+      this.eventListeners.push({ element, event, handler });
+    }
+  }
+
+  /**
+   * Remove all tracked event listeners (cleanup)
+   */
+  cleanup() {
+    this.eventListeners.forEach(({ element, event, handler }) => {
+      if (element && element.removeEventListener) {
+        element.removeEventListener(event, handler);
+      }
+    });
+    this.eventListeners = [];
+  }
+
+  /**
+   * Conditionally show toast based on settings
+   */
+  conditionalShowToast(message, type = 'info', duration = 4000) {
+    if (this.currentSettings && this.currentSettings.showToastNotifications !== false) {
+      showToast(message, type, duration);
+    }
+  }
+
+  /**
+   * Setup all event listeners
+   */
+  setupEventListeners() {
+    // Start/Stop session button
+    this.safeAddListener(this.elements.startButton, 'click', () => {
+      if (this.isSessionActive) {
+        this.stopSession();
+      } else {
+        this.startSession();
+      }
+    });
+    
+    // Mute/Unmute button
+    this.safeAddListener(this.elements.muteButton, 'click', () => {
+      try {
+        const btn = this.elements.muteButton;
+        // Prefer the DOM class as the source of truth for UI state, but
+        // fall back to the audioHandler internal state if the class is missing.
+        let currentlyMuted = false;
+        if (btn) {
+          currentlyMuted = btn.classList.contains('muted');
+        } else if (this.audioHandler && typeof this.audioHandler.isMicrophoneMuted === 'function') {
+          currentlyMuted = this.audioHandler.isMicrophoneMuted();
+        }
+
+        // If no session is active, prevent enabling the mic (unmuting)
+        // currentlyMuted === true means the button is currently muted and clicking would unmute
+        if (!this.isSessionActive && currentlyMuted) {
+          this.conditionalShowToast(window.APP_RESOURCES?.StartSessionBeforeMicrophone || 'Start a session before activating the microphone', 'warning');
+          addTraceEntry('system', 'Attempted to activate microphone without session');
+          return;
+        }
+      } catch (e) {
+        // ignore and proceed to toggle as fallback
+      }
+      this.toggleMute();
+    });
+    
+    // Settings button
+    this.safeAddListener(this.elements.settingsButton, 'click', () => {
+      showSettingsModal();
+    });
+    
+    // Close settings modal
+    this.safeAddListener(this.elements.closeSettingsButton, 'click', () => {
+      hideSettingsModal();
+    });
+    
+    // Save settings
+    this.safeAddListener(this.elements.saveSettingsButton, 'click', () => {
+      this.saveSettingsFromModal();
+    });
+    
+    // Chat toggle
+    this.safeAddListener(this.elements.chatToggle, 'click', () => {
+      toggleTranscriptPanel();
+    });
+    
+    // Clear chat
+    this.safeAddListener(this.elements.clearChatButton, 'click', () => {
+      clearTranscripts();
+      this.conditionalShowToast(window.APP_RESOURCES?.ConversationCleared || 'Conversation cleared', 'info');
+    });
+    
+    // Send text message
+    this.safeAddListener(this.elements.sendTextButton, 'click', () => {
+      this.sendTextMessage();
+    });
+    
+    // Text input - send on Enter (Shift+Enter for new line)
+    this.safeAddListener(this.elements.textInput, 'keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        this.sendTextMessage();
+      }
+    });
+    
+    // Auto-resize text input
+    this.safeAddListener(this.elements.textInput, 'input', () => {
+      autoResizeTextarea(this.elements.textInput);
+    });
+    
+    // Voice selection change - update welcome message
+    this.safeAddListener(this.elements.voiceSelect, 'change', () => {
+      const voiceId = this.elements.voiceSelect.value;
+      updateWelcomeMessageInput(voiceId, this.elements.welcomeMessageInput);
+    });
+    
+    // Close modal on background click
+    this.safeAddListener(this.elements.settingsModal, 'click', (e) => {
+      if (e.target === this.elements.settingsModal) {
+        hideSettingsModal();
+      }
+    });
+    
+    // Theme toggle
+    this.safeAddListener(this.elements.themeToggleButton, 'click', () => {
+      this.toggleTheme();
+    });
+    
+    // Trace toggle
+    this.safeAddListener(this.elements.traceToggle, 'click', () => {
+      toggleTracePanel();
+    });
+    
+    // Keyboard support for trace and chat toggles
+    this.safeAddListener(this.elements.chatToggle, 'keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        toggleTranscriptPanel();
+      }
+    });
+    
+    this.safeAddListener(this.elements.traceToggle, 'keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        toggleTracePanel();
+      }
+    });
+    
+    // Escape key closes modals
+    const escapeKeyHandler = (e) => {
+      if (e.key === 'Escape') {
+        hideSettingsModal();
+        // Could also close panels here if needed
+      }
+    };
+    document.addEventListener('keydown', escapeKeyHandler);
+    this.eventListeners.push({ element: document, event: 'keydown', handler: escapeKeyHandler });
+    
+    // Clear trace
+    this.safeAddListener(this.elements.clearTraceButton, 'click', () => {
+      clearTraceEntries();
+      addTraceEntry('system', 'Trace cleared');
+    });
+
+    // Voice Live endpoint copy/test buttons
+    this.safeAddListener(this.elements.voiceLiveEndpointCopy, 'click', async () => {
+      try {
+        const val = this.elements.voiceLiveEndpointInput ? this.elements.voiceLiveEndpointInput.value.trim() : '';
+        if (!val) {
+          this.showEndpointFeedback('No endpoint to copy', 'error');
+          return;
+        }
+        await navigator.clipboard.writeText(val);
+        this.showEndpointFeedback(window.APP_RESOURCES?.EndpointCopied || 'Endpoint copied to clipboard', 'success');
+        this.conditionalShowToast(window.APP_RESOURCES?.EndpointCopied || 'Endpoint copied', 'success');
+      } catch (err) {
+        console.error('Copy failed', err);
+        this.showEndpointFeedback(window.APP_RESOURCES?.UnableToCopyEndpoint || 'Unable to copy endpoint', 'error');
+      }
+    });
+
+    this.safeAddListener(this.elements.voiceLiveEndpointTest, 'click', async () => {
+      const url = this.elements.voiceLiveEndpointInput ? this.elements.voiceLiveEndpointInput.value.trim() : '';
+      if (!url) {
+        this.showEndpointFeedback(window.APP_RESOURCES?.EnterValidUrl || 'Enter a valid URL before testing', 'error');
+        return;
+      }
+      this.showEndpointFeedback(window.APP_RESOURCES?.TestingEndpoint || 'Testing endpoint...', '');
+      try {
+        const ok = await this.testEndpoint(url, 6000);
+        if (ok) {
+          this.showEndpointFeedback(window.APP_RESOURCES?.EndpointReachable || 'Endpoint reachable', 'success');
+          this.conditionalShowToast(window.APP_RESOURCES?.EndpointReachable || 'Endpoint reachable', 'success');
+        } else {
+          this.showEndpointFeedback(window.APP_RESOURCES?.EndpointNotReachable || 'Endpoint not reachable (timeout or invalid response)', 'error');
+          this.conditionalShowToast(window.APP_RESOURCES?.EndpointNotReachable || 'Endpoint not reachable', 'error');
+        }
+      } catch (err) {
+        this.showEndpointFeedback(`${window.APP_RESOURCES?.EndpointTestError || 'Endpoint test error'}: ${err.message}`, 'error');
+        this.conditionalShowToast(window.APP_RESOURCES?.EndpointTestErrorMessage || 'Error during endpoint test', 'error');
+      }
+    });
+
+    // Hamburger / left-panel toggle - Handled by initHamburgerMenu
+
+    // Left-panel buttons mapping to main actions
+    this.safeAddListener(this.elements.lp_traceToggle, 'click', () => { 
+        this.elements.traceToggle && this.elements.traceToggle.click(); 
+        document.body.classList.remove('menu-open'); 
+    });
+    this.safeAddListener(this.elements.lp_settingsButton, 'click', () => { 
+        this.elements.settingsButton && this.elements.settingsButton.click(); 
+        document.body.classList.remove('menu-open'); 
+    });
+    this.safeAddListener(this.elements.lp_chatToggle, 'click', () => { 
+        this.elements.chatToggle && this.elements.chatToggle.click(); 
+        document.body.classList.remove('menu-open'); 
+    });
+    // lp_themeToggle is handled by initHamburgerMenu
+
+    // Close left panel when clicking overlay - Handled by initHamburgerMenu
+
+    // Ensure Escape closes left panel as well
+    const escapePanelHandler = (e) => {
+      if (e.key === 'Escape') {
+        this.closeLeftPanel();
+      }
+    };
+    document.addEventListener('keydown', escapePanelHandler);
+    this.eventListeners.push({ element: document, event: 'keydown', handler: escapePanelHandler });
+  }
+
+  showEndpointFeedback(text, type) {
+    try {
+      const el = this.elements.voiceLiveEndpointFeedback;
+      if (!el) return;
+      el.textContent = text || '';
+      el.classList.remove('success', 'error');
+      if (type === 'success') el.classList.add('success');
+      if (type === 'error') el.classList.add('error');
+    } catch (e) {}
+  }
+
+  async testEndpoint(url, timeout = 6000) {
+    // Attempt a HEAD first, fallback to GET. Use AbortController for timeout.
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeout);
+    try {
+      // Ensure URL has protocol
+      let testUrl = url;
+      if (!/^https?:\/\//i.test(testUrl)) {
+        testUrl = 'https://' + testUrl;
+      }
+      // Try HEAD
+      let resp = await fetch(testUrl, { method: 'HEAD', mode: 'cors', signal: controller.signal });
+      clearTimeout(timer);
+      return resp && resp.ok;
+    } catch (e) {
+      // If HEAD failed (CORS or not allowed), try GET without throwing immediately
+      try {
+        const controller2 = new AbortController();
+        const timer2 = setTimeout(() => controller2.abort(), timeout);
+        let testUrl = url;
+        if (!/^https?:\/\//i.test(testUrl)) {
+          testUrl = 'https://' + testUrl;
+        }
+        const resp2 = await fetch(testUrl, { method: 'GET', mode: 'cors', signal: controller2.signal });
+        clearTimeout(timer2);
+        return resp2 && resp2.ok;
+      } catch (err2) {
+        // network error or timeout
+        return false;
+      }
+    }
+  }
+
+  /**
+   * Move primary controls into left panel on small screens for cleaner DOM
+   */
+  relocateControlsForSmallScreens() {
+    const panelBody = document.getElementById('leftPanelBody');
+    if (!panelBody || !this.elements.leftPanel) return;
+
+    const mq = window.matchMedia('(max-width: 768px)');
+    const moveIn = () => {
+      if (mq.matches) {
+        // Move the primary controls into the panel if not already there
+        const controls = ['startButton','muteButton','traceToggle','settingsButton','chatToggle'];
+        controls.forEach(id => {
+          const el = document.getElementById(id);
+          if (el && !panelBody.contains(el)) {
+            // Create wrapper for consistent styling in panel
+            const wrapper = document.createElement('div');
+            wrapper.className = 'left-panel-control-wrapper';
+            wrapper.appendChild(el);
+            panelBody.appendChild(wrapper);
+          }
+        });
+      } else {
+        // Move controls back to original positions by unwrapping
+        const wrappers = panelBody.querySelectorAll('.left-panel-control-wrapper');
+        wrappers.forEach(w => {
+          const child = w.firstElementChild;
+          if (child) {
+            // Insert back into body (append to main container)
+            document.querySelector('.main-container').appendChild(child);
+          }
+          w.remove();
+        });
+      }
+    };
+
+    // Run once and listen for changes
+    moveIn();
+    mq.addEventListener('change', moveIn);
+  }
+
+  /**
+   * Focus trap for left panel to keep tab focus inside the panel while open
+   */
+  enableLeftPanelFocusTrap() {
+    const panel = this.elements.leftPanel;
+    if (!panel) return;
+
+    panel.addEventListener('keydown', (e) => {
+      if (e.key !== 'Tab') return;
+      const focusable = panel.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+      if (!focusable.length) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+
+      if (e.shiftKey) { // shift+tab
+        if (document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        }
+      } else { // tab
+        if (document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
+    });
+  }
+  
+  /**
+   * Populate settings modal with voice models and voices
+   */
+  populateSettings() {
+    // Populate voice models
+    this.elements.voiceModelSelect.innerHTML = '';
+    VOICE_MODELS.forEach(model => {
+      const option = document.createElement('option');
+      option.value = model.id;
+      option.textContent = `${model.name} - ${model.description}`;
+      if (model.id === this.currentSettings.voiceModel) {
+        option.selected = true;
+      }
+      this.elements.voiceModelSelect.appendChild(option);
+    });
+    
+    // Populate voices
+    this.elements.voiceSelect.innerHTML = '';
+    VOICES.forEach(voice => {
+      const option = document.createElement('option');
+      option.value = voice.id;
+      option.textContent = voice.displayName;
+      if (voice.id === this.currentSettings.voice) {
+        option.selected = true;
+      }
+      this.elements.voiceSelect.appendChild(option);
+    });
+    
+    // Set welcome message
+    this.elements.welcomeMessageInput.value = this.currentSettings.welcomeMessage;
+    // Set model instructions if present
+    if (this.elements.modelInstructionsInput) {
+      this.elements.modelInstructionsInput.value = this.currentSettings.modelInstructions || '';
+    }
+    // Voice Live endpoint / api key
+    if (this.elements.voiceLiveEndpointInput) {
+      this.elements.voiceLiveEndpointInput.value = this.currentSettings.voiceLiveEndpoint || '';
+    }
+    if (this.elements.voiceLiveApiKeyInput) {
+      this.elements.voiceLiveApiKeyInput.value = this.currentSettings.voiceLiveApiKey || '';
+    }
+    
+    // Set toast notifications toggle
+    if (this.elements.toastNotificationsToggle) {
+      this.elements.toastNotificationsToggle.checked = this.currentSettings.showToastNotifications !== false;
+    }
+
+    // Set Foundry Agent settings
+    if (this.elements.foundryProjectInput) {
+      this.elements.foundryProjectInput.value = this.currentSettings.foundryProjectName || '';
+    }
+    if (this.elements.foundryAgentInput) {
+      this.elements.foundryAgentInput.value = this.currentSettings.foundryAgentId || '';
+    }
+    if (this.elements.localeSelect) {
+      this.elements.localeSelect.value = this.currentSettings.locale || this.currentSettings.language || 'en-US';
+    }
+  }
+  
+  /**
+   * Load theme preference from localStorage
+   */
+  loadThemePreference() { return getSavedTheme() === 'dark'; }
+  
+  toggleTheme() {
+    toggleTheme();
+    this.isDarkMode = getSavedTheme() === 'dark';
+    addTraceEntry('system', `Theme changed to ${this.isDarkMode ? 'dark' : 'light'}`);
+  }
+
+  applyTheme() {
+    applyThemeMode(getSavedTheme());
+  }
+
+  // Call this during init to listen for external changes
+  enableThemeSync() {
+    listenForExternalChanges((mode) => {
+      this.isDarkMode = mode === 'dark';
+    });
+  }
+  
+  /**
+   * Save settings from modal
+   */
+  saveSettingsFromModal() {
+    const newSettings = {
+      voiceModel: this.elements.voiceModelSelect.value,
+      voice: this.elements.voiceSelect.value,
+      welcomeMessage: this.elements.welcomeMessageInput.value,
+      modelInstructions: this.elements.modelInstructionsInput ? this.elements.modelInstructionsInput.value : '',
+      voiceLiveEndpoint: this.elements.voiceLiveEndpointInput ? this.elements.voiceLiveEndpointInput.value.trim() : '',
+      voiceLiveApiKey: this.elements.voiceLiveApiKeyInput ? this.elements.voiceLiveApiKeyInput.value.trim() : '',
+      showToastNotifications: this.elements.toastNotificationsToggle ? this.elements.toastNotificationsToggle.checked : false,
+      // Foundry Agent settings
+      foundryAgentId: this.elements.foundryAgentInput ? this.elements.foundryAgentInput.value : '',
+      foundryProjectName: this.elements.foundryProjectInput ? this.elements.foundryProjectInput.value : '',
+      locale: this.elements.localeSelect ? this.elements.localeSelect.value : 'en-US',
+      language: this.elements.localeSelect ? this.elements.localeSelect.value : 'en-US'
+    };
+    
+    // Validate compatibility
+    const validation = validateModelVoiceCompatibility(newSettings.voiceModel, newSettings.voice);
+    if (!validation.valid) {
+      this.conditionalShowToast(validation.message, 'error');
+      return;
+    }
+    
+    // Save to localStorage
+    if (saveSettings(newSettings, this.pageName)) {
+      this.currentSettings = newSettings;
+      addTraceEntry('system', 'Settings saved');
+      this.conditionalShowToast(window.APP_RESOURCES?.SettingsSavedSuccessfully || 'Settings saved successfully', 'success');
+      hideSettingsModal();
+      
+      // If session is active, notify user to restart
+      if (this.isSessionActive) {
+        this.conditionalShowToast(window.APP_RESOURCES?.RestartSessionForSettings || 'Restart the session to apply new settings', 'info');
+      }
+    }
+  }
+  
+  /**
+   * Start voice agent session
+   */
+  async startSession() {
+    try {
+      // Refresh currentSettings from modal inputs in case user changed values but did not click Save
+      this.currentSettings = {
+        ...this.currentSettings,
+        voiceModel: this.elements.voiceModelSelect ? this.elements.voiceModelSelect.value : this.currentSettings.voiceModel,
+        voice: this.elements.voiceSelect ? this.elements.voiceSelect.value : this.currentSettings.voice,
+        welcomeMessage: this.elements.welcomeMessageInput ? this.elements.welcomeMessageInput.value : this.currentSettings.welcomeMessage,
+        modelInstructions: this.elements.modelInstructionsInput ? this.elements.modelInstructionsInput.value : this.currentSettings.modelInstructions,
+        voiceLiveEndpoint: this.elements.voiceLiveEndpointInput ? this.elements.voiceLiveEndpointInput.value.trim() : this.currentSettings.voiceLiveEndpoint,
+        voiceLiveApiKey: this.elements.voiceLiveApiKeyInput ? this.elements.voiceLiveApiKeyInput.value.trim() : this.currentSettings.voiceLiveApiKey,
+        showToastNotifications: this.elements.toastNotificationsToggle ? this.elements.toastNotificationsToggle.checked : this.currentSettings.showToastNotifications,
+        // Foundry Agent settings
+        foundryAgentId: this.elements.foundryAgentInput ? this.elements.foundryAgentInput.value : this.currentSettings.foundryAgentId,
+        foundryProjectName: this.elements.foundryProjectInput ? this.elements.foundryProjectInput.value : this.currentSettings.foundryProjectName,
+        locale: this.elements.localeSelect ? this.elements.localeSelect.value : this.currentSettings.locale
+      };
+
+      // Validate settings
+      const validation = validateModelVoiceCompatibility(
+        this.currentSettings.voiceModel,
+        this.currentSettings.voice
+      );
+      
+      if (!validation.valid) {
+        this.conditionalShowToast(validation.message, 'error');
+        showSettingsModal();
+        return;
+      }
+      
+      updateStatus('Connecting...', 'disconnected');
+      addTraceEntry('system', 'Connecting...');
+      
+      // Connect WebSocket
+      await this.wsHandler.connect();
+      
+      // Send configuration
+      // Ensure the settings include voice live fields before sending
+      const configToSend = {
+        ...this.currentSettings,
+        voiceLiveEndpoint: this.currentSettings.voiceLiveEndpoint || '',
+        voiceLiveApiKey: this.currentSettings.voiceLiveApiKey || ''
+      };
+      // Ensure model instructions key exists and is included in the config
+      configToSend.modelInstructions = this.currentSettings.modelInstructions || '';
+      this.wsHandler.sendConfig(configToSend);
+      
+      // Start microphone
+      await this.audioHandler.startMicrophone();
+      
+      // Activate visualizer
+      this.visualizer.setActive(true);
+      
+      // Update UI state
+      this.isSessionActive = true;
+      this.elements.startButton.classList.add('active');
+      this.elements.muteButton.classList.remove('muted');
+      
+      updateStatus('Session active', 'connected');
+      this.conditionalShowToast(window.APP_RESOURCES?.SessionStarted || 'Session started', 'success');
+      
+      // Add system message to transcript
+      const voiceName = getVoiceName(this.currentSettings.voice);
+      addTranscript('system', `Session started with ${voiceName}`);
+      addTraceEntry('system', `Session started with ${voiceName}`);
+      
+    } catch (error) {
+      console.error('Error starting session:', error);
+      this.conditionalShowToast(window.APP_RESOURCES?.SessionStartFailed || 'Unable to start session', 'error');
+      addTraceEntry('system', `Session start error: ${error.message}`);
+      this.stopSession();
+    }
+  }
+  
+  /**
+   * Stop voice agent session
+   */
+  stopSession() {
+    try {
+      // Send stop message to server
+      if (this.wsHandler) {
+        this.wsHandler.sendStop();
+      }
+      
+      // Stop microphone
+      if (this.audioHandler) {
+        this.audioHandler.stopMicrophone();
+        this.audioHandler.stopPlayback();
+      }
+      
+      // Deactivate visualizer
+      if (this.visualizer) {
+        this.visualizer.setActive(false);
+      }
+      
+      // Disconnect WebSocket
+      if (this.wsHandler) {
+        this.wsHandler.disconnect();
+      }
+      
+      // Update UI state
+      this.isSessionActive = false;
+      this.elements.startButton.classList.remove('active');
+      this.elements.muteButton.classList.add('muted');
+      
+      updateStatus('Session ended', 'disconnected');
+      this.conditionalShowToast(window.APP_RESOURCES?.SessionEnded || 'Session ended', 'info');
+      
+      // Add system message to transcript
+      addTranscript('system', 'Session ended');
+      addTraceEntry('system', 'Session ended');
+      
+    } catch (error) {
+      console.error('Error stopping session:', error);
+      addTraceEntry('system', `Session stop error: ${error.message}`);
+    }
+  }
+  
+  /**
+   * Toggle microphone mute
+   */
+  toggleMute() {
+    if (!this.audioHandler) return;
+    
+    const isMuted = this.audioHandler.toggleMute();
+    
+    if (isMuted) {
+      this.elements.muteButton.classList.add('muted');
+      // Accessibility: reflect pressed state and label
+      try { this.elements.muteButton.setAttribute('aria-pressed', 'true'); } catch(e) {}
+      try { this.elements.muteButton.setAttribute('aria-label', 'Microphone deactivated'); } catch(e) {}
+      this.conditionalShowToast(window.APP_RESOURCES?.MicrophoneMuted || 'Microphone deactivated', 'warning');
+      addTraceEntry('system', 'Microphone deactivated');
+    } else {
+      this.elements.muteButton.classList.remove('muted');
+      try { this.elements.muteButton.setAttribute('aria-pressed', 'false'); } catch(e) {}
+      try { this.elements.muteButton.setAttribute('aria-label', 'Microphone activated'); } catch(e) {}
+      this.conditionalShowToast(window.APP_RESOURCES?.MicrophoneUnmuted || 'Microphone activated', 'success');
+      addTraceEntry('system', 'Microphone activated');
+    }
+  }
+  
+  /**
+   * Send text message to agent
+   */
+  sendTextMessage() {
+    const text = this.elements.textInput.value.trim();
+    
+    if (!text) return;
+    
+    if (!this.isSessionActive) {
+      this.conditionalShowToast(window.APP_RESOURCES?.StartSessionBeforeMessage || 'Start a session to send messages', 'warning');
+      addTraceEntry('system', 'Attempted to send message without active session');
+      return;
+    }
+    
+    // Add to transcript
+    addTranscript('user', text);
+    addTraceEntry('user', text);
+    
+    // Clear input
+    this.elements.textInput.value = '';
+    autoResizeTextarea(this.elements.textInput);
+    
+    // TODO: Send text to server via WebSocket
+    // This would require a new message type in the protocol
+    //this.conditionalShowToast('Invio di messaggi di testo non ancora supportato dal server', 'info');
+    //addTraceEntry('system', 'Tentativo invio messaggio di testo (non ancora supportato)');
+    this.sendTextMessageToServer(text);
+
+  }
+
+  /**
+   * Send a plain text message to the server over the WebSocket
+   * @param {string} text - Message text
+   */
+  sendTextMessageToServer(text) {
+    try {
+      if (!text) return;
+
+      if (!this.wsHandler || !this.wsHandler.isSocketConnected()) {
+        this.conditionalShowToast(window.APP_RESOURCES?.NoConnectionToSendMessage || 'No connection: unable to send message', 'error');
+        addTraceEntry('system', 'Attempted to send message without WebSocket connection');
+        return;
+      }
+
+      // Use WebSocketHandler.sendMessage which follows the server protocol (Kind: 'Message')
+      this.wsHandler.sendMessage(text);
+      addTraceEntry('system', `Message sent to server: ${text}`);
+      this.conditionalShowToast(window.APP_RESOURCES?.MessageSent || 'Message sent', 'success');
+    } catch (error) {
+      console.error('Error sending text message to server:', error);
+      addTraceEntry('system', `Message send error: ${error.message}`);
+      this.conditionalShowToast(window.APP_RESOURCES?.ErrorSendingMessage || 'Error sending message', 'error');
+    }
+  }
+  
+  /**
+   * Handle WebSocket connection opened
+   */
+  handleWebSocketOpen() {
+    updateStatus('Waiting for session...', 'disconnected');
+    addTraceEntry('system', 'WebSocket connected');
+  }
+  
+  /**
+   * Handle WebSocket connection closed
+   */
+  handleWebSocketClose() {
+    if (this.isSessionActive) {
+      // Unexpected disconnect
+      this.conditionalShowToast(window.APP_RESOURCES?.ConnectionLost || 'Connection lost', 'error');
+      addTraceEntry('system', window.APP_RESOURCES?.WebSocketConnectionLost || 'WebSocket connection lost');
+      this.stopSession();
+    }
+  }
+  
+  /**
+   * Handle incoming audio from server
+   * @param {ArrayBuffer} arrayBuffer - Audio data
+   */
+  handleIncomingAudio(arrayBuffer) {
+    // Convert ArrayBuffer to base64 for queueing
+    // (AudioHandler expects base64 from original implementation)
+    const uint8Array = new Uint8Array(arrayBuffer);
+    let binaryString = '';
+    for (let i = 0; i < uint8Array.length; i++) {
+      binaryString += String.fromCharCode(uint8Array[i]);
+    }
+    const base64 = btoa(binaryString);
+    
+    // Queue for playback
+    this.audioHandler.queueAudio(base64);
+  }
+  
+  /**
+   * Handle transcription from server
+   * @param {string} text - Transcribed text
+   * @param {string} role - 'user' or 'agent'
+   */
+  handleTranscription(text, role) {
+    // Visualizer handles speaking animation via RMS ingestion.
+    // Update visualizer mode so it can react differently for assistant vs user.
+    if (this.visualizer) {
+      this.visualizer.setMode(role === 'agent' ? 'assistant' : 'user');
+    }
+
+    // Update status if agent is speaking
+    if (role === 'agent') {
+      updateStatus(window.APP_RESOURCES?.AssistantSpeaking || 'Assistant is speaking...', 'speaking');
+    }
+  }
+  
+  /**
+   * Handle stop audio command from server
+   */
+  handleStopAudio() {
+    if (this.audioHandler) {
+      this.audioHandler.stopPlayback();
+    }
+    updateStatus(window.APP_RESOURCES?.SessionActive || 'Session active', 'connected');
+  }
+  
+  /**
+   * Handle WebSocket error
+   * @param {Error} error - Error object
+   */
+  handleWebSocketError(error) {
+    console.error('WebSocket error:', error);
+    addTraceEntry('system', `${window.APP_RESOURCES?.WebSocketError || 'WebSocket error'}: ${error.message}`);
+    if (this.isSessionActive) {
+      this.stopSession();
+    }
+  }
+}
+
+/**
+ * Initialize application when DOM is ready
+ */
+document.addEventListener('DOMContentLoaded', () => {
+  try {
+    const app = new VoiceAgentApp();
+    app.init();
+      // Enable cross-tab theme synchronization
+      if (typeof app.enableThemeSync === 'function') app.enableThemeSync();
+    
+    // Make app globally accessible for debugging (optional)
+    window.voiceAgentApp = app;
+    
+    // Cleanup event listeners on unload
+    window.addEventListener('beforeunload', () => {
+      app.cleanup();
+    });
+    
+  } catch (error) {
+    console.error('Fatal error:', error);
+    showErrorBoundary(`${window.APP_RESOURCES?.CriticalError || 'Critical error'}: ${error.message}`);
+  }
+});

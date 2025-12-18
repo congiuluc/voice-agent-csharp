@@ -107,6 +107,17 @@ module keyvault 'modules/keyvault.bicep' = {
   dependsOn: [ appIdentity, acs ]
 }
 
+// Cosmos DB for call monitoring and pricing configuration
+module cosmosdb 'modules/cosmosdb.bicep' = {
+  name: 'cosmosdb-deployment'
+  scope: rg
+  params: {
+    name: 'cosmos-${sanitizedEnvName}-${uniqueSuffix}'
+    location: location
+    tags: tags
+  }
+}
+
 // Add role assignments 
 module RoleAssignments 'modules/roleassignments.bicep' = {
   scope: rg
@@ -116,8 +127,10 @@ module RoleAssignments 'modules/roleassignments.bicep' = {
     aiServicesId: aiServices.outputs.aiServicesId
     keyVaultName: sanitizedKeyVaultName
     acsResourceId: acs.outputs.acsResourceId
+    cosmosDbAccountId: cosmosdb.outputs.accountName
+    currentUserPrincipalId: principalId
   }
-  dependsOn: [ keyvault, appIdentity, acs ] 
+  dependsOn: [ keyvault, appIdentity, acs, cosmosdb ] 
 }
 
 // MCP Server Container App (optional - can run standalone)
@@ -154,10 +167,13 @@ module containerapp 'modules/containerapp.bicep' = {
     modelDeploymentName: modelName
     acsConnectionStringSecretUri: keyvault.outputs.acsConnectionStringUri
     acsEndpoint: acs.outputs.acsEndpoint
+    cosmosDbEndpoint: cosmosdb.outputs.endpoint
+    cosmosDbDatabaseName: cosmosdb.outputs.databaseName
     logAnalyticsWorkspaceName: logAnalyticsName
     mcpServerUrl: deployMcpServer ? mcpserver.outputs.mcpServerUrl : 'http://localhost:5001'
     containerAppEnvironmentId: deployMcpServer ? mcpserver.outputs.containerAppEnvironmentId : ''
     imageName: 'mcr.microsoft.com/azuredocs/containerapps-helloworld:latest'
+    applicationInsightsConnectionString: monitoring.outputs.appInsightsConnectionString
   }
   dependsOn: [keyvault, RoleAssignments]
 }
@@ -177,4 +193,8 @@ output AZURE_FOUNDRY_PROJECT_NAME string = aiServices.outputs.aiProjectName
 
 output AZURE_VOICE_LIVE_MODEL string = modelName
 output MCP_SERVER_URL string = deployMcpServer ? mcpserver.outputs.mcpServerUrl : 'http://localhost:5001 (standalone - not deployed)'
+output COSMOS_DB_ENDPOINT string = cosmosdb.outputs.endpoint
+output COSMOS_DB_ACCOUNT_NAME string = cosmosdb.outputs.accountName
+output COSMOS_DB_DATABASE_NAME string = cosmosdb.outputs.databaseName
+output APPLICATIONINSIGHTS_CONNECTION_STRING string = monitoring.outputs.appInsightsConnectionString
 

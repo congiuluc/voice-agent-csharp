@@ -1,19 +1,11 @@
 @page "/VoiceAvatar"
 @model VoiceAgentCSharp.Pages.VoiceAvatarModel
 @{
-    ViewData["Title"] = "Voice Avatar";
+    Layout = "_Layout";
+    ViewData["Title"] = Localizer["VoiceAvatar"];
 }
 
-<!DOCTYPE html>
-<html lang="it">
-
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>@ViewData["Title"]</title>
-    <link rel="icon" type="image/svg+xml" href="~/favicon.svg">
-    <link rel="stylesheet" href="~/theme.css">
-    <link rel="stylesheet" href="~/styles.css">
+@section Styles {
     <style>
         /* Avatar-specific overrides to match Assistant layout */
         #avatarContainer {
@@ -101,260 +93,140 @@
         .status-dot.connected { background: #27ae60; }
         .status-dot.disconnected { background: #e74c3c; }
     </style>
-</head>
+}
 
-<body>
-    <div class="main-container">
-        <!-- Main Title -->
-        <h1><span class="brand-l">Voice</span> <span class="brand-ia">Avatar</span></h1>
+<div class="main-container">
+    <!-- Main Title -->
+    <h1><span class="brand-l">Voice</span> <span class="brand-ia">Avatar</span></h1>
 
-        <!-- Home Button -->
-        <a href="/" class="home-btn" title="Home" aria-label="Vai alla home">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
-                <path d="M3 11.5L12 4l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1v-8.5z" stroke-linecap="round" stroke-linejoin="round"></path>
-            </svg>
-        </a>
+    <partial name="_CommonControls" />
 
-        <!-- Top Right Controls -->
-        <button id="chatToggle" class="chat-toggle" title="Mostra/Nascondi chat" aria-label="Toggle transcript">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-            </svg>
-        </button>
-
-        <!-- Theme toggle button -->
-        <button id="themeToggleButton" title="Attiva/Disattiva tema scuro" aria-label="Cambia tema" class="theme-toggle-btn">
-            <svg id="sunIcon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="12" cy="12" r="5"></circle>
-                <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
-            </svg>
-            <svg id="moonIcon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
-            </svg>
-        </button>
-
-        <!-- Logout button -->
-        <a href="/Logout" class="logout-btn" title="Logout" aria-label="Logout">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" stroke-linecap="round" stroke-linejoin="round"></path>
-                <polyline points="16 17 21 12 16 7" stroke-linecap="round" stroke-linejoin="round"></polyline>
-                <line x1="21" y1="12" x2="9" y2="12" stroke-linecap="round" stroke-linejoin="round"></line>
-            </svg>
-        </a>
-
-        <!-- Trace toggle (below chat button) -->
-        <button id="traceToggle" class="trace-toggle-btn" title="Mostra/Nascondi trace" aria-label="Mostra o nascondi trace dei messaggi">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M3 3h18v18H3z" stroke="currentColor" stroke-width="2" fill="none" />
-                <path d="M7 8h10M7 12h10M7 16h6" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-            </svg>
-            <span class="trace-badge" id="traceBadge">0</span>
-        </button>
-
-        <!-- Avatar Container -->
-        <div id="avatarContainer">
-            <div class="avatar-status">
-                <span class="status-dot" id="avatarStatusDot"></span>
-                <span id="avatarStatusText">Non connesso</span>
-            </div>
-
-            <video id="avatarVideo" class="avatar-video" autoplay playsinline muted></video>
-
-            <div class="avatar-overlay" id="avatarOverlay">
-                <div class="avatar-placeholder" id="avatarPlaceholder">
-                    <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
-                        <circle cx="12" cy="8" r="4"></circle>
-                        <path d="M4 20c0-4 4-7 8-7s8 3 8 7"></path>
-                    </svg>
-                    <span>Clicca "Avvia" per iniziare</span>
-                </div>
-                <div class="avatar-loading hidden" id="avatarLoading">
-                    <div class="avatar-spinner"></div>
-                    <span>Connessione in corso...</span>
-                </div>
-            </div>
+    <!-- Avatar Container -->
+    <div id="avatarContainer">
+        <div class="avatar-status">
+            <span class="status-dot" id="avatarStatusDot"></span>
+            <span id="avatarStatusText">@Localizer["NotConnected"]</span>
         </div>
 
-        <!-- Controls Bar (Aligned with VoiceAssistant) -->
-        <div class="controls-bar">
-            <button id="startButton" class="control-btn primary" title="Avvia Sessione">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <polygon points="5 3 19 12 5 21 5 3"></polygon>
+        <video id="avatarVideo" class="avatar-video" autoplay playsinline muted></video>
+
+        <div class="avatar-overlay" id="avatarOverlay">
+            <div class="avatar-placeholder" id="avatarPlaceholder">
+                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+                    <circle cx="12" cy="8" r="4"></circle>
+                    <path d="M4 20c0-4 4-7 8-7s8 3 8 7"></path>
                 </svg>
-            </button>
+                <span>@Localizer["ClickStartToBegin"]</span>
+            </div>
+            <div class="avatar-loading hidden" id="avatarLoading">
+                <div class="avatar-spinner"></div>
+                <span>@Localizer["Connecting"]</span>
+            </div>
+        </div>
+    </div>
+
+    <partial name="_StartButton" />
+    <partial name="_MuteButton" />
+    <partial name="_ChatControls" />
+    <partial name="_StatusMonitor" />
+    <partial name="_LeftPanel" />
+    <partial name="_TracePanel" />
+    <partial name="_TranscriptPanel" />
+</div>
+
+<!-- Settings Modal -->
+<div id="settingsModal" class="settings-modal">
+    <div class="settings-content">
+        <partial name="_SettingsHeader" />
+        <div class="settings-body">
+            <partial name="_LanguageSelector" />
             
-            <button id="muteButton" class="control-btn muted" title="Attiva/Disattiva microfono">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
-                    <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
-                    <line x1="12" y1="19" x2="12" y2="23"></line>
-                    <line x1="8" y1="23" x2="16" y2="23"></line>
-                </svg>
-            </button>
+            <div class="setting-group">
+                <label for="voiceLiveEndpointInput">@Localizer["VoiceLiveEndpoint"]</label>
+                <div class="input-group">
+                    <input id="voiceLiveEndpointInput" class="form-control" type="url" inputmode="url"
+                        placeholder="https://*.cognitiveservices.azure.com" aria-label="@Localizer["VoiceLiveEndpointURL"]" />
+                </div>
+                <span class="setting-hint">@Localizer["VoiceLiveEndpointHint"]</span>
+            </div>
+            <div class="setting-group">
+                <label for="voiceLiveApiKeyInput">@Localizer["VoiceLiveApiKey"]</label>
+                <div class="input-group">
+                    <input id="voiceLiveApiKeyInput" class="form-control" type="password"
+                        placeholder="@Localizer["EnterApiKey"]" />
+                </div>
+                <span class="setting-hint">@Localizer["VoiceLiveApiKeyHint"]</span>
+            </div>
+            <div class="setting-group">
+                <label for="voiceModelSelect">@Localizer["VoiceModel"]</label>
+                <select id="voiceModelSelect" class="form-control"></select>
+                <span class="setting-hint">@Localizer["SelectVoiceModel"]</span>
+            </div>
+            <div class="setting-group">
+                <label for="voiceSelect">@Localizer["Voice"]</label>
+                <select id="voiceSelect" class="form-control"></select>
+                <span class="setting-hint">@Localizer["SelectVoice"]</span>
+            </div>
+            
+            <!-- Avatar Specific Settings -->
+            <div class="setting-group avatar-selection-grid">
+                <div>
+                    <label for="avatarCharacterSelect">@Localizer["AvatarCharacter"]</label>
+                    <select id="avatarCharacterSelect" class="form-control">
+                        <option value="harry">Harry</option>
+                        <option value="jeff">Jeff</option>
+                        <option value="lisa">Lisa</option>
+                        <option value="lori">Lori</option>
+                        <option value="max">Max</option>
+                        <option value="meg">Meg</option>
+                    </select>
+                    <span class="setting-hint">@Localizer["SelectAvatarCharacter"]</span>
+                </div>
 
-            <button id="settingsButton" class="control-btn" title="Impostazioni">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <circle cx="12" cy="12" r="3"></circle>
-                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
-                </svg>
-            </button>
+                <div>
+                    <label for="avatarStyleSelect">@Localizer["AvatarStyle"]</label>
+                    <select id="avatarStyleSelect" class="form-control">
+                        <!-- Populated dynamically by voice-avatar.js based on character -->
+                    </select>
+                    <span class="setting-hint">@Localizer["SelectAvatarStyle"]</span>
+                </div>
+
+                <div class="avatar-preview-area">
+                    <label>@Localizer["Preview"]</label>
+                    <div class="avatar-preview-card">
+                        <img id="avatarPreviewImage" src="/media/placeholder.png" alt="@Localizer["AvatarPreviewAlt"]" style="max-width:100%;height:auto;border-radius:8px;" />
+                    </div>
+                    <div class="setting-hint">@Localizer["AvatarPreviewHint"]</div>
+                </div>
+
+                <div class="avatar-gestures-area">
+                    <label>@Localizer["AvailableGestures"]</label>
+                    <div id="avatarGesturesList" class="gestures-list">@Localizer["GesturesHint"]</div>
+                </div>
+            </div>
+
+            <div class="setting-group">
+                <label for="welcomeMessageInput">@Localizer["WelcomeMessage"]</label>
+                <textarea id="welcomeMessageInput" class="form-control" rows="3"
+                    placeholder="@Localizer["WelcomeMessageHint"]"></textarea>
+                <span class="setting-hint">@Localizer["WelcomeMessageHint"]</span>
+            </div>
+            <div class="setting-group">
+                <label for="modelInstructionsInput">@Localizer["ModelInstructions"]</label>
+                <textarea id="modelInstructionsInput" class="form-control" rows="5"
+                    placeholder="@Localizer["ModelInstructionsHint"]"></textarea>
+                <span class="setting-hint">@Localizer["ModelInstructionsHint"]</span>
+            </div>
+
+            <div class="setting-group">
+                <label for="toastNotificationsToggle"><input id="toastNotificationsToggle" type="checkbox" />@Localizer["ShowNotifications"]</label>
+            </div>
         </div>
+        <partial name="_SettingsFooter" />
     </div>
+</div>
 
-        <!-- Trace panel (bottom left) -->
-        <div class="trace-panel" id="tracePanel">
-            <div class="trace-header">
-                <h3>Trace Messaggi</h3>
-                <button id="clearTraceButton" class="clear-trace-btn" title="Cancella trace">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path
-                            d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6h14z"
-                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-                    </svg>
-                </button>
-            </div>
-            <div id="traceContent" class="trace-content"></div>
-        </div>
-
-        <!-- Transcript Panel (Sliding from right) -->
-        <div id="transcriptBox" class="transcript-box">
-            <div class="transcript-header">
-                <h3>Chat</h3>
-                <button id="clearChatButton" class="clear-chat-btn" title="Cancella conversazione"
-                    aria-label="Clear chat">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path
-                            d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6h14z"
-                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        </path>
-                    </svg></button>
-            </div>
-            <div id="transcriptContent"></div>
-            <div class="text-input-row">
-                <textarea id="textInput" placeholder="Scrivi un messaggio..." rows="1"></textarea>
-                <button id="sendTextButton" title="Invia messaggio" aria-label="Send message">
-                    <!-- Paper plane icon (send) - uses currentColor so theme controls color -->
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"
-                        xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                        <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"></path>
-                    </svg>
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Settings Modal -->
-    <div id="settingsModal" class="settings-modal">
-        <div class="settings-content">
-            <div class="settings-header">
-                <h2>Impostazioni Voice Avatar</h2>
-                <button id="closeSettingsButton" class="close-settings-btn" title="Chiudi impostazioni"
-                    aria-label="Close settings">×</button>
-            </div>
-            <div class="settings-body">
-                <div class="setting-group">
-                    <label for="voiceLiveEndpointInput">Voice Live Endpoint:</label>
-                    <div class="input-group">
-                        <input id="voiceLiveEndpointInput" class="form-control" type="url" inputmode="url"
-                            placeholder="https://*.cognitiveservices.azure.com" aria-label="Voice Live endpoint URL" />
-                    </div>
-                    <span class="setting-hint">URL del servizio Voice Live (es.
-                        https://*.cognitiveservices.azure.com)</span>
-                </div>
-                <div class="setting-group">
-                    <label for="voiceLiveApiKeyInput">Voice Live API Key:</label>
-                    <div class="input-group">
-                        <input id="voiceLiveApiKeyInput" class="form-control" type="password"
-                            placeholder="Inserisci la API Key" />
-                    </div>
-                    <span class="setting-hint">Chiave API per l'autenticazione verso Voice Live</span>
-                </div>
-                <div class="setting-group">
-                    <label for="voiceModelSelect">Modello Voice:</label>
-                    <select id="voiceModelSelect" class="form-control"></select>
-                    <span class="setting-hint">Seleziona il modello vocale preferito</span>
-                </div>
-                <div class="setting-group">
-                    <label for="voiceSelect">Voce:</label>
-                    <select id="voiceSelect" class="form-control"></select>
-                    <span class="setting-hint">Seleziona la voce dell'assistente</span>
-                </div>
-                
-                <!-- Avatar Specific Settings -->
-                <div class="setting-group avatar-selection-grid">
-                    <div>
-                        <label for="avatarCharacterSelect">Personaggio Avatar:</label>
-                        <select id="avatarCharacterSelect" class="form-control">
-                            <option value="harry">Harry</option>
-                            <option value="jeff">Jeff</option>
-                            <option value="lisa">Lisa</option>
-                            <option value="lori">Lori</option>
-                            <option value="max">Max</option>
-                            <option value="meg">Meg</option>
-                        </select>
-                        <span class="setting-hint">Seleziona il personaggio dell'avatar</span>
-                    </div>
-
-                    <div>
-                        <label for="avatarStyleSelect">Stile Avatar:</label>
-                        <select id="avatarStyleSelect" class="form-control">
-                            <!-- Populated dynamically by voice-avatar.js based on character -->
-                        </select>
-                        <span class="setting-hint">Seleziona lo stile dell'avatar</span>
-                    </div>
-
-                    <div class="avatar-preview-area">
-                        <label>Anteprima:</label>
-                        <div class="avatar-preview-card">
-                            <img id="avatarPreviewImage" src="/media/placeholder.png" alt="Anteprima Avatar" style="max-width:100%;height:auto;border-radius:8px;" />
-                        </div>
-                        <div class="setting-hint">Anteprima del personaggio e stile selezionato</div>
-                    </div>
-
-                    <div class="avatar-gestures-area">
-                        <label>Gesti disponibili:</label>
-                        <div id="avatarGesturesList" class="gestures-list">Seleziona un personaggio e uno stile per vedere i gesti disponibili.</div>
-                    </div>
-                </div>
-
-                <div class="setting-group">
-                    <label for="welcomeMessageInput">Messaggio di Benvenuto:</label>
-                    <textarea id="welcomeMessageInput" class="form-control" rows="3"
-                        placeholder="Inserisci un messaggio di benvenuto personalizzato..."></textarea>
-                    <span class="setting-hint">Il messaggio personalizzato per la sessione</span>
-                </div>
-                <div class="setting-group">
-                    <label for="modelInstructionsInput">Istruzioni per il modello (opzionale):</label>
-                    <textarea id="modelInstructionsInput" class="form-control" rows="5"
-                        placeholder="Inserisci istruzioni che saranno passate al modello come system prompt..."></textarea>
-                    <span class="setting-hint">Testo opzionale che verrà inviato al modello come prompt di sistema
-                        (breve, per la voce preferisci frasi concise).</span>
-                </div>
-
-                <div class="setting-group">
-                    <label for="toastNotificationsToggle"><input id="toastNotificationsToggle" type="checkbox" />Mostra
-                        notifiche (Toast):</label>
-
-                </div>
-            </div>
-            <div class="settings-footer">
-                <button id="saveSettingsButton" class="save-settings-btn" title="Salva impostazioni">Salva
-                    Impostazioni</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Error Boundary -->
-    <div id="errorBoundary" class="error-boundary">
-        <div class="error-content">
-            <h2>⚠️ Errore Applicazione</h2>
-            <p id="errorMessage"></p>
-            <button id="reloadButton" title="Ricarica pagina">Ricarica Pagina</button>
-        </div>
-    </div>
-
-    <div id="toastContainer" class="toast-container"></div>
-
-    <script type="module" src="~/js/voice-avatar.js?v=1.0.3"></script>
-</body>
-</html>
+@section Scripts {
+    <script type="module" src="~/js/handlers/voice-avatar.js?v=1.0.3" asp-append-version="true"></script>
+    <script type="module" src="~/js/ui/app-settings.js" asp-append-version="true"></script>
+}

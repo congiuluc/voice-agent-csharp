@@ -11,10 +11,13 @@ param modelDeploymentName string
 param acsConnectionStringSecretUri string
 param acsEndpoint string = ''
 param azureVoiceLiveApiKeySecretUri string = ''
+param cosmosDbEndpoint string = ''
+param cosmosDbDatabaseName string = ''
 param logAnalyticsWorkspaceName string
 param mcpServerUrl string = 'http://localhost:5001'
 param foundryAgentId string = ''
 param containerAppEnvironmentId string = ''
+param applicationInsightsConnectionString string = ''
 @description('The name of the container image')
 param imageName string = ''
 
@@ -90,6 +93,11 @@ resource containerApp 'Microsoft.App/containerApps@2024-10-02-preview' = {
           image: !empty(imageName) ? imageName : 'mcr.microsoft.com/azuredocs/containerapps-helloworld:latest'
           env: [
             {
+              // Application Insights connection string for telemetry
+              name: 'ApplicationInsights__ConnectionString'
+              value: applicationInsightsConnectionString
+            }
+            {
               // Maps to configuration["AzureVoiceLive:Endpoint"]
               name: 'AzureVoiceLive__Endpoint'
               value: aiServicesEndpoint
@@ -123,6 +131,16 @@ resource containerApp 'Microsoft.App/containerApps@2024-10-02-preview' = {
               // Foundry Agent ID
               name: 'AzureFoundry__AgentId'
               value: foundryAgentId
+            }
+            {
+              // Cosmos DB Endpoint for call monitoring
+              name: 'CosmosDb__Endpoint'
+              value: cosmosDbEndpoint
+            }
+            {
+              // Cosmos DB Database name
+              name: 'CosmosDb__DatabaseName'
+              value: cosmosDbDatabaseName
             }
             {
               name: 'DEBUG_MODE'
