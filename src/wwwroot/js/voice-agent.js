@@ -6,7 +6,7 @@
 
 import { wireFoundryUi } from './foundry-agents.js';
 import { VOICE_MODELS, ITALIAN_VOICES, getVoiceName } from './config.js';
-import { VoiceVisualizer } from './voice-visualizer.js';
+import { VoiceVisualizerFactory } from './modules/voice-visualizer-factory.js';
 import { AudioHandler } from './audio-handler.js';
 import { WebSocketHandler } from './websocket-handler.js';
 import {
@@ -52,6 +52,9 @@ class VoiceAgentApp {
     
     // Theme state (use centralized theme)
     this.isDarkMode = getSavedTheme() === 'dark';
+    
+    // Event listener tracking for cleanup
+    this.eventListeners = [];
   }
 
   /**
@@ -72,8 +75,8 @@ class VoiceAgentApp {
       // Apply saved theme
         applyThemeMode(getSavedTheme());
       
-      // Initialize visualizer
-      this.visualizer = new VoiceVisualizer(this.elements.canvas);
+      // Initialize visualizer using factory
+      this.visualizer = await VoiceVisualizerFactory.createVisualizer('wave', this.elements.canvas);
       
       // Initialize audio handler
       this.audioHandler = new AudioHandler((rms, source) => {
@@ -182,7 +185,23 @@ class VoiceAgentApp {
   }
   
   safeAddListener(element, event, handler) {
-    if (element) element.addEventListener(event, handler);
+    if (element) {
+      element.addEventListener(event, handler);
+      // Track listener for cleanup
+      this.eventListeners.push({ element, event, handler });
+    }
+  }
+
+  /**
+   * Remove all tracked event listeners (cleanup)
+   */
+  cleanup() {
+    this.eventListeners.forEach(({ element, event, handler }) => {
+      if (element && element.removeEventListener) {
+        element.removeEventListener(event, handler);
+      }
+    });
+    this.eventListeners = [];
   }
 
   conditionalShowToast(message, type = 'info') {
@@ -267,20 +286,24 @@ class VoiceAgentApp {
     this.safeAddListener(this.elements.lp_chatToggle, 'click', () => { this.elements.chatToggle.click(); this.closeLeftPanel(); });
     
     // Overlay click
-    document.addEventListener('click', (e) => {
+    const overlayClickHandler = (e) => {
       const overlay = document.querySelector('.left-panel-overlay');
       if (overlay && overlay.classList.contains('visible') && e.target === overlay) {
         this.closeLeftPanel();
       }
-    });
+    };
+    document.addEventListener('click', overlayClickHandler);
+    this.eventListeners.push({ element: document, event: 'click', handler: overlayClickHandler });
     
     // Escape key
-    document.addEventListener('keydown', (e) => {
+    const escapeHandler = (e) => {
       if (e.key === 'Escape') {
         hideSettingsModal();
         this.closeLeftPanel();
       }
-    });
+    };
+    document.addEventListener('keydown', escapeHandler);
+    this.eventListeners.push({ element: document, event: 'keydown', handler: escapeHandler });
   }
 
   openLeftPanel() {
@@ -573,4 +596,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const app = new VoiceAgentApp();
   app.init();
   window.voiceAgentApp = app;
+  
+  // Cleanup event listeners on unload
+  window.addEventListener('beforeunload', () => {
+    app.cleanup();
+  });
 });

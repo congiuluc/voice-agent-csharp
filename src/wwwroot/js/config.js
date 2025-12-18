@@ -132,10 +132,12 @@ export const AUDIO_CONFIG = {
  * Extract the display name from a voice ID
  * Example: "it-IT-IsabellaNeural" -> "Isabella"
  * 
+ * @deprecated DUPLICATION: Use 'extractVoiceName' from 'ui-utils.js' instead.
  * @param {string} voiceId - Full voice identifier (e.g., "it-IT-IsabellaNeural")
  * @returns {string} - Extracted voice name (e.g., "Isabella")
  */
 export function getVoiceName(voiceId) {
+  // TODO: Refactor consumers to import { extractVoiceName } from './ui-utils.js'
   try {
     // Voice IDs follow pattern: "language-country-NameNeural"
     // Split by hyphen and get the third part, then remove "Neural" suffix
@@ -154,11 +156,13 @@ export function getVoiceName(voiceId) {
 /**
  * Validate if a voice is compatible with a model
  * 
+ * @deprecated DUPLICATION: Use 'validateModelVoiceCompatibility' from 'ui-utils.js' instead.
  * @param {string} modelId - Voice model identifier
  * @param {string} voiceId - Voice identifier
  * @returns {Object} - {valid: boolean, message: string}
  */
 export function validateCompatibility(modelId, voiceId) {
+  // TODO: Refactor consumers to import { validateModelVoiceCompatibility } from './ui-utils.js'
   try {
     const compatibility = MODEL_VOICE_COMPATIBILITY[modelId];
     

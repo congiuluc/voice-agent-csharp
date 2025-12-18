@@ -122,7 +122,8 @@ public class VoiceAcsSession : IVoiceSession
             Voice = azureVoice,
             InputAudioFormat = InputAudioFormat.Pcm16,
             OutputAudioFormat = OutputAudioFormat.Pcm16,
-            TurnDetection = turnDetectionConfig
+            TurnDetection = turnDetectionConfig,
+            InputAudioTranscription = new AudioInputTranscriptionOptions(AudioInputTranscriptionOptionsModel.Whisper1)
         };
 
         // Configure for model-based or agent-based conversation
@@ -251,7 +252,8 @@ public class VoiceAcsSession : IVoiceSession
         {
             Voice = azureVoice,
             InputAudioEchoCancellation = new AudioEchoCancellation(),
-            TurnDetection = turnDetectionConfig
+            TurnDetection = turnDetectionConfig,
+            InputAudioTranscription = new AudioInputTranscriptionOptions(AudioInputTranscriptionOptionsModel.Whisper1)
         };
 
         // Update model/instructions if provided and not using Foundry Agent

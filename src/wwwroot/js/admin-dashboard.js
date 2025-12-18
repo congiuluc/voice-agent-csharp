@@ -153,21 +153,8 @@ function updateTokenConsumptionCharts(modelData) {
                             autoSkip: false,
                             maxRotation: 45,
                             minRotation: 30,
-                            // shorten long labels and insert line breaks for readability
-                            callback: function(value, index, values) {
-                                const label = this.getLabelForValue(value) || this.getLabelForValue(index) || '';
-                                // split on non-alphanumeric separators or at 20 chars
-                                if (label.length <= 20) return label;
-                                // try to split into two lines at a separator
-                                const parts = label.split(/[_\-\.\s]+/);
-                                if (parts.length > 1) {
-                                    // join into two roughly equal halves
-                                    const half = Math.ceil(parts.length / 2);
-                                    return parts.slice(0, half).join(' ') + '\n' + parts.slice(half).join(' ');
-                                }
-                                // fallback: hard wrap at ~20 chars
-                                return label.substring(0, 20) + '\n' + label.substring(20);
-                            }
+                            // Use helper function for better readability
+                            callback: formatChartLabel
                         },
                         grid: { color: colors.grid }
                     },
@@ -282,16 +269,8 @@ function updateTokenConsumptionCharts(modelData) {
                             autoSkip: false,
                             maxRotation: 45,
                             minRotation: 30,
-                            callback: function(value, index, values) {
-                                const label = this.getLabelForValue(value) || this.getLabelForValue(index) || '';
-                                if (label.length <= 20) return label;
-                                const parts = label.split(/[_\-\.\s]+/);
-                                if (parts.length > 1) {
-                                    const half = Math.ceil(parts.length / 2);
-                                    return parts.slice(0, half).join(' ') + '\n' + parts.slice(half).join(' ');
-                                }
-                                return label.substring(0, 20) + '\n' + label.substring(20);
-                            }
+                            // Use helper function for better readability
+                            callback: formatChartLabel
                         },
                         grid: { color: colors.grid }
                     },
@@ -719,6 +698,43 @@ document.addEventListener('DOMContentLoaded', () => {
         attributeFilter: ['data-theme']
     });
 });
+
+/**
+ * Helper function to format chart labels with smart wrapping
+ * Used in Chart.js ticks callback
+ * 
+ * @param {number|string} value - The tick value
+ * @param {number} index - The tick index
+ * @param {Array} values - All tick values
+ * @returns {string|Array} - Formatted label (string or array for multi-line)
+ */
+function formatChartLabel(value, index, values) {
+    // 'this' is bound to the scale instance by Chart.js
+    const label = this.getLabelForValue(value) || this.getLabelForValue(index) || '';
+    
+    // Short labels don't need wrapping
+    if (label.length <= 20) return label;
+
+    // Split on non-alphanumeric separators (underscore, dash, dot, space)
+    const parts = label.split(/[_\-\.\s]+/);
+    
+    if (parts.length > 1) {
+        // Join into two roughly equal halves
+        const half = Math.ceil(parts.length / 2);
+        // Return an array to create multi-line labels in Chart.js
+        // Note: Chart.js supports arrays for multi-line labels, or strings with \n
+        return [
+            parts.slice(0, half).join(' '),
+            parts.slice(half).join(' ')
+        ];
+    }
+    
+    // Fallback: hard wrap at 20 chars
+    return [
+        label.substring(0, 20),
+        label.substring(20)
+    ];
+}
 
 // Export functions for global use
 window.refreshData = refreshData;

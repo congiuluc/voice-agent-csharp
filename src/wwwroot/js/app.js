@@ -6,7 +6,7 @@
  */
 
 import { VOICE_MODELS, ITALIAN_VOICES, getVoiceName } from './config.js';
-import { VoiceVisualizer } from './voice-visualizer.js';
+import { VoiceVisualizerFactory } from './modules/voice-visualizer-factory.js';
 import { AudioHandler } from './audio-handler.js';
 import { WebSocketHandler } from './websocket-handler.js';
 import { consumptionTracker } from './consumption-tracker.js';
@@ -53,6 +53,9 @@ class VoiceAgentApp {
     
     // Theme state (centralized)
     this.isDarkMode = getSavedTheme() === 'dark';
+    
+    // Event listener tracking for cleanup
+    this.eventListeners = [];
   }
 
   /**
@@ -135,8 +138,8 @@ class VoiceAgentApp {
       // Apply saved theme
       this.applyTheme();
       
-      // Initialize visualizer
-      this.visualizer = new VoiceVisualizer(this.elements.canvas);
+      // Initialize visualizer using factory
+      this.visualizer = await VoiceVisualizerFactory.createVisualizer('wave', this.elements.canvas);
       
       // Initialize audio handler with RMS callback for visualizer
       this.audioHandler = new AudioHandler((rms, source) => {
@@ -258,12 +261,26 @@ class VoiceAgentApp {
   }
   
   /**
-   * Helper to safely add event listener with null check
+   * Helper to safely add event listener with null check and tracking for cleanup
    */
   safeAddListener(element, event, handler) {
     if (element) {
       element.addEventListener(event, handler);
+      // Track listener for cleanup
+      this.eventListeners.push({ element, event, handler });
     }
+  }
+
+  /**
+   * Remove all tracked event listeners (cleanup)
+   */
+  cleanup() {
+    this.eventListeners.forEach(({ element, event, handler }) => {
+      if (element && element.removeEventListener) {
+        element.removeEventListener(event, handler);
+      }
+    });
+    this.eventListeners = [];
   }
 
   /**
@@ -397,12 +414,14 @@ class VoiceAgentApp {
     });
     
     // Escape key closes modals
-    document.addEventListener('keydown', (e) => {
+    const escapeKeyHandler = (e) => {
       if (e.key === 'Escape') {
         hideSettingsModal();
         // Could also close panels here if needed
       }
-    });
+    };
+    document.addEventListener('keydown', escapeKeyHandler);
+    this.eventListeners.push({ element: document, event: 'keydown', handler: escapeKeyHandler });
     
     // Clear trace
     this.safeAddListener(this.elements.clearTraceButton, 'click', () => {
@@ -466,19 +485,23 @@ class VoiceAgentApp {
     this.safeAddListener(this.elements.lp_chatToggle, 'click', () => { this.elements.chatToggle && this.elements.chatToggle.click(); this.closeLeftPanel(); });
 
     // Close left panel when clicking overlay (we add overlay dynamically)
-    document.addEventListener('click', (e) => {
+    const overlayClickHandler = (e) => {
       const overlay = document.querySelector('.left-panel-overlay');
       if (overlay && overlay.classList.contains('visible') && e.target === overlay) {
         this.closeLeftPanel();
       }
-    });
+    };
+    document.addEventListener('click', overlayClickHandler);
+    this.eventListeners.push({ element: document, event: 'click', handler: overlayClickHandler });
 
     // Ensure Escape closes left panel as well
-    document.addEventListener('keydown', (e) => {
+    const escapePanelHandler = (e) => {
       if (e.key === 'Escape') {
         this.closeLeftPanel();
       }
-    });
+    };
+    document.addEventListener('keydown', escapePanelHandler);
+    this.eventListeners.push({ element: document, event: 'keydown', handler: escapePanelHandler });
   }
 
   showEndpointFeedback(text, type) {
@@ -1006,6 +1029,11 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Make app globally accessible for debugging (optional)
     window.voiceAgentApp = app;
+    
+    // Cleanup event listeners on unload
+    window.addEventListener('beforeunload', () => {
+      app.cleanup();
+    });
     
   } catch (error) {
     console.error('Fatal error:', error);

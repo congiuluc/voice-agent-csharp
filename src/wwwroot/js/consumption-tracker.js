@@ -5,6 +5,11 @@
  * Provides real-time updates to the consumption dashboard.
  */
 
+import { PricingManager } from './modules/pricing-manager.js';
+import { ConsumptionFormatter } from './modules/consumption-formatter.js';
+import { ConsumptionUIRenderer } from './modules/consumption-ui-renderer.js';
+import { SettingsManager } from './modules/settings-manager.js';
+
 /**
  * ConsumptionTracker class
  * Manages tracking of Voice Live API usage and consumption
@@ -62,77 +67,47 @@ export class ConsumptionTracker {
     this.modelTokenUsage = {}; // { modelName: { input: 0, output: 0, cached: 0 } }
     this.modelCosts = {}; // { modelName: { input: 0, output: 0, cached: 0, total: 0 } }
     
-    // Model pricing configuration (in USD per 1K tokens)
-    // These values are the per-1M numbers divided by 1000 to match server-side (per-1K) schema
-    this.modelPrices = {
-      'gpt-4o': { input: 0.00250, output: 0.01000, cached: 0.00125 },
-      'gpt-4o-mini': { input: 0.00015, output: 0.00060, cached: 0.000075 },
-      'gpt-4-turbo': { input: 0.01000, output: 0.03000, cached: 0.00500 },
-      'gpt-4': { input: 0.03000, output: 0.06000, cached: 0.01500 },
-      'gpt-3.5-turbo': { input: 0.00050, output: 0.00150, cached: 0.00025 },
-      // Added new models (per-1K)
-      'gpt-5-nano': { input: 0.0129730, output: 0.0285406, cached: 0.0000346 },
-      'phi4-mm-realtime': { input: 0.0034595, output: 0.0285406, cached: 0.0000346 },
-      'phi4-mini': { input: 0.0129730, output: 0.0285406, cached: 0.0000346 },
-      // mini models requested (per-1K)
-      'gpt-realtime-mini': { input: 0.0095136, output: 0.0190271, cached: 0.0002855 },
-      'gpt-4o-mini': { input: 0.0129730, output: 0.0285406, cached: 0.0002855 },
-      'gpt-4.1-mini': { input: 0.0129730, output: 0.0285406, cached: 0.0002855 },
-      'gpt-5-mini': { input: 0.0129730, output: 0.0285406, cached: 0.0002855 },
-      'gpt-realtime': { input: 0.0380541, output: 0.0761082, cached: 0.0023784 },
-      'default': { input: 0.00100, output: 0.00200, cached: 0.00050 }
-    };
+    // Pricing manager for cost calculations
+    this.pricingManager = new PricingManager();
+    
+    // Settings manager for consumption history persistence
+    this.historyManager = new SettingsManager('voiceAgent_consumptionHistory', {
+      sessions: [],
+      aggregated: {
+        totalSessions: 0,
+        totalTokens: 0,
+        totalInputTokens: 0,
+        totalOutputTokens: 0,
+        totalInputAudioMs: 0,
+        totalOutputAudioMs: 0,
+        lastUpdated: null
+      }
+    });
     
     // UI elements cache
     this.dashboardElement = null;
     
+    // Event listener tracking for cleanup
+    this.eventListeners = [];
+    
     // Initialize UI
     this.initializeDashboard();
     // Try to load server-driven pricing to override frontend fallbacks
-    this.loadServerPricing();
+    this.pricingManager.loadServerPricing();
   }
 
   /**
-   * Load pricing from server and populate modelPrices map.
-   * The server returns prices per 1K tokens; frontend expects per 1M tokens
-   * in the modelPrices map to preserve the existing calculations. Convert
-   * from per-1K to per-1M by multiplying by 1000.
+   * Remove all tracked event listeners (cleanup)
    */
-  async loadServerPricing() {
-    try {
-      const resp = await fetch('/api/admin/pricing/list', { cache: 'no-store' });
-      if (!resp.ok) return;
-      const json = await resp.json();
-
-      // API historically returned an array at the root, but newer controller returns
-      // an object with a `pricing` array. Support both shapes for compatibility.
-      const list = Array.isArray(json) ? json : (Array.isArray(json?.pricing) ? json.pricing : []);
-      if (list.length === 0) return;
-
-      list.forEach(p => {
-        try {
-          const model = p.modelName || p.model || p.name;
-          if (!model) return;
-          // server uses per-1K decimals and frontend now also uses per-1K. Keep values as-is.
-          const input = (p.inputTokenCost || p.inputTokenCost === 0) ? p.inputTokenCost : undefined;
-          const output = (p.outputTokenCost || p.outputTokenCost === 0) ? p.outputTokenCost : undefined;
-          const cached = (p.cachedInputTokenCost || p.cachedInputTokenCost === 0) ? p.cachedInputTokenCost : undefined;
-
-          this.modelPrices[model] = {
-            input: (input !== undefined) ? input : (this.modelPrices[model]?.input ?? this.modelPrices['default'].input),
-            output: (output !== undefined) ? output : (this.modelPrices[model]?.output ?? this.modelPrices['default'].output),
-            cached: (cached !== undefined) ? cached : (this.modelPrices[model]?.cached ?? this.modelPrices['default'].cached)
-          };
-        } catch (e) {
-          console.warn('Failed to process pricing entry', e);
-        }
-      });
-    } catch (e) {
-      // network error or not available - keep fallbacks
-      console.debug('Could not load server pricing, using frontend fallbacks', e);
-    }
+  cleanup() {
+    this.eventListeners.forEach(({ element, event, handler }) => {
+      if (element && element.removeEventListener) {
+        element.removeEventListener(event, handler);
+      }
+    });
+    this.eventListeners = [];
   }
-  
+
   /**
    * Initialize the consumption dashboard UI
    */
@@ -344,12 +319,16 @@ export class ConsumptionTracker {
       }
     }
     
-    // Add event listeners
-    button.addEventListener('click', () => this.toggleDashboard());
+    // Add event listeners with tracking for cleanup
+    const toggleHandler = () => this.toggleDashboard();
+    button.addEventListener('click', toggleHandler);
+    this.eventListeners.push({ element: button, event: 'click', handler: toggleHandler });
     
     const closeBtn = document.getElementById('closeDashboard');
     if (closeBtn) {
-      closeBtn.addEventListener('click', () => this.hideDashboard());
+      const closeHandler = () => this.hideDashboard();
+      closeBtn.addEventListener('click', closeHandler);
+      this.eventListeners.push({ element: closeBtn, event: 'click', handler: closeHandler });
     }
   }
   
@@ -812,55 +791,28 @@ export class ConsumptionTracker {
   calculateModelCosts() {
     for (const modelName in this.modelTokenUsage) {
       const usage = this.modelTokenUsage[modelName];
-      const pricing = this.modelPrices[modelName] || this.modelPrices['default'];
-      // Pricing values are per 1K tokens. Convert tokens to thousands for cost calculation.
-      const inputCost = (usage.input / 1000) * pricing.input;
-      const outputCost = (usage.output / 1000) * pricing.output;
-      const cachedCost = (usage.cached / 1000) * pricing.cached;
-      
-      this.modelCosts[modelName] = {
-        input: inputCost,
-        output: outputCost,
-        cached: cachedCost,
-        total: inputCost + outputCost + cachedCost
-      };
+      this.modelCosts[modelName] = this.pricingManager.calculateCosts(modelName, usage);
       
       this.logEvent('CalculatedModelCosts', {
         model: modelName,
         tokens: usage,
-        pricing: pricing,
         costs: this.modelCosts[modelName]
       });
     }
   }
   
   /**
-   * Format duration in milliseconds to human-readable string
-   * @param {number} ms - Duration in milliseconds
-   * @returns {string} Formatted duration (e.g., "2.35s" or "1m 23.45s")
+   * Format duration in milliseconds (delegated to ConsumptionFormatter)
    */
   formatDuration(ms) {
-    if (ms < 1000) {
-      return `${ms.toFixed(0)}ms`;
-    } else if (ms < 60000) {
-      return `${(ms / 1000).toFixed(2)}s`;
-    } else {
-      const minutes = Math.floor(ms / 60000);
-      const seconds = ((ms % 60000) / 1000).toFixed(2);
-      return `${minutes}m ${seconds}s`;
-    }
+    return ConsumptionFormatter.formatDuration(ms);
   }
   
   /**
-   * Format sample rate to human-readable string
-   * @param {number} rate - Sample rate in Hz
-   * @returns {string} Formatted sample rate (e.g., "24kHz")
+   * Format sample rate to human-readable string (delegated to ConsumptionFormatter)
    */
   formatSampleRate(rate) {
-    if (rate >= 1000) {
-      return `${(rate / 1000).toFixed(0)}kHz`;
-    }
-    return `${rate}Hz`;
+    return ConsumptionFormatter.formatSampleRate(rate);
   }
 
   /**
@@ -925,51 +877,10 @@ export class ConsumptionTracker {
   }
   
   /**
-   * Create a token consumption row with stacked bar chart
+   * Create a token consumption row (delegated to ConsumptionUIRenderer)
    */
   createTokenConsumptionRow(model, usage) {
-    const totalTokens = usage.input + usage.output + usage.cached;
-    
-    if (totalTokens === 0) {
-      return '';
-    }
-    
-    const inputPercent = (usage.input / totalTokens) * 100;
-    const outputPercent = (usage.output / totalTokens) * 100;
-    const cachedPercent = (usage.cached / totalTokens) * 100;
-    
-    return `
-      <div class="model-row">
-        <div class="model-header">
-          <strong>${this.escapeHtml(model)}</strong>
-          <span class="model-total">${this.formatNumber(totalTokens)} tokens</span>
-        </div>
-        <div class="stacked-bar-chart">
-          <div class="bar-container">
-            ${inputPercent > 0 ? `
-              <div class="bar-segment input-segment" style="width: ${inputPercent}%; flex: ${inputPercent};" title="Input: ${this.formatNumber(usage.input)} tokens (${inputPercent.toFixed(1)}%)">
-                <span class="segment-label">${inputPercent > 8 ? `Input ${inputPercent.toFixed(0)}%` : ''}</span>
-              </div>
-            ` : ''}
-            ${outputPercent > 0 ? `
-              <div class="bar-segment output-segment" style="width: ${outputPercent}%; flex: ${outputPercent};" title="Output: ${this.formatNumber(usage.output)} tokens (${outputPercent.toFixed(1)}%)">
-                <span class="segment-label">${outputPercent > 8 ? `Output ${outputPercent.toFixed(0)}%` : ''}</span>
-              </div>
-            ` : ''}
-            ${cachedPercent > 0 ? `
-              <div class="bar-segment cached-segment" style="width: ${cachedPercent}%; flex: ${cachedPercent};" title="Cached: ${this.formatNumber(usage.cached)} tokens (${cachedPercent.toFixed(1)}%)">
-                <span class="segment-label">${cachedPercent > 8 ? `Cached ${cachedPercent.toFixed(0)}%` : ''}</span>
-              </div>
-            ` : ''}
-          </div>
-        </div>
-        <div class="model-details">
-          <span class="detail-item input-detail"><span class="detail-color input-color"></span>Input: ${this.formatNumber(usage.input)}</span>
-          <span class="detail-item output-detail"><span class="detail-color output-color"></span>Output: ${this.formatNumber(usage.output)}</span>
-          <span class="detail-item cached-detail"><span class="detail-color cached-color"></span>Cached: ${this.formatNumber(usage.cached)}</span>
-        </div>
-      </div>
-    `;
+    return ConsumptionUIRenderer.createTokenConsumptionRow(model, usage);
   }
   
   /**
@@ -1000,66 +911,17 @@ export class ConsumptionTracker {
   }
   
   /**
-   * Create a model cost row with stacked bar chart
+   * Create a model cost row (delegated to ConsumptionUIRenderer)
    */
   createModelCostRow(model, costs) {
-    const totalCost = costs.total;
-    
-    if (totalCost === 0) {
-      return '';
-    }
-    
-    const inputPercent = (costs.input / totalCost) * 100;
-    const outputPercent = (costs.output / totalCost) * 100;
-    const cachedPercent = (costs.cached / totalCost) * 100;
-    
-    return `
-      <div class="model-cost-row">
-        <div class="model-header">
-          <strong>${this.escapeHtml(model)}</strong>
-          <span class="model-total">$${totalCost.toFixed(4)}</span>
-        </div>
-        <div class="stacked-bar-chart">
-          <div class="bar-container">
-            ${inputPercent > 0 ? `
-              <div class="bar-segment input-segment" style="width: ${inputPercent}%; flex: ${inputPercent};" title="Input: $${costs.input.toFixed(4)} (${inputPercent.toFixed(1)}%)">
-                <span class="segment-label">${inputPercent > 8 ? `Input ${inputPercent.toFixed(0)}%` : ''}</span>
-              </div>
-            ` : ''}
-            ${outputPercent > 0 ? `
-              <div class="bar-segment output-segment" style="width: ${outputPercent}%; flex: ${outputPercent};" title="Output: $${costs.output.toFixed(4)} (${outputPercent.toFixed(1)}%)">
-                <span class="segment-label">${outputPercent > 8 ? `Output ${outputPercent.toFixed(0)}%` : ''}</span>
-              </div>
-            ` : ''}
-            ${cachedPercent > 0 ? `
-              <div class="bar-segment cached-segment" style="width: ${cachedPercent}%; flex: ${cachedPercent};" title="Cached: $${costs.cached.toFixed(4)} (${cachedPercent.toFixed(1)}%)">
-                <span class="segment-label">${cachedPercent > 8 ? `Cached ${cachedPercent.toFixed(0)}%` : ''}</span>
-              </div>
-            ` : ''}
-          </div>
-        </div>
-        <div class="model-details">
-          <span class="detail-item input-detail"><span class="detail-color input-color"></span>Input: $${costs.input.toFixed(4)}</span>
-          <span class="detail-item output-detail"><span class="detail-color output-color"></span>Output: $${costs.output.toFixed(4)}</span>
-          <span class="detail-item cached-detail"><span class="detail-color cached-color"></span>Cached: $${costs.cached.toFixed(4)}</span>
-        </div>
-      </div>
-    `;
+    return ConsumptionUIRenderer.createCostRow(model, costs);
   }
   
   /**
-   * Escape HTML special characters
+   * Escape HTML special characters (delegated to ConsumptionFormatter)
    */
   escapeHtml(text) {
-    if (!text) return '';
-    const map = {
-      '&': '&amp;',
-      '<': '&lt;',
-      '>': '&gt;',
-      '"': '&quot;',
-      "'": '&#039;'
-    };
-    return text.replace(/[&<>"']/g, m => map[m]);
+    return ConsumptionFormatter.escapeHtml(text);
   }
   
   /**
@@ -1068,7 +930,7 @@ export class ConsumptionTracker {
   updateTokenBadge() {
     const badge = document.getElementById('tokenBadge');
     if (badge) {
-      badge.textContent = this.formatCompactNumber(this.totalTokens);
+      badge.textContent = ConsumptionFormatter.formatCompactNumber(this.totalTokens);
     }
   }
   
@@ -1109,31 +971,24 @@ export class ConsumptionTracker {
   }
   
   /**
-   * Truncate ID for display
+   * Truncate ID for display (delegated to ConsumptionFormatter)
    */
   truncateId(id) {
-    if (!id) return '-';
-    if (id.length <= 16) return id;
-    return `${id.substring(0, 8)}...${id.substring(id.length - 4)}`;
+    return ConsumptionFormatter.truncateId(id);
   }
   
   /**
-   * Format number with locale
+   * Format number with locale (delegated to ConsumptionFormatter)
    */
   formatNumber(num) {
-    return num.toLocaleString();
+    return ConsumptionFormatter.formatNumber(num);
   }
   
   /**
-   * Format number in compact form (1.2K, 3.4M, etc.)
+   * Format number in compact form (delegated to ConsumptionFormatter)
    */
   formatCompactNumber(num) {
-    if (num >= 1000000) {
-      return (num / 1000000).toFixed(1) + 'M';
-    } else if (num >= 1000) {
-      return (num / 1000).toFixed(1) + 'K';
-    }
-    return num.toString();
+    return ConsumptionFormatter.formatCompactNumber(num);
   }
   
   /**
@@ -1197,7 +1052,7 @@ export class ConsumptionTracker {
   }
   
   /**
-   * Save current session data to localStorage
+   * Save current session data using SettingsManager
    */
   saveToLocalStorage() {
     try {
@@ -1248,27 +1103,28 @@ export class ConsumptionTracker {
       history.aggregated.totalOutputAudioMs += this.totalOutputAudioDurationMs;
       history.aggregated.lastUpdated = new Date().toISOString();
       
-      localStorage.setItem(this.getStorageKey(), JSON.stringify(history));
+      this.historyManager.set(history);
+      this.historyManager.save();
       this.logEvent('SavedToLocalStorage', { sessionId: this.sessionId });
       
       return true;
     } catch (error) {
-      console.error('[ConsumptionTracker] Error saving to localStorage:', error);
+      console.error('[ConsumptionTracker] Error saving to storage:', error);
       return false;
     }
   }
   
   /**
-   * Load consumption history from localStorage
+   * Load consumption history using SettingsManager
    */
   loadFromLocalStorage() {
     try {
-      const stored = localStorage.getItem(this.getStorageKey());
-      if (stored) {
-        return JSON.parse(stored);
+      const history = this.historyManager.getAll();
+      if (history && history.sessions) {
+        return history;
       }
     } catch (error) {
-      console.error('[ConsumptionTracker] Error loading from localStorage:', error);
+      console.error('[ConsumptionTracker] Error loading from storage:', error);
     }
     
     // Return empty structure
@@ -1303,11 +1159,11 @@ export class ConsumptionTracker {
   }
   
   /**
-   * Clear consumption history from localStorage
+   * Clear consumption history using SettingsManager
    */
   clearHistory() {
     try {
-      localStorage.removeItem(this.getStorageKey());
+      this.historyManager.clear();
       this.logEvent('HistoryCleared', {});
       return true;
     } catch (error) {

@@ -102,7 +102,8 @@ public class VoiceAgentSession : VoiceSessionBase
             Voice = azureVoice,
             InputAudioFormat = InputAudioFormat.Pcm16,
             OutputAudioFormat = OutputAudioFormat.Pcm16,
-            TurnDetection = turnDetectionConfig
+            TurnDetection = turnDetectionConfig,
+            InputAudioTranscription = new AudioInputTranscriptionOptions(AudioInputTranscriptionOptionsModel.Whisper1)
         };
 
         // Ensure modalities include audio and text
@@ -163,7 +164,8 @@ public class VoiceAgentSession : VoiceSessionBase
         {
             Voice = azureVoice,
             InputAudioEchoCancellation = new AudioEchoCancellation(),
-            TurnDetection = turnDetectionConfig
+            TurnDetection = turnDetectionConfig,
+            InputAudioTranscription = new AudioInputTranscriptionOptions(AudioInputTranscriptionOptionsModel.Whisper1)
         };
 
         // Note: AI Agent mode only supports MCP tools, not function tools.

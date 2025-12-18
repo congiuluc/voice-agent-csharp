@@ -1,11 +1,18 @@
+import { SettingsManager } from './modules/settings-manager.js';
+
 // Centralized theme sync helper
 // Exposes functions to get/apply/toggle theme and sync across tabs
 const THEME_KEY = 'voiceAgent_theme';
+const themeManager = new SettingsManager(THEME_KEY, { theme: 'dark' });
 
 function getSavedTheme() {
-  const saved = localStorage.getItem(THEME_KEY);
-  if (!saved) return 'dark';
-  return saved === 'dark' ? 'dark' : 'light';
+  try {
+    const theme = themeManager.get('theme');
+    return (theme === 'dark' || theme === 'light') ? theme : 'dark';
+  } catch (error) {
+    console.error('Error loading theme:', error);
+    return 'dark';
+  }
 }
 
 function applyThemeMode(mode) {
@@ -22,7 +29,12 @@ function applyThemeMode(mode) {
 }
 
 function saveTheme(mode) {
-  localStorage.setItem(THEME_KEY, mode === 'dark' ? 'dark' : 'light');
+  try {
+    themeManager.set({ theme: mode === 'dark' ? 'dark' : 'light' });
+    themeManager.save();
+  } catch (error) {
+    console.error('Error saving theme:', error);
+  }
   // Broadcast to other tabs using BroadcastChannel if available
   try {
     if (window.BroadcastChannel) {

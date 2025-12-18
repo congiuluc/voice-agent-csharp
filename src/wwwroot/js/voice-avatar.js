@@ -33,6 +33,7 @@ import {
     AUDIO_CONFIG 
 } from './config.js';
 import { getSavedTheme, applyThemeMode, toggleTheme as themeToggle, listenForExternalChanges } from './theme-sync.js';
+import { SettingsManager } from './modules/settings-manager.js';
 
 class VoiceAvatarApp {
     constructor() {
@@ -393,12 +394,19 @@ class VoiceAvatarApp {
         try {
             themeToggle();
         } catch (err) {
-            // Fallback: toggle data-theme attribute and localStorage if theme-sync fails
+            // Fallback: toggle data-theme attribute and use SettingsManager if theme-sync fails
             const html = document.documentElement;
             const currentTheme = html.getAttribute('data-theme');
             const newTheme = currentTheme === 'light' ? 'dark' : 'light';
             html.setAttribute('data-theme', newTheme);
-            localStorage.setItem('theme', newTheme);
+            
+            try {
+                const themeManager = new SettingsManager('voiceAgent_theme', { theme: 'dark' });
+                themeManager.set({ theme: newTheme });
+                themeManager.save();
+            } catch (e) {
+                console.error('Error saving theme:', e);
+            }
         }
     }
 

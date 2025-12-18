@@ -158,7 +158,8 @@ public class VoiceLiveAssistant : IAsyncDisposable
                 Voice = azureVoice,
                 InputAudioFormat = InputAudioFormat.Pcm16,
                 OutputAudioFormat = OutputAudioFormat.Pcm16,
-                TurnDetection = turnDetectionConfig
+                TurnDetection = turnDetectionConfig,
+                InputAudioTranscription = new AudioInputTranscriptionOptions(AudioInputTranscriptionOptionsModel.Whisper1)
             };
 
             // Ensure modalities include audio
@@ -275,7 +276,8 @@ public class VoiceLiveAssistant : IAsyncDisposable
             InputAudioNoiseReduction = new AudioNoiseReduction(AudioNoiseReductionType.NearField),
             Instructions = instructions,
             Voice = azureVoice,
-            TurnDetection = turnDetectionConfig
+            TurnDetection = turnDetectionConfig,
+            InputAudioTranscription = new AudioInputTranscriptionOptions(AudioInputTranscriptionOptionsModel.Whisper1)
         };
 
 

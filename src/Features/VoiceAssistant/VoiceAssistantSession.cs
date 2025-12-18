@@ -164,7 +164,8 @@ public class VoiceAssistantSession : VoiceSessionBase
             Voice = azureVoice,
             InputAudioEchoCancellation = new AudioEchoCancellation(),
             InputAudioNoiseReduction = new AudioNoiseReduction(AudioNoiseReductionType.NearField),
-            TurnDetection = turnDetectionConfig
+            TurnDetection = turnDetectionConfig,
+            InputAudioTranscription = new AudioInputTranscriptionOptions(AudioInputTranscriptionOptionsModel.Whisper1)
         };
 
         // Add tools if provided

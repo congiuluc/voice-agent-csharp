@@ -10,6 +10,7 @@
  */
 
 import { getVoiceName, validateCompatibility, DEFAULT_SETTINGS } from './config.js';
+import { SettingsManager } from './modules/settings-manager.js';
 
 // Re-export transcript and trace functions from their dedicated modules
 export { addTranscript, clearTranscripts, toggleTranscriptPanel } from './transcript-manager.js';
@@ -227,22 +228,17 @@ export function validateModelVoiceCompatibility(model, voice) {
 }
 
 /**
- * Get the storage key for the current page
- * @param {string} pageName - Name of the page (VoiceAssistant, VoiceAgent, VoiceAvatar)
- * @returns {string} - Storage key for this page
- */
-function getSettingsKey(pageName) {
-  return `voiceAgent_${pageName}_settings`;
-}
-
-/**
- * Save settings to localStorage
+ * Save settings using SettingsManager
  * @param {Object} settings - Settings object to save
  * @param {string} pageName - Name of the page (VoiceAssistant, VoiceAgent, VoiceAvatar)
+ * @returns {boolean} - True if settings saved successfully
  */
 export function saveSettings(settings, pageName = 'default') {
   try {
-    localStorage.setItem(getSettingsKey(pageName), JSON.stringify(settings));
+    const storageKey = `voiceAgent_${pageName}_settings`;
+    const manager = new SettingsManager(storageKey, DEFAULT_SETTINGS);
+    manager.set(settings);
+    manager.save();
     return true;
   } catch (error) {
     console.error('Error saving settings:', error);
@@ -252,21 +248,20 @@ export function saveSettings(settings, pageName = 'default') {
 }
 
 /**
- * Load settings from localStorage
+ * Load settings using SettingsManager
  * @param {string} pageName - Name of the page (VoiceAssistant, VoiceAgent, VoiceAvatar)
  * @returns {Object} - Loaded settings or defaults
  */
 export function loadSettings(pageName = 'default') {
   try {
-    const stored = localStorage.getItem(getSettingsKey(pageName));
-    if (stored) {
-      const settings = JSON.parse(stored);
-      // Merge with defaults to ensure all properties exist
-      return {
-        ...DEFAULT_SETTINGS,
-        ...settings
-      };
-    }
+    const storageKey = `voiceAgent_${pageName}_settings`;
+    const manager = new SettingsManager(storageKey, DEFAULT_SETTINGS);
+    const settings = manager.getAll();
+    // Merge with defaults to ensure all properties exist
+    return {
+      ...DEFAULT_SETTINGS,
+      ...settings
+    };
   } catch (error) {
     console.error('Error loading settings:', error);
   }

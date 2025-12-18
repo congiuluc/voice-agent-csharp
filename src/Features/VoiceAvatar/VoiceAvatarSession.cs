@@ -716,7 +716,8 @@ public class VoiceAvatarSession : VoiceSessionBase
             Voice = azureVoice,
             InputAudioEchoCancellation = new AudioEchoCancellation(),
             InputAudioNoiseReduction = new AudioNoiseReduction(AudioNoiseReductionType.NearField),
-            TurnDetection = turnDetectionConfig
+            TurnDetection = turnDetectionConfig,
+            InputAudioTranscription = new AudioInputTranscriptionOptions(AudioInputTranscriptionOptionsModel.Whisper1)
         };
 
         // Configure modalities for avatar session

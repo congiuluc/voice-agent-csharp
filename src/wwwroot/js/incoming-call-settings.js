@@ -5,6 +5,8 @@
  * Handles configuration for Azure Communication Services (ACS) integration.
  */
 
+import { SettingsManager } from './modules/settings-manager.js';
+
 /**
  * Default incoming call settings (only keys used by server/session)
  */
@@ -24,6 +26,11 @@ const DEFAULT_INCOMING_CALL_SETTINGS = {
  * Storage key for incoming call settings
  */
 const STORAGE_KEY = 'incomingCallSettings';
+
+/**
+ * Settings manager for incoming call configuration
+ */
+const settingsManager = new SettingsManager(STORAGE_KEY, DEFAULT_INCOMING_CALL_SETTINGS);
 
 /**
  * Initialize incoming call settings module
@@ -96,12 +103,11 @@ function isModalVisible() {
 }
 
 /**
- * Load incoming call settings from localStorage
+ * Load incoming call settings using SettingsManager
  */
 function loadIncomingCallSettings() {
   try {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    const settings = saved ? JSON.parse(saved) : DEFAULT_INCOMING_CALL_SETTINGS;
+    const settings = settingsManager.getAll();
 
     // Apply loaded settings to form
     document.getElementById('enableIncomingCallsToggle').checked = settings.enableIncomingCalls ?? false;
@@ -163,7 +169,7 @@ function saveSettings() {
       }
     }
 
-    // Save to localStorage
+    // Save to SettingsManager
     // Only persist non-secret settings
     const toPersist = {
       enableIncomingCalls: settings.enableIncomingCalls,
@@ -174,7 +180,8 @@ function saveSettings() {
       instructions: settings.instructions,
       callTimeout: settings.callTimeout
     };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(toPersist));
+    settingsManager.set(toPersist);
+    settingsManager.save();
     
     showStatusMessage('success', 'Impostazioni salvate con successo');
     console.log('✓ Incoming call settings saved', settings);
@@ -208,7 +215,7 @@ function resetSettings() {
   document.getElementById('incomingCallInstructionsInput').value = DEFAULT_INCOMING_CALL_SETTINGS.instructions;
   document.getElementById('callTimeoutInput').value = DEFAULT_INCOMING_CALL_SETTINGS.callTimeout;
 
-  localStorage.removeItem(STORAGE_KEY);
+  settingsManager.clear();
   showStatusMessage('info', 'Impostazioni ripristinate ai valori predefiniti');
   console.log('✓ Incoming call settings reset to defaults');
 }
@@ -289,13 +296,12 @@ function showStatusMessage(type, message) {
 }
 
 /**
- * Get current incoming call settings (for use by other modules)
+ * Get current incoming call settings using SettingsManager (for use by other modules)
  * @returns {Object} Current settings
  */
 export function getIncomingCallSettings() {
   try {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    return saved ? JSON.parse(saved) : DEFAULT_INCOMING_CALL_SETTINGS;
+    return settingsManager.getAll();
   } catch (error) {
     console.error('Error getting incoming call settings:', error);
     return DEFAULT_INCOMING_CALL_SETTINGS;
