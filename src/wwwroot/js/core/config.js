@@ -178,6 +178,9 @@ export const AUDIO_CONFIG = {
  */
 export function getVoiceName(voiceId) {
   try {
+    console.warn(
+      "Deprecated: 'getVoiceName' is deprecated. Please use 'extractVoiceName' from './ui-utils.js' instead."
+    );
     const voice = getVoiceById(voiceId);
     if (voice) return voice.name;
 
