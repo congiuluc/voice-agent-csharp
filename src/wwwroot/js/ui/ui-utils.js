@@ -238,8 +238,7 @@ export function saveSettings(settings, pageName = 'default') {
   try {
     const storageKey = `voiceAgent_${pageName}_settings`;
     const manager = new SettingsManager(storageKey, DEFAULT_SETTINGS);
-    manager.set(settings);
-    manager.save();
+    manager.save(settings);
     return true;
   } catch (error) {
     console.error('Error saving settings:', error);
