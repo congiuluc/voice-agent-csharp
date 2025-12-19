@@ -5,6 +5,9 @@
     ViewData["Title"] = Localizer["VoiceAvatar"];
 }
 
+<main role="main">
+    <h1><span class="brand-l">Voice</span> <span class="brand-ia">Avatar</span></h1>
+
 @section Styles {
     <style>
         /* Avatar-specific overrides to match Assistant layout */
@@ -95,6 +98,7 @@
     </style>
 }
 
+<main role="main">
 <div class="main-container">
     <!-- Main Title -->
     <h1><span class="brand-l">Voice</span> <span class="brand-ia">Avatar</span></h1>
@@ -225,6 +229,7 @@
         <partial name="_SettingsFooter" />
     </div>
 </div>
+</main>
 
 @section Scripts {
     <script type="module" src="~/js/handlers/voice-avatar.js?v=1.0.3" asp-append-version="true"></script>
