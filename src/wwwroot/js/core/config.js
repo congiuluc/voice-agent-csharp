@@ -147,7 +147,7 @@ export const DEFAULT_SETTINGS = {
   modelInstructions: '',
   showToastNotifications: false, // Enable toast notifications by default
   language: 'en-US',
-  visualizerType: 'oscilloscope', // Default visualizer type (wave, cardio, vortex, lines, holographic, tesseract, cortana)
+  visualizerType: 'simplex', // Default visualizer type (wave, cardio, vortex, lines, holographic, tesseract, cortana)
   // Voice Live service connection settings
   voiceLiveEndpoint: '',
   voiceLiveApiKey: '',

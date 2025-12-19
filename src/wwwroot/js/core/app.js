@@ -97,7 +97,7 @@ class VoiceAgentApp {
       // Initialize visualizer using the configured type from shared uiSettings
       // Check both the shared uiSettings and the page-specific settings
       const sharedUISettings = new SettingsManager('uiSettings', {}).getAll();
-      const visualizerType = sharedUISettings.visualizerType || this.currentSettings.visualizerType || 'wave';
+      const visualizerType = sharedUISettings.visualizerType || this.currentSettings.visualizerType || 'simplex';
       console.log('📊 Initializing visualizer with type:', visualizerType);
       this.visualizer = await VoiceVisualizerFactory.createVisualizer(visualizerType, this.elements.canvas);
       

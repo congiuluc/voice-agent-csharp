@@ -16,7 +16,8 @@ export class VoiceVisualizerFactory {
     'holographic': 'visualizers/voice-visualizer-holographic.js',
     'tesseract': 'visualizers/voice-visualizer-tesseract.js',
     'cortana': 'visualizers/voice-visualizer-cortana.js',
-    'equalizer': 'visualizers/voice-visualizer-equalizer.js'
+    'equalizer': 'visualizers/voice-visualizer-equalizer.js',
+    'simplex': 'visualizers/voice-visualizer-simplex.js'
   };
 
   /**
@@ -31,7 +32,7 @@ export class VoiceVisualizerFactory {
     
     if (!modulePath) {
       console.warn(`[VoiceVisualizerFactory] Unknown visualizer type: ${type}, falling back to wave`);
-      return this.createVisualizer('oscilloscope', canvas);
+      return this.createVisualizer('simplex', canvas);
     }
 
     try {
@@ -39,9 +40,9 @@ export class VoiceVisualizerFactory {
       return new module.VoiceVisualizer(canvas);
     } catch (error) {
       console.error(`[VoiceVisualizerFactory] Error loading visualizer "${type}":`, error);
-      // Fallback to oscilloscope visualizer
-      if (type !== 'oscilloscope') {
-        return this.createVisualizer('oscilloscope', canvas);
+      // Fallback to simplex visualizer
+      if (type !== 'simplex') {
+        return this.createVisualizer('simplex', canvas);
       }
       throw error;
     }

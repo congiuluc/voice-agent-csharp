@@ -127,6 +127,9 @@
   <data name="Cortana">
     <value>Cortana</value>
   </data>
+  <data name="Simplex">
+    <value>Simplex</value>
+  </data>
   <data name="Equalizer">
     <value>Equalizer</value>
   </data>

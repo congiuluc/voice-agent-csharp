@@ -345,12 +345,11 @@ class VoiceAvatarApp extends BaseVoiceApp {
         this.updateAvatarStatus('connecting', window.APP_RESOURCES?.Connecting || 'Connecting...');
         if (this.elements.startButton) {
             this.elements.startButton.classList.add('active');
-            this.elements.startButton.innerHTML = `
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <rect x="6" y="4" width="4" height="16"></rect>
-                    <rect x="14" y="4" width="4" height="16"></rect>
-                </svg>
-            `; // Change to Stop icon
+            // Toggle existing SVGs in the shared start button markup instead of replacing innerHTML
+            const playIcon = document.getElementById('playIcon');
+            const stopIcon = document.getElementById('stopIcon');
+            if (playIcon) playIcon.classList.add('icon-hidden');
+            if (stopIcon) stopIcon.classList.remove('icon-hidden');
         }
 
         try {
@@ -415,11 +414,11 @@ class VoiceAvatarApp extends BaseVoiceApp {
 
         if (this.elements.startButton) {
             this.elements.startButton.classList.remove('active');
-            this.elements.startButton.innerHTML = `
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <polygon points="5 3 19 12 5 21 5 3"></polygon>
-                </svg>
-            `; // Change back to Play icon
+            // Toggle back to existing SVGs
+            const playIcon = document.getElementById('playIcon');
+            const stopIcon = document.getElementById('stopIcon');
+            if (playIcon) playIcon.classList.remove('icon-hidden');
+            if (stopIcon) stopIcon.classList.add('icon-hidden');
         }
 
         addTraceEntry('system', window.APP_RESOURCES?.AvatarStopped || 'Avatar stopped');

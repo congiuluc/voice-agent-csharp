@@ -12,7 +12,7 @@ import { showToast } from './ui-utils.js';
 const DEFAULT_UI_SETTINGS = {
   language: 'en-US',
   theme: 'dark',
-  visualizerType: 'wave'
+  visualizerType: 'simplex'
 };
 
 const uiSettingsManager = new SettingsManager('uiSettings', DEFAULT_UI_SETTINGS);
@@ -182,7 +182,7 @@ function loadSettings() {
   const visualizerSelect = document.getElementById('visualizerSelect');
   if (visualizerSelect) {
     const uiSettings = uiSettingsManager.getAll();
-    visualizerSelect.value = uiSettings.visualizerType || 'wave';
+    visualizerSelect.value = uiSettings.visualizerType || 'simplex';
   }
 
   console.log('✓ Settings loaded');
@@ -194,7 +194,7 @@ function loadSettings() {
 async function saveSettings() {
   try {
     const selectedTheme = document.getElementById('themeSelect')?.value || 'dark';
-    const selectedVisualizer = document.getElementById('visualizerSelect')?.value || 'wave';
+    const selectedVisualizer = document.getElementById('visualizerSelect')?.value || 'simplex';
     const selectedLanguage = document.getElementById('languageSelect')?.value;
     
     // Save theme and visualizer settings
@@ -261,7 +261,7 @@ export function getUISettings() {
  */
 export function getSavedVisualizerType() {
   const uiSettings = uiSettingsManager.getAll();
-  return uiSettings.visualizerType || 'wave';
+  return uiSettings.visualizerType || 'simplex';
 }
 
 // Initialize when DOM is ready
