@@ -25,6 +25,7 @@
             overflow: hidden;
             box-shadow: 0 0 40px rgba(139, 92, 246, 0.3);
             z-index: 10;
+            transition: all 0.3s ease;
         }
 
         .avatar-video {
@@ -85,6 +86,7 @@
             align-items: center;
             gap: 8px;
             z-index: 30;
+            animation: fadeInUp 0.3s ease-out;
         }
 
         .status-dot {
@@ -92,9 +94,57 @@
             height: 8px;
             border-radius: 50%;
             background: #f39c12;
+            animation: pulse 2s ease-in-out infinite;
         }
-        .status-dot.connected { background: #27ae60; }
-        .status-dot.disconnected { background: #e74c3c; }
+        .status-dot.connected { 
+            background: #27ae60;
+            box-shadow: 0 0 8px rgba(39, 174, 96, 0.6);
+        }
+        .status-dot.disconnected { 
+            background: #e74c3c;
+            animation: none;
+        }
+
+        /* Responsive improvements */
+        @@media (max-width: 1024px) {
+            #avatarContainer {
+                width: 70vw;
+                height: auto;
+                aspect-ratio: 16/9;
+            }
+        }
+
+        @@media (max-width: 768px) {
+            #avatarContainer {
+                width: 90vw;
+                height: auto;
+                aspect-ratio: 16/9;
+            }
+
+            .avatar-status {
+                font-size: 0.7em;
+                padding: 4px 8px;
+            }
+        }
+
+        @@media (max-width: 480px) {
+            #avatarContainer {
+                width: 95vw;
+                height: auto;
+                aspect-ratio: 16/9;
+            }
+
+            .avatar-status {
+                top: 8px;
+                left: 8px;
+                font-size: 0.65em;
+            }
+        }
+
+        /* Hover effect enhancement */
+        #avatarContainer:hover {
+            box-shadow: 0 0 50px rgba(139, 92, 246, 0.5);
+        }
     </style>
 }
 
@@ -103,7 +153,7 @@
     <!-- Main Title -->
     <h1><span class="brand-l">Voice</span> <span class="brand-ia">Avatar</span></h1>
 
-    <partial name="_CommonControls" />
+    <vc:common-controls></vc:common-controls>
 
     <!-- Avatar Container -->
     <div id="avatarContainer">
@@ -129,9 +179,12 @@
         </div>
     </div>
 
-    <partial name="_StartButton" />
-    <partial name="_MuteButton" />
-    <partial name="_ChatControls" />
+<div class="bottom-controls-container">
+            <partial name="_MuteButton" />
+            <partial name="_StartButton" />
+        </div>
+    <partial name="_CommonControls" />
+
     <partial name="_StatusMonitor" />
     <partial name="_LeftPanel" />
     <partial name="_TracePanel" />

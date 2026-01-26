@@ -23,7 +23,7 @@ export { addTraceEntry, clearTraceEntries, toggleTracePanel } from '../managers/
  * @param {number} duration - Display duration in milliseconds (default: 4000)
  * @param {string} title - Optional title for the toast (default: auto-generated)
  */
-export function showToast(message, type = 'info', duration = 4000, title = null) {
+export function showToast(message, type = 'info', title = null, duration = 4000) {
   const container = document.getElementById('toastContainer');
   if (!container) return;
   

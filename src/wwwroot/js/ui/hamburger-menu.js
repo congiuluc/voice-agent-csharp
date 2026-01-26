@@ -70,6 +70,57 @@ export function initHamburgerMenu() {
         lpThemeToggle.addEventListener('click', () => {
             const themeBtn = document.getElementById('themeToggleButton');
             if (themeBtn) themeBtn.click();
+            closeMenu();
+        });
+    }
+
+    // Settings proxy
+    const lpSettingsBtn = document.getElementById('lp_settingsButton');
+    if (lpSettingsBtn) {
+        lpSettingsBtn.addEventListener('click', () => {
+            const settingsBtn = document.getElementById('settingsButton');
+            if (settingsBtn) settingsBtn.click();
+            closeMenu();
+        });
+    }
+
+    // Dashboard proxy
+    const lpDashboardToggle = document.getElementById('lp_dashboardToggle');
+    if (lpDashboardToggle) {
+        lpDashboardToggle.addEventListener('click', () => {
+            const dashboardToggle = document.getElementById('dashboardToggle');
+            if (dashboardToggle) dashboardToggle.click();
+            closeMenu();
+        });
+    }
+
+    // Chat proxy
+    const lpChatToggle = document.getElementById('lp_chatToggle');
+    if (lpChatToggle) {
+        lpChatToggle.addEventListener('click', () => {
+            const chatToggle = document.getElementById('chatToggle');
+            if (chatToggle) chatToggle.click();
+            closeMenu();
+        });
+    }
+
+    // Trace proxy
+    const lpTraceToggle = document.getElementById('lp_traceToggle');
+    if (lpTraceToggle) {
+        lpTraceToggle.addEventListener('click', () => {
+            const traceToggle = document.getElementById('traceToggle');
+            if (traceToggle) traceToggle.click();
+            closeMenu();
+        });
+    }
+
+    // Incoming Call Settings proxy
+    const lpIncomingSettingsBtn = document.getElementById('lp_incomingCallSettingsButton');
+    if (lpIncomingSettingsBtn) {
+        lpIncomingSettingsBtn.addEventListener('click', () => {
+            const incomingSettingsBtn = document.getElementById('incomingCallSettingsButton');
+            if (incomingSettingsBtn) incomingSettingsBtn.click();
+            closeMenu();
         });
     }
 }

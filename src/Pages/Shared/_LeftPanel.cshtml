@@ -1,11 +1,26 @@
 @inject IStringLocalizer<SharedResource> Localizer
+@{
+    var isIndex = ViewContext.RouteData.Values["page"]?.ToString() == "/Index";
+}
 <!-- Left Panel (Slideover) -->
 <nav id="leftPanel" class="left-panel" aria-hidden="true">
     <div class="left-panel-header">
         <h3>@Localizer["Menu"]</h3>
-        <button id="closeLeftPanel" class="close-left-panel" title="@Localizer["CloseMenu"]" aria-label="@Localizer["CloseMenu"]">×</button>
+        <button id="closeLeftPanel" class="close-left-panel" title="@Localizer["CloseMenu"]" aria-label="@Localizer["CloseMenu"]">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+        </button>
     </div>
     <div class="left-panel-body" id="leftPanelBody">
+        @if (!isIndex)
+        {
+            <a href="/" class="lp-btn">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11.5L12 4l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1v-8.5z"/></svg>
+                <span>@Localizer["Home"]</span>
+            </a>
+        }
         <button class="lp-btn" id="lp_themeToggle">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"></circle><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
             <span>@Localizer["ChangeTheme"]</span>
@@ -14,9 +29,35 @@
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19.14 12.94c.04-.31.06-.63.06-.94s-.02-.64-.06-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.11-.2-.36-.28-.57-.2l-2.39.96c-.5-.38-1.04-.7-1.64-.94l-.36-1.95c-.05-.21-.25-.36-.47-.36h-3.98c-.22 0-.42.15-.47.36l-.36 1.95c-.6.24-1.14.56-1.64.94l-2.39-.96c-.21-.08-.46 0-.57.2L2.71 8.88c-.11.2-.06.47.12.61l2.03 1.58c-.04.3-.06.61-.06.94s.02.64.06.94L2.83 14.5c-.18.14-.23.41-.12.61l1.92 3.32c.11.2.36.28.57.2l2.39-.96c.5.38 1.04.7 1.64.94l.36 1.95c.05.21.25.36.47.36h3.98c.22 0 .42-.15.47-.36l.36-1.95c.6-.24 1.14-.56 1.64-.94l2.39.96c.21.08.46 0 .57-.2l1.92-3.32c.11-.2.06-.47-.12-.61l-2.03-1.58z"></path><circle cx="12" cy="12" r="3"></circle></svg>
             <span>@Localizer["Settings"]</span>
         </button>
+        @if (isIndex)
+        {
+            <button class="lp-btn" id="lp_incomingCallSettingsButton">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+                <span>@Localizer["IncomingCallSettings"]</span>
+            </button>
+            <a href="/IncomingCall" class="lp-btn" id="lp_incomingCallMonitoringButton">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+                <span>Incoming Call Monitoring</span>
+            </a>
+        }
+        else
+        {
+            <button class="lp-btn" id="lp_chatToggle">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                <span>@Localizer["ToggleChat"]</span>
+            </button>
+            <button class="lp-btn" id="lp_traceToggle">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 3h18v18H3z" stroke="currentColor" stroke-width="2" fill="none" /><path d="M7 8h10M7 12h10M7 16h6" stroke="currentColor" stroke-width="2" stroke-linecap="round" /></svg>
+                <span>@Localizer["ToggleTranscript"]</span>
+            </button>
+            <button class="lp-btn" id="lp_dashboardToggle">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 16l4-4 4 4 5-6"/></svg>
+                <span>@Localizer["ToggleConsumptionDashboard"]</span>
+            </button>
+        }
         @if (User.IsInRole("Admin"))
         {
-            <a href="/Admin/CallMonitoring" class="lp-btn">
+            <a href="/Admin/CallMonitoring" class="lp-btn" target="_blank">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
                 <span>@Localizer["CallMonitoringDashboard"]</span>
             </a>

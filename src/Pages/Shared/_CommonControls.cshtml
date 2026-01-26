@@ -21,31 +21,89 @@
     </a>
 }
 
-<!-- Theme toggle button -->
-<button id="themeToggleButton" title="@Localizer["ToggleTheme"]" aria-label="@Localizer["ChangeTheme"]" class="theme-toggle-btn">
-    <svg id="sunIcon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <circle cx="12" cy="12" r="5"></circle>
-        <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
-    </svg>
-    <svg id="moonIcon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
-    </svg>
-</button>
+<!-- Right Menu Container -->
+<div class="right-menu-container">
+    <!-- Theme toggle button -->
+    <button id="themeToggleButton" title="@Localizer["ToggleTheme"]" aria-label="@Localizer["ChangeTheme"]" class="theme-toggle-btn">
+        <svg id="sunIcon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="5"></circle>
+            <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+        </svg>
+        <svg id="moonIcon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+        </svg>
+    </button>
 
-<!-- Logout button -->
-<a href="/Logout" class="logout-btn" title="@Localizer["Logout"]" aria-label="@Localizer["Logout"]">
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" stroke-linecap="round" stroke-linejoin="round"></path>
-        <polyline points="16 17 21 12 16 7" stroke-linecap="round" stroke-linejoin="round"></polyline>
-        <line x1="21" y1="12" x2="9" y2="12" stroke-linecap="round" stroke-linejoin="round"></line>
-    </svg>
-</a>
+ 
 
-<!-- Settings button -->
-<button id="settingsButton" class="settings-btn" title="@Localizer["Settings"]" aria-label="@Localizer["Settings"]">
-    <!-- Gear / settings icon -->
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
-        <path d="M19.14 12.94c.04-.31.06-.63.06-.94s-.02-.64-.06-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.11-.2-.36-.28-.57-.2l-2.39.96c-.5-.38-1.04-.7-1.64-.94l-.36-1.95c-.05-.21-.25-.36-.47-.36h-3.98c-.22 0-.42.15-.47.36l-.36 1.95c-.6.24-1.14.56-1.64.94l-2.39-.96c-.21-.08-.46 0-.57.2L2.71 8.88c-.11.2-.06.47.12.61l2.03 1.58c-.04.3-.06.61-.06.94s.02.64.06.94L2.83 14.5c-.18.14-.23.41-.12.61l1.92 3.32c.11.2.36.28.57.2l2.39-.96c.5.38 1.04.7 1.64.94l.36 1.95c.05.21.25.36.47.36h3.98c.22 0 .42-.15.47-.36l.36-1.95c.6-.24 1.14-.56 1.64-.94l2.39.96c.21.08.46 0 .57-.2l1.92-3.32c.11-.2.06-.47-.12-.61l-2.03-1.58z"></path>
-        <circle cx="12" cy="12" r="3"></circle>
-    </svg>
-</button>
+    <!-- Logout button -->
+    <a href="/Logout" class="logout-btn" title="@Localizer["Logout"]" aria-label="@Localizer["Logout"]">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" stroke-linecap="round" stroke-linejoin="round"></path>
+            <polyline points="16 17 21 12 16 7" stroke-linecap="round" stroke-linejoin="round"></polyline>
+            <line x1="21" y1="12" x2="9" y2="12" stroke-linecap="round" stroke-linejoin="round"></line>
+        </svg>
+    </a>
+
+    <!-- Settings button -->
+    <button id="settingsButton" class="settings-btn" title="@Localizer["Settings"]" aria-label="@Localizer["Settings"]">
+        <!-- Gear / settings icon -->
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+            <path d="M19.14 12.94c.04-.31.06-.63.06-.94s-.02-.64-.06-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.11-.2-.36-.28-.57-.2l-2.39.96c-.5-.38-1.04-.7-1.64-.94l-.36-1.95c-.05-.21-.25-.36-.47-.36h-3.98c-.22 0-.42.15-.47.36l-.36 1.95c-.6.24-1.14.56-1.64.94l-2.39-.96c-.21-.08-.46 0-.57.2L2.71 8.88c-.11.2-.06.47.12.61l2.03 1.58c-.04.3-.06.61-.06.94s.02.64.06.94L2.83 14.5c-.18.14-.23.41-.12.61l1.92 3.32c.11.2.36.28.57.2l2.39-.96c.5.38 1.04.7 1.64.94l.36 1.95c.05.21.25.36.47.36h3.98c.22 0 .42-.15.47-.36l.36-1.95c.6-.24 1.14-.56 1.64-.94l2.39.96c.21.08.46 0 .57-.2l1.92-3.32c.11-.2.06-.47-.12-.61l-2.03-1.58z"></path>
+            <circle cx="12" cy="12" r="3"></circle>
+        </svg>
+    </button>
+
+    @if (isIndex)
+    {
+        <!-- Incoming Call Settings button -->
+        <button id="incomingCallSettingsButton" class="incoming-settings-btn" title="@Localizer["IncomingCallSettings"]" aria-label="@Localizer["IncomingCallSettings"]">
+            <!-- Phone / call icon -->
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+            </svg>
+        </button>
+
+        <!-- Incoming Call Monitoring button -->
+        <a href="/IncomingCall" id="incomingCallMonitoringButton" class="monitoring-btn" title="Incoming Call Monitoring" aria-label="Incoming Call Monitoring">
+            <!-- Activity / monitor icon -->
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+            </svg>
+        </a>
+    }
+    else
+    {
+        <!-- Chat Toggle Button (not on Index) -->
+        <button id="chatToggle" class="chat-toggle" title="@Localizer["ToggleChat"]" aria-label="@Localizer["ToggleChat"]">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+            </svg>
+        </button>
+
+        <!-- Trace Toggle Button (not on Index) -->
+        <button id="traceToggle" class="trace-toggle-btn" title="@Localizer["ToggleTranscript"]" aria-label="@Localizer["ToggleTranscript"]">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M3 3h18v18H3z" stroke="currentColor" stroke-width="2" fill="none" />
+                <path d="M7 8h10M7 12h10M7 16h6" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+            </svg>
+            <span class="trace-badge" id="traceBadge">0</span>
+        </button>
+
+        <!-- Dashboard Toggle Button -->
+        <button id="dashboardToggle" class="dashboard-toggle-btn" title="@Localizer["ToggleConsumptionDashboard"]" aria-label="@Localizer["ToggleConsumptionDashboard"]">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M3 3v18h18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M7 16l4-4 4 4 5-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <span class="dashboard-badge" id="tokenBadge">0</span>
+        </button>
+    }
+    @if (User.IsInRole("Admin"))
+    {
+        <!-- Admin Dashboard Button -->
+        <a href="/Admin/CallMonitoring" class="admin-btn" title="@Localizer["CallMonitoringDashboard"]" aria-label="@Localizer["CallMonitoringDashboard"]" target="_blank">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+        </a>
+    }
+</div>

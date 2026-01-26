@@ -14,6 +14,11 @@ public interface IVoiceSession : IAsyncDisposable
     string SessionType { get; }
 
     /// <summary>
+    /// Gets the unique session identifier.
+    /// </summary>
+    string SessionId { get; }
+
+    /// <summary>
     /// Starts the voice session with the configured parameters.
     /// </summary>
     Task StartAsync(CancellationToken cancellationToken = default);

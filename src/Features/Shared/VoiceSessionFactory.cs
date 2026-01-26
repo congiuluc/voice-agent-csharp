@@ -84,6 +84,12 @@ public class VoiceSessionFactory
         // Create and start the ACS session
         var httpClient = _httpClientFactory.CreateClient();
         var session = new VoiceAcsSession(client, config, callConnection, _logger, httpClient);
+        
+        // Register session for monitoring
+        var sessionId = callConnection.CallConnectionId;
+        _monitoringService.LogSessionCreated("PSTN-User", "IncomingCall", sessionId, config.Model ?? "gpt-4o");
+        session.SetMonitoring(_monitoringService, sessionId);
+
         await session.StartAsync().ConfigureAwait(false);
         return session;
     }

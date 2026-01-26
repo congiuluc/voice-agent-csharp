@@ -18,6 +18,7 @@ public class VoiceMediaHandler
     private readonly ILogger<VoiceMediaHandler> _logger;
     private readonly IConfiguration _configuration;
     private readonly VoiceSessionFactory _sessionFactory;
+    private readonly VoiceAgentCSharp.Features.Monitoring.CallMonitoringService _monitoringService;
     private WebSocket? _clientWebSocket;
     private IVoiceSession? _voiceSession;
     private VoiceAvatarSession? _avatarSession;
@@ -64,11 +65,17 @@ public class VoiceMediaHandler
     /// <param name="configuration">Application configuration.</param>
     /// <param name="logger">Logger instance.</param>
     /// <param name="sessionFactory">Factory for creating voice sessions.</param>
-    public VoiceMediaHandler(IConfiguration configuration, ILogger<VoiceMediaHandler> logger, VoiceSessionFactory sessionFactory)
+    /// <param name="monitoringService">Monitoring service for tracking sessions.</param>
+    public VoiceMediaHandler(
+        IConfiguration configuration, 
+        ILogger<VoiceMediaHandler> logger, 
+        VoiceSessionFactory sessionFactory,
+        VoiceAgentCSharp.Features.Monitoring.CallMonitoringService monitoringService)
     {
         _configuration = configuration;
         _logger = logger;
         _sessionFactory = sessionFactory ?? throw new ArgumentNullException(nameof(sessionFactory));
+        _monitoringService = monitoringService ?? throw new ArgumentNullException(nameof(monitoringService));
     }
 
     #endregion
@@ -86,14 +93,42 @@ public class VoiceMediaHandler
 
         _logger.LogInformation("Initializing Voice WebSocket handler. RawAudio={IsRaw}", _isRawAudio);
 
-        _clientProvidedModelInstructions = _configuration["AzureVoiceLive:CallInstructions"] ?? "You are a helpful virtual assistant.";
-        
+        // Load incoming call settings from configuration
+        var section = _configuration.GetSection("IncomingCall");
+        if (section.Exists())
+        {
+            _clientProvidedLocale = section["Locale"] ?? _clientProvidedLocale;
+            _clientProvidedVoice = section["Voice"] ?? _clientProvidedVoice;
+            _clientProvidedModelInstructions = section["Instructions"] ?? _clientProvidedModelInstructions;
+            _clientProvidedWelcomeMessage = section["WelcomeMessage"] ?? _clientProvidedWelcomeMessage;
+            _clientProvidedFoundryProjectName = section["FoundryProjectName"] ?? _clientProvidedFoundryProjectName;
+            _clientProvidedFoundryAgentId = section["FoundryAssistantId"] ?? _clientProvidedFoundryAgentId;
+        }
+
+        // Environment variables override configuration
+        var envLocale = Environment.GetEnvironmentVariable("INCOMING_CALL_LOCALE");
+        if (!string.IsNullOrWhiteSpace(envLocale)) _clientProvidedLocale = envLocale;
+
+        var envVoice = Environment.GetEnvironmentVariable("INCOMING_CALL_VOICE");
+        if (!string.IsNullOrWhiteSpace(envVoice)) _clientProvidedVoice = envVoice;
+
+        var envInstructions = Environment.GetEnvironmentVariable("INCOMING_CALL_INSTRUCTIONS");
+        if (!string.IsNullOrWhiteSpace(envInstructions)) _clientProvidedModelInstructions = envInstructions;
+
+        var envWelcome = Environment.GetEnvironmentVariable("INCOMING_CALL_WELCOME_MESSAGE");
+        if (!string.IsNullOrWhiteSpace(envWelcome)) _clientProvidedWelcomeMessage = envWelcome;
+
+        var envProject = Environment.GetEnvironmentVariable("INCOMING_CALL_FOUNDRY_PROJECT_NAME");
+        if (!string.IsNullOrWhiteSpace(envProject)) _clientProvidedFoundryProjectName = envProject;
+
+        var envAssistant = Environment.GetEnvironmentVariable("INCOMING_CALL_FOUNDRY_ASSISTANT_ID");
+        if (!string.IsNullOrWhiteSpace(envAssistant)) _clientProvidedFoundryAgentId = envAssistant;
+
         await InitializeVoiceLiveConnectionAsync();
         var session = _voiceSession;
-        if (session != null)
+        if (session != null && !string.IsNullOrEmpty(_clientProvidedWelcomeMessage))
         {
-            var initCallMessage = _configuration["AzureVoiceLive:CallInitMessage"]??"Hello";
-            await session.SendTextAsync(initCallMessage).ConfigureAwait(false);
+            await session.SendTextAsync(_clientProvidedWelcomeMessage).ConfigureAwait(false);
         }
         await ReceiveMessagesAsync(ProcessVoiceMessageAsync);
     }
@@ -260,21 +295,31 @@ public class VoiceMediaHandler
             ? _clientProvidedModel
             : _configuration["AzureVoiceLive:Model"] ?? "gpt-4o";
 
+        var section = _configuration.GetSection("VoiceAvatar");
+
         var avatarCharacter = !string.IsNullOrWhiteSpace(_clientProvidedAvatarCharacter)
             ? _clientProvidedAvatarCharacter
-            : _configuration["AzureVoiceLive:AvatarCharacter"] ?? "lisa";
+            : section["Character"] ?? "lisa";
 
         var avatarStyle = !string.IsNullOrWhiteSpace(_clientProvidedAvatarStyle)
             ? _clientProvidedAvatarStyle
-            : _configuration["AzureVoiceLive:AvatarStyle"] ?? "casual-sitting";
+            : section["Style"] ?? "casual-sitting";
 
         var voice = !string.IsNullOrWhiteSpace(_clientProvidedVoice)
             ? _clientProvidedVoice
-            : _configuration["AzureVoiceLive:Voice"] ?? "en-US-AvaNeural";
+            : section["Voice"] ?? "en-US-AvaNeural";
 
         var locale = !string.IsNullOrWhiteSpace(_clientProvidedLocale)
             ? _clientProvidedLocale
-            : _configuration["AzureVoiceLive:Locale"] ?? "en-US";
+            : section["Locale"] ?? "en-US";
+
+        var instructions = !string.IsNullOrWhiteSpace(_clientProvidedModelInstructions)
+            ? _clientProvidedModelInstructions
+            : section["Instructions"] ?? "You are a helpful virtual assistant.";
+
+        var welcomeMessage = !string.IsNullOrWhiteSpace(_clientProvidedWelcomeMessage)
+            ? _clientProvidedWelcomeMessage
+            : section["WelcomeMessage"] ?? "Hello";
 
         _logger.LogInformation(
             "Creating Avatar session: Endpoint={Endpoint}, Model={Model}, Character={Character}, Style={Style}, Voice={Voice}, Locale={Locale}",
@@ -291,8 +336,8 @@ public class VoiceMediaHandler
                 Model = model,
                 ModelId = model,
                 Voice = voice,
-                WelcomeMessage = _clientProvidedWelcomeMessage,
-                ModelInstructions = _clientProvidedModelInstructions,
+                WelcomeMessage = welcomeMessage,
+                ModelInstructions = instructions,
                 Locale = locale,
                 AvatarCharacter = avatarCharacter,
                 AvatarStyle = avatarStyle,
@@ -454,16 +499,26 @@ public class VoiceMediaHandler
             ? _clientProvidedModel
             : _configuration["AzureVoiceLive:Model"] ?? "gpt-4o";
 
+        // Determine session type based on whether Foundry Agent parameters are provided
+        var sessionType = !string.IsNullOrWhiteSpace(_clientProvidedFoundryAgentId) ? "Agent" : "Assistant";
+        var sectionName = sessionType == "Agent" ? "VoiceAgent" : "VoiceAssistant";
+        var section = _configuration.GetSection(sectionName);
+
         var voice = !string.IsNullOrWhiteSpace(_clientProvidedVoice)
             ? _clientProvidedVoice
-            : _configuration["AzureVoiceLive:Voice"] ?? "en-US-AvaNeural";
+            : section["Voice"] ?? "en-US-AvaNeural";
 
         var locale = !string.IsNullOrWhiteSpace(_clientProvidedLocale)
             ? _clientProvidedLocale
-            : _configuration["AzureVoiceLive:Locale"] ?? "en-US";
+            : section["Locale"] ?? "en-US";
 
-        // Determine session type based on whether Foundry Agent parameters are provided
-        var sessionType = !string.IsNullOrWhiteSpace(_clientProvidedFoundryAgentId) ? "Agent" : "Assistant";
+        var instructions = !string.IsNullOrWhiteSpace(_clientProvidedModelInstructions)
+            ? _clientProvidedModelInstructions
+            : section["Instructions"] ?? "You are a helpful virtual assistant.";
+
+        var welcomeMessage = !string.IsNullOrWhiteSpace(_clientProvidedWelcomeMessage)
+            ? _clientProvidedWelcomeMessage
+            : section["WelcomeMessage"] ?? "Hello";
 
         _logger.LogInformation(
             "Creating Voice {SessionType} session: Endpoint={Endpoint}, Model={Model}, Voice={Voice}, Locale={Locale}",
@@ -484,8 +539,8 @@ public class VoiceMediaHandler
                 Model = model,
                 ModelId = model,
                 Voice = voice,
-                WelcomeMessage = _clientProvidedWelcomeMessage,
-                ModelInstructions = _clientProvidedModelInstructions,
+                WelcomeMessage = welcomeMessage,
+                ModelInstructions = instructions,
                 Locale = locale,
                 FoundryAgentId = _clientProvidedFoundryAgentId,
                 FoundryProjectName = _clientProvidedFoundryProjectName,
@@ -666,7 +721,7 @@ public class VoiceMediaHandler
     /// Voice Live endpoint/apiKey before initializing the session. This will time out after 3s
     /// and fall back to server configuration. For incoming calls (ACS), timeout is expected behavior.
     /// </summary>
-    private async Task WaitForInitialConfigAsync(int timeoutMs = 3000)
+    private async Task WaitForInitialConfigAsync(int timeoutMs = 2000)
     {
         if (_clientWebSocket == null) return;
 

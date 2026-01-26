@@ -70,6 +70,18 @@
   <data name="VoiceAvatar">
     <value>Avatar Vocale</value>
   </data>
+  <data name="IncomingCallSettings">
+    <value>Impostazioni Chiamata in Entrata</value>
+  </data>
+  <data name="AzureVoice">
+    <value>Voce Azure</value>
+  </data>
+  <data name="FoundryProjectName">
+    <value>Nome Progetto Foundry</value>
+  </data>
+  <data name="FoundryAssistantId">
+    <value>ID Assistente Foundry</value>
+  </data>
   <data name="Settings">
     <value>Impostazioni</value>
   </data>
@@ -135,6 +147,15 @@
   </data>
   <data name="IncomingCallSettings">
     <value>Impostazioni Chiamate in Arrivo</value>
+  </data>
+  <data name="AzureVoice">
+    <value>Azure Voice</value>
+  </data>
+  <data name="FoundryProjectName">
+    <value>Foundry Project Name</value>
+  </data>
+  <data name="FoundryAssistantId">
+    <value>Foundry Assistant ID</value>
   </data>
   <data name="EnableIncomingCalls">
     <value>Abilita Chiamate in Arrivo</value>

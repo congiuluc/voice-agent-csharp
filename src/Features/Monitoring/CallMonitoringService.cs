@@ -52,6 +52,11 @@ public class CallMonitoringService
     // Track models used by any session (active or completed)
     private readonly ConcurrentDictionary<string, byte> _usedModels = new();
 
+    /// <summary>
+    /// Event raised when a new transcript entry is added to a session.
+    /// </summary>
+    public event Action<string, TranscriptEntry>? OnTranscriptAdded;
+
     public CallMonitoringService(
         TelemetryClient telemetryClient,
         PricingService pricingService,
@@ -202,6 +207,27 @@ public class CallMonitoringService
 
         _logger.LogInformation("Session created: {SessionId}, User: {UserId}, Type: {CallType}, Model: {Model}",
             sessionId, userId, callType, model);
+    }
+
+    /// <summary>
+    /// Adds a transcript entry to an active session.
+    /// </summary>
+    /// <param name="sessionId">The session ID.</param>
+    /// <param name="role">The role (user or assistant).</param>
+    /// <param name="text">The transcript text.</param>
+    public void AddTranscript(string sessionId, string role, string text)
+    {
+        if (_activeSessions.TryGetValue(sessionId, out var session))
+        {
+            var entry = new TranscriptEntry
+            {
+                Role = role,
+                Text = text,
+                Timestamp = DateTime.UtcNow
+            };
+            session.Transcripts.Add(entry);
+            OnTranscriptAdded?.Invoke(sessionId, entry);
+        }
     }
 
     /// <summary>

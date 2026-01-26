@@ -41,6 +41,8 @@ public abstract class VoiceSessionBase : IVoiceSession
 
     public abstract string SessionType { get; }
 
+    public string SessionId => _sessionId ?? string.Empty;
+
     #endregion
 
     #region Constructor
@@ -254,6 +256,11 @@ public abstract class VoiceSessionBase : IVoiceSession
             {
                 await OnTranscription(text).ConfigureAwait(false);
             }
+
+            if (!string.IsNullOrEmpty(text) && _monitoringService != null && _sessionId != null)
+            {
+                _monitoringService.AddTranscript(_sessionId, "assistant", text);
+            }
         }
         catch (Exception ex)
         {
@@ -271,6 +278,11 @@ public abstract class VoiceSessionBase : IVoiceSession
             if (OnUserTranscription != null)
             {
                 await OnUserTranscription(text).ConfigureAwait(false);
+            }
+
+            if (!string.IsNullOrEmpty(text) && _monitoringService != null && _sessionId != null)
+            {
+                _monitoringService.AddTranscript(_sessionId, "user", text);
             }
         }
         catch (Exception ex)

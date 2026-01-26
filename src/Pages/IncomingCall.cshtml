@@ -1,0 +1,406 @@
+@page
+@model VoiceAgentCSharp.Pages.IncomingCallModel
+@using Microsoft.AspNetCore.Mvc.Localization
+@inject IViewLocalizer Localizer
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = Localizer["CallMonitoring"];
+    var currentCulture = CultureInfo.CurrentCulture.Name;
+}
+
+<vc:common-controls></vc:common-controls>
+
+<div class="monitoring-container">
+    <header class="monitoring-header">
+        <h1>@ViewData["Title"]</h1>
+        <p class="subtitle">Real-time view of active incoming calls and transcripts</p>
+    </header>
+
+<div id="sessionsList" class="sessions-grid">
+        @if (!Model.ActiveSessions.Any())
+        {
+            <div class="no-sessions">
+                <p>No active calls at the moment.</p>
+            </div>
+        }
+        @foreach (var session in Model.ActiveSessions)
+        {
+            <div class="session-card" id="session-@session.SessionId">
+                <div class="session-header">
+                    <span class="session-id">ID: @session.SessionId</span>
+                    <span class="session-type">@session.CallType</span>
+                    <span class="session-status status-active">●  Active</span>
+                </div>
+                <div class="session-info">
+                    <p><strong>User:</strong> @session.UserId</p>
+                    <p><strong>Model:</strong> @session.Model</p>
+                    <p><strong>Started:</strong> @session.StartTime?.ToString("HH:mm:ss")</p>
+                </div>
+                <div class="transcript-container" id="transcript-@session.SessionId">
+                    @foreach (var entry in session.Transcripts)
+                    {
+                        <div class="transcript-entry @entry.Role">
+                            <span class="role">@(entry.Role == "user" ? "User" : "Assistant"):</span>
+                            <span class="text">@entry.Text</span>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@section Scripts {
+    <script type="module">
+        import { showToast } from '/js/ui/ui-utils.js';
+
+        const sessionsList = document.getElementById('sessionsList');
+        const eventSource = new EventSource('/api/CallMonitoring/stream-transcripts');
+
+        // Helper function to create skeleton loader
+        function createSkeletonLoader() {
+            return `
+                <div class="session-card skeleton-card">
+                    <div class="skeleton-header">
+                        <div class="skeleton-text" style="width: 120px;"></div>
+                        <div class="skeleton-text" style="width: 100px;"></div>
+                        <div class="skeleton-text" style="width: 80px;"></div>
+                    </div>
+                    <div class="skeleton-text" style="height: 60px; margin-bottom: var(--spacing-md);"></div>
+                    <div class="skeleton-transcript"></div>
+                </div>
+            `;
+        }
+
+        // Helper function to auto-scroll transcript to bottom smoothly
+        function scrollTranscriptToBottom(transcriptContainer) {
+            requestAnimationFrame(() => {
+                transcriptContainer.scrollTop = transcriptContainer.scrollHeight;
+            });
+        }
+
+        eventSource.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            const { sessionId, entry } = data;
+            
+            let sessionCard = document.getElementById(`session-${sessionId}`);
+            if (!sessionCard) {
+                console.log(`New transcript for unknown session: ${sessionId}`);
+                return;
+            }
+
+            const transcriptContainer = document.getElementById(`transcript-${sessionId}`);
+            if (transcriptContainer) {
+                const entryDiv = document.createElement('div');
+                entryDiv.className = `transcript-entry ${entry.role}`;
+                
+                const roleSpan = document.createElement('span');
+                roleSpan.className = 'role';
+                roleSpan.textContent = (entry.role === 'user' ? 'User' : 'Assistant') + ': ';
+                
+                const textSpan = document.createElement('span');
+                textSpan.className = 'text';
+                textSpan.textContent = entry.text;
+                
+                entryDiv.appendChild(roleSpan);
+                entryDiv.appendChild(textSpan);
+                transcriptContainer.appendChild(entryDiv);
+                
+                // Auto-scroll to bottom with smooth behavior
+                scrollTranscriptToBottom(transcriptContainer);
+            }
+        };
+
+        eventSource.onerror = (error) => {
+            console.error('EventSource failed:', error);
+        };
+
+        // Periodically refresh active sessions to catch new ones
+        setInterval(async () => {
+            try {
+                const response = await fetch('/api/CallMonitoring/active-sessions');
+                const sessions = await response.json();
+                
+                // Remove sessions that are no longer active
+                const currentCards = document.querySelectorAll('.session-card:not(.skeleton-card)');
+                currentCards.forEach(card => {
+                    const id = card.id.replace('session-', '');
+                    if (!sessions.find(s => s.sessionId === id)) {
+                        // Fade out animation before removal
+                        card.style.animation = 'fadeInUp 0.3s ease-out reverse';
+                        setTimeout(() => card.remove(), 300);
+                    }
+                });
+
+                // Add new sessions
+                sessions.forEach(session => {
+                    if (!document.getElementById(`session-${session.sessionId}`)) {
+                        location.reload();
+                    }
+                });
+
+                if (sessions.length > 0 && document.querySelector('.no-sessions')) {
+                    document.querySelector('.no-sessions').remove();
+                } else if (sessions.length === 0 && !document.querySelector('.no-sessions')) {
+                    sessionsList.innerHTML = '<div class="no-sessions"><p>No active calls at the moment.</p></div>';
+                }
+            } catch (err) {
+                console.error('Error fetching active sessions:', err);
+            }
+        }, 5000);
+    </script>
+}
+
+<style>
+    .monitoring-container {
+        padding: var(--spacing-xl);
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+
+    .monitoring-header {
+        margin-bottom: var(--spacing-xl);
+        text-align: center;
+    }
+
+    .sessions-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(450px, 1fr));
+        gap: var(--spacing-lg);
+    }
+
+    .session-card {
+        background: var(--theme-glass-bg);
+        border: 1px solid var(--theme-glass-border);
+        border-radius: var(--radius-lg);
+        padding: var(--spacing-lg);
+        display: flex;
+        flex-direction: column;
+        max-height: 600px;
+        -webkit-backdrop-filter: var(--theme-glass-blur);
+        backdrop-filter: var(--theme-glass-blur);
+        animation: fadeInUp 0.5s ease-out;
+        transition: all 0.3s ease;
+    }
+
+    .session-card:hover {
+        border-color: var(--theme-primary);
+        box-shadow: 0 8px 24px rgba(0, 212, 255, 0.15);
+        transform: translateY(-2px);
+    }
+
+    .session-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: var(--spacing-md);
+        padding-bottom: var(--spacing-sm);
+        border-bottom: 1px solid var(--theme-glass-border);
+    }
+
+    .session-id {
+        font-family: monospace;
+        font-size: 0.9rem;
+        opacity: 0.8;
+    }
+
+    .session-status {
+        font-size: 0.8rem;
+        padding: 6px 12px;
+        border-radius: 12px;
+        font-weight: bold;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        animation: pulse 2s ease-in-out infinite;
+    }
+
+    .status-active {
+        background: rgba(34, 197, 94, 0.8);
+        color: white;
+        box-shadow: 0 0 12px rgba(34, 197, 94, 0.5);
+        position: relative;
+    }
+
+    .status-active::before {
+        content: '';
+        display: inline-block;
+        width: 6px;
+        height: 6px;
+        background: #22c55e;
+        border-radius: 50%;
+        animation: pulse 2s ease-in-out infinite;
+    }
+
+    .session-info {
+        margin-bottom: var(--spacing-md);
+        font-size: 0.9rem;
+    }
+
+    .session-info p {
+        margin: 4px 0;
+    }
+
+    .transcript-container {
+        scroll-behavior: smooth;
+    }
+
+    .transcript-container::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .transcript-container::-webkit-scrollbar-track {
+        background: rgba(0, 212, 255, 0.1);
+        border-radius: 3px;
+    }
+
+    .transcript-container::-webkit-scrollbar-thumb {
+        background: rgba(0, 212, 255, 0.3);
+        animation: fadeInUp 0.3s ease-out;
+        line-height: 1.4;
+        border-radius: 3px;
+    }
+
+    .transcript-container::-webkit-scrollbar-thumb:hover {
+        background: rgba(0, 212, 255, 0.5);
+        flex-grow: 1;
+        overflow-y: auto;
+        background: rgba(0, 0, 0, 0.2);
+        border-radius: var(--radius-md);
+        padding: var(--spacing-md);
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-sm);
+    }
+
+    .transcript-entry {
+        padding: var(--spacing-sm);
+        border-radius: var(--radius-sm);
+        max-width: 90%;
+    }
+
+    .transcript-entry.user {
+        align-self: flex-end;
+        background: var(--primary-color);
+        color: white;
+    /* Skeleton Loading Styles */
+    .skeleton-loader {
+        background: linear-gradient(
+            90deg,
+            rgba(0, 212, 255, 0.1) 0%,
+            rgba(0, 212, 255, 0.2) 50%,
+            rgba(0, 212, 255, 0.1) 100%
+        );
+        background-size: 200% 100%;
+        animation: shimmer 2s infinite;
+        border-radius: var(--radius-sm);
+        min-height: 20px;
+    }
+
+    .skeleton-card {
+        animation: fadeInUp 0.5s ease-out;
+    }
+
+    .skeleton-header {
+        display: flex;
+        gap: var(--spacing-sm);
+        margin-bottom: var(--spacing-md);
+    }
+
+    .skeleton-text {
+        height: 20px;
+        border-radius: 4px;
+        background: linear-gradient(
+            90deg,
+            rgba(0, 212, 255, 0.1) 0%,
+            rgba(0, 212, 255, 0.2) 50%,
+            rgba(0, 212, 255, 0.1) 100%
+        );
+        background-size: 200% 100%;
+        animation: shimmer 2s infinite;
+        flex: 1;
+    }
+
+    .skeleton-transcript {
+        flex: 1;
+        border-radius: 4px;
+        background: linear-gradient(
+            90deg,
+            rgba(0, 212, 255, 0.1) 0%,
+            rgba(0, 212, 255, 0.2) 50%,
+            rgba(0, 212, 255, 0.1) 100%
+        );
+        background-size: 200% 100%;
+        animation: shimmer 2s infinite;
+        min-height: 200px;
+    }
+
+    /* Micro-interactions for interactive elements */
+    .session-header {
+        transition: all 0.2s ease;
+    }
+
+    .session-id,
+    .session-type {
+        transition: color 0.2s ease;
+    }
+
+    .session-card:hover .session-id,
+    .session-card:hover .session-type {
+        color: var(--theme-primary);
+    }
+
+    /* Enhanced responsiveness for monitoring layout */
+    @@media (max-width: 1200px) {
+        .sessions-grid {
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+        }
+    }
+
+    @@media (max-width: 768px) {
+        .sessions-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .session-card {
+            max-height: none;
+        }
+
+        .transcript-container {
+            max-height: 300px;
+        }
+    }
+
+    }
+
+    .transcript-entry.assistant {
+        align-self: flex-start;
+        background: rgba(255, 255, 255, 0.1);
+    }
+
+    .role {
+        font-weight: bold;
+        font-size: 0.8rem;
+        display: block;
+        margin-bottom: 2px;
+    }
+
+    .no-sessions {
+        grid-column: 1 / -1;
+        text-align: center;
+        padding: var(--spacing-xl);
+        opacity: 0.6;
+    }
+
+    body.light-mode .session-card {
+        background: rgba(255, 255, 255, 0.8);
+    }
+
+    body.light-mode .transcript-container {
+        background: rgba(0, 0, 0, 0.05);
+    }
+
+    body.light-mode .transcript-entry.assistant {
+        background: rgba(0, 0, 0, 0.1);
+    }
+</style>

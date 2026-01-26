@@ -13,6 +13,60 @@
       },
       "appExists": {
         "value": "${SERVICE_APP_RESOURCE_EXISTS=false}"
+      },
+      "voiceAssistantLocale": {
+        "value": "${VOICE_ASSISTANT_LOCALE=en-US}"
+      },
+      "voiceAssistantVoice": {
+        "value": "${VOICE_ASSISTANT_VOICE=en-US-AvaNeural}"
+      },
+      "voiceAssistantInstructions": {
+        "value": "${VOICE_ASSISTANT_INSTRUCTIONS=You are a helpful virtual assistant, your name is Ava, when starting a conversation present yourself as Ava and ask how you can assist.}"
+      },
+      "voiceAssistantWelcomeMessage": {
+        "value": "${VOICE_ASSISTANT_WELCOME_MESSAGE=Hello}"
+      },
+      "voiceAgentLocale": {
+        "value": "${VOICE_AGENT_LOCALE=en-US}"
+      },
+      "voiceAgentVoice": {
+        "value": "${VOICE_AGENT_VOICE=en-US-AvaNeural}"
+      },
+      "voiceAgentInstructions": {
+        "value": "${VOICE_AGENT_INSTRUCTIONS=You are a helpful virtual assistant.}"
+      },
+      "voiceAgentWelcomeMessage": {
+        "value": "${VOICE_AGENT_WELCOME_MESSAGE=Hello}"
+      },
+      "voiceAvatarLocale": {
+        "value": "${VOICE_AVATAR_LOCALE=en-US}"
+      },
+      "voiceAvatarVoice": {
+        "value": "${VOICE_AVATAR_VOICE=en-US-AvaNeural}"
+      },
+      "voiceAvatarCharacter": {
+        "value": "${VOICE_AVATAR_CHARACTER=lisa}"
+      },
+      "voiceAvatarStyle": {
+        "value": "${VOICE_AVATAR_STYLE=casual-sitting}"
+      },
+      "voiceAvatarInstructions": {
+        "value": "${VOICE_AVATAR_INSTRUCTIONS=You are a helpful virtual assistant.}"
+      },
+      "voiceAvatarWelcomeMessage": {
+        "value": "${VOICE_AVATAR_WELCOME_MESSAGE=Hello}"
+      },
+      "incomingCallLocale": {
+        "value": "${INCOMING_CALL_LOCALE=en-US}"
+      },
+      "incomingCallVoice": {
+        "value": "${INCOMING_CALL_VOICE=en-US-AvaNeural}"
+      },
+      "incomingCallInstructions": {
+        "value": "${INCOMING_CALL_INSTRUCTIONS=You are a helpful virtual assistant.}"
+      },
+      "incomingCallWelcomeMessage": {
+        "value": "${INCOMING_CALL_WELCOME_MESSAGE=Hello, how can I help you today?}"
       }
     }
   }

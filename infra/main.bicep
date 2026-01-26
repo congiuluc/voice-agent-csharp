@@ -19,9 +19,53 @@ param useContainerRegistry bool = true
 param deployMcpServer bool = true
 param appExists bool
 @description('The OpenAI model name')
-param modelName string = ' gpt-4o-mini'
+param modelName string = 'gpt-4o-mini'
 @description('Id of the user or app to assign application roles. If ommited will be generated from the user assigned identity.')
 param principalId string = ''
+
+// Voice Assistant settings
+@description('Voice Assistant locale')
+param voiceAssistantLocale string = 'en-US'
+@description('Voice Assistant voice')
+param voiceAssistantVoice string = 'en-US-AvaNeural'
+@description('Voice Assistant instructions')
+param voiceAssistantInstructions string = 'You are a helpful virtual assistant, your name is Ava, when starting a conversation present yourself as Ava and ask how you can assist.'
+@description('Voice Assistant welcome message')
+param voiceAssistantWelcomeMessage string = 'Hello'
+
+// Voice Agent settings
+@description('Voice Agent locale')
+param voiceAgentLocale string = 'en-US'
+@description('Voice Agent voice')
+param voiceAgentVoice string = 'en-US-AvaNeural'
+@description('Voice Agent instructions')
+param voiceAgentInstructions string = 'You are a helpful virtual assistant.'
+@description('Voice Agent welcome message')
+param voiceAgentWelcomeMessage string = 'Hello'
+
+// Voice Avatar settings
+@description('Voice Avatar locale')
+param voiceAvatarLocale string = 'en-US'
+@description('Voice Avatar voice')
+param voiceAvatarVoice string = 'en-US-AvaNeural'
+@description('Voice Avatar character')
+param voiceAvatarCharacter string = 'lisa'
+@description('Voice Avatar style')
+param voiceAvatarStyle string = 'casual-sitting'
+@description('Voice Avatar instructions')
+param voiceAvatarInstructions string = 'You are a helpful virtual assistant.'
+@description('Voice Avatar welcome message')
+param voiceAvatarWelcomeMessage string = 'Hello'
+
+// Incoming Call settings
+@description('Incoming Call locale')
+param incomingCallLocale string = 'en-US'
+@description('Incoming Call voice')
+param incomingCallVoice string = 'en-US-AvaNeural'
+@description('Incoming Call instructions')
+param incomingCallInstructions string = 'You are a helpful virtual assistant.'
+@description('Incoming Call welcome message')
+param incomingCallWelcomeMessage string = 'Hello, how can I help you today?'
 
 var uniqueSuffix = substring(uniqueString(subscription().id, environmentName), 0, 5)
 var tags = {'azd-env-name': environmentName }
@@ -174,6 +218,24 @@ module containerapp 'modules/containerapp.bicep' = {
     containerAppEnvironmentId: deployMcpServer ? mcpserver.outputs.containerAppEnvironmentId : ''
     imageName: 'mcr.microsoft.com/azuredocs/containerapps-helloworld:latest'
     applicationInsightsConnectionString: monitoring.outputs.appInsightsConnectionString
+    voiceAssistantLocale: voiceAssistantLocale
+    voiceAssistantVoice: voiceAssistantVoice
+    voiceAssistantInstructions: voiceAssistantInstructions
+    voiceAssistantWelcomeMessage: voiceAssistantWelcomeMessage
+    voiceAgentLocale: voiceAgentLocale
+    voiceAgentVoice: voiceAgentVoice
+    voiceAgentInstructions: voiceAgentInstructions
+    voiceAgentWelcomeMessage: voiceAgentWelcomeMessage
+    voiceAvatarLocale: voiceAvatarLocale
+    voiceAvatarVoice: voiceAvatarVoice
+    voiceAvatarCharacter: voiceAvatarCharacter
+    voiceAvatarStyle: voiceAvatarStyle
+    voiceAvatarInstructions: voiceAvatarInstructions
+    voiceAvatarWelcomeMessage: voiceAvatarWelcomeMessage
+    incomingCallLocale: incomingCallLocale
+    incomingCallVoice: incomingCallVoice
+    incomingCallInstructions: incomingCallInstructions
+    incomingCallWelcomeMessage: incomingCallWelcomeMessage
   }
   dependsOn: [keyvault, RoleAssignments]
 }

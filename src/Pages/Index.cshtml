@@ -94,6 +94,51 @@
             </div>
         </div>
 
+        <!-- Incoming Call Settings Modal -->
+        <div id="incomingCallSettingsModal" class="settings-modal">
+            <div class="settings-content">
+                <div class="settings-header">
+                    <h2>@Localizer["IncomingCallSettings"]</h2>
+                    <button class="close-settings" id="closeIncomingCallSettings">&times;</button>
+                </div>
+                <div class="settings-body">
+                    <div class="setting-group">
+                        <label for="incomingLocale">@Localizer["Language"]:</label>
+                        <select id="incomingLocale" class="form-control">
+                            <option value="en-US">English (US)</option>
+                            <option value="it-IT">Italiano (Italia)</option>
+                            <option value="fr-FR">Français (France)</option>
+                            <option value="es-ES">Español (España)</option>
+                            <option value="de-DE">Deutsch (Deutschland)</option>
+                        </select>
+                    </div>
+                    <div class="setting-group">
+                        <label for="incomingVoice">@Localizer["AzureVoice"]:</label>
+                        <input type="text" id="incomingVoice" class="form-control" placeholder="e.g. en-US-AvaNeural" />
+                    </div>
+                    <div class="setting-group">
+                        <label for="incomingInstructions">Instructions:</label>
+                        <textarea id="incomingInstructions" class="form-control" rows="3"></textarea>
+                    </div>
+                    <div class="setting-group">
+                        <label for="incomingWelcomeMessage">Welcome Message:</label>
+                        <input type="text" id="incomingWelcomeMessage" class="form-control" />
+                    </div>
+                    <div class="setting-group">
+                        <label for="incomingFoundryProject">@Localizer["FoundryProjectName"]:</label>
+                        <input type="text" id="incomingFoundryProject" class="form-control" />
+                    </div>
+                    <div class="setting-group">
+                        <label for="incomingFoundryAssistant">@Localizer["FoundryAssistantId"]:</label>
+                        <input type="text" id="incomingFoundryAssistant" class="form-control" />
+                    </div>
+                </div>
+                <div class="settings-footer">
+                    <button id="saveIncomingCallSettings" class="save-settings-btn">@Localizer["Save"]</button>
+                </div>
+            </div>
+        </div>
+
         <!-- Toast Container (for notifications like in Voice Assistant) -->
         <div id="toastContainer" class="toast-container"></div>
     </div>
@@ -123,8 +168,10 @@
     <!-- Initialize Hamburger Menu -->
     <script type="module">
         import { initHamburgerMenu } from '/js/ui/hamburger-menu.js';
+        import { initIncomingCallSettings } from '/js/ui/incoming-call-settings.js';
         document.addEventListener('DOMContentLoaded', () => {
             initHamburgerMenu();
+            initIncomingCallSettings();
         });
     </script>
 }

@@ -198,9 +198,6 @@ export class BaseVoiceApp {
     // Left panel mappings
     this.safeAddListener(this.elements.lp_startButton, 'click', () => { this.elements.startButton?.click(); document.body.classList.remove('menu-open'); });
     this.safeAddListener(this.elements.lp_muteButton, 'click', () => { this.elements.muteButton?.click(); document.body.classList.remove('menu-open'); });
-    this.safeAddListener(this.elements.lp_traceToggle, 'click', () => { this.elements.traceToggle?.click(); document.body.classList.remove('menu-open'); });
-    this.safeAddListener(this.elements.lp_settingsButton, 'click', () => { this.elements.settingsButton?.click(); document.body.classList.remove('menu-open'); });
-    this.safeAddListener(this.elements.lp_chatToggle, 'click', () => { this.elements.chatToggle?.click(); document.body.classList.remove('menu-open'); });
   }
 
   async populateSettings() {

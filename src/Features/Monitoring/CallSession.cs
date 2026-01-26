@@ -141,8 +141,29 @@ public class CallSession
     public string? ErrorMessage { get; set; }
 
     /// <summary>
+    /// List of transcript entries for the session.
+    /// </summary>
+    [JsonPropertyName("transcripts")]
+    public List<TranscriptEntry> Transcripts { get; set; } = new();
+
+    /// <summary>
     /// TTL in seconds (90 days = 7776000 seconds).
     /// </summary>
     [JsonPropertyName("ttl")]
     public int Ttl { get; set; } = 7776000;
+}
+
+/// <summary>
+/// Represents a single transcript entry in a call session.
+/// </summary>
+public class TranscriptEntry
+{
+    [JsonPropertyName("timestamp")]
+    public DateTime Timestamp { get; set; } = DateTime.UtcNow;
+
+    [JsonPropertyName("role")]
+    public string Role { get; set; } = string.Empty; // "user" or "assistant"
+
+    [JsonPropertyName("text")]
+    public string Text { get; set; } = string.Empty;
 }

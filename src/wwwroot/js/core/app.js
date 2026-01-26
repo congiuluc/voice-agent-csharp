@@ -429,23 +429,6 @@ class VoiceAgentApp {
 
     // Hamburger / left-panel toggle - Handled by initHamburgerMenu
 
-    // Left-panel buttons mapping to main actions
-    this.safeAddListener(this.elements.lp_traceToggle, 'click', () => { 
-        this.elements.traceToggle && this.elements.traceToggle.click(); 
-        document.body.classList.remove('menu-open'); 
-    });
-    this.safeAddListener(this.elements.lp_settingsButton, 'click', () => { 
-        this.elements.settingsButton && this.elements.settingsButton.click(); 
-        document.body.classList.remove('menu-open'); 
-    });
-    this.safeAddListener(this.elements.lp_chatToggle, 'click', () => { 
-        this.elements.chatToggle && this.elements.chatToggle.click(); 
-        document.body.classList.remove('menu-open'); 
-    });
-    // lp_themeToggle is handled by initHamburgerMenu
-
-    // Close left panel when clicking overlay - Handled by initHamburgerMenu
-
     // Ensure Escape closes left panel as well
     const escapePanelHandler = (e) => {
       if (e.key === 'Escape') {

@@ -1,4 +1,4 @@
-<Project Sdk="Aspire.AppHost.Sdk/13.0.1">
+<Project Sdk="Aspire.AppHost.Sdk/13.1.0">
 
   <ItemGroup>
     <!-- AppHost sits under the 'aspire' folder; reference the sibling 'src' and 'mcp' projects correctly -->

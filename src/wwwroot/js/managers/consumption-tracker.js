@@ -131,11 +131,31 @@ export class ConsumptionTracker {
       mainContainer.appendChild(this.dashboardElement);
     }
     
-    // Add toggle button to controls
-    this.addToggleButton();
-    
-    // Initially hidden
-    this.dashboardElement.classList.add('hidden');
+    // Add event listener to the toggle button (now in HTML)
+    const toggleBtn = document.getElementById('dashboardToggle');
+    if (toggleBtn) {
+      const toggleHandler = () => this.toggleDashboard();
+      toggleBtn.addEventListener('click', toggleHandler);
+      this.eventListeners.push({ element: toggleBtn, event: 'click', handler: toggleHandler });
+    }
+
+    // Add event listener to the mobile toggle button
+    const lpToggleBtn = document.getElementById('lp_dashboardToggle');
+    if (lpToggleBtn) {
+      const lpToggleHandler = () => {
+        this.toggleDashboard();
+        document.body.classList.remove('menu-open'); // Close hamburger menu
+      };
+      lpToggleBtn.addEventListener('click', lpToggleHandler);
+      this.eventListeners.push({ element: lpToggleBtn, event: 'click', handler: lpToggleHandler });
+    }
+
+    const closeBtn = document.getElementById('closeDashboard');
+    if (closeBtn) {
+      const closeHandler = () => this.hideDashboard();
+      closeBtn.addEventListener('click', closeHandler);
+      this.eventListeners.push({ element: closeBtn, event: 'click', handler: closeHandler });
+    }
   }
   
   /**
@@ -291,62 +311,15 @@ export class ConsumptionTracker {
   /**
    * Add toggle button for the dashboard
    */
-  addToggleButton() {
-    // Check if button already exists
-    if (document.getElementById('dashboardToggle')) return;
-    
-    const r = window.APP_RESOURCES || {};
-    const button = document.createElement('button');
-    button.id = 'dashboardToggle';
-    button.className = 'dashboard-toggle-btn';
-    button.title = r.ToggleConsumptionDashboard || 'Consumption Dashboard';
-    button.setAttribute('aria-label', r.ToggleConsumptionDashboard || 'Toggle consumption dashboard');
-    button.innerHTML = `
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M3 3v18h18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        <path d="M7 16l4-4 4 4 5-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>
-      <span class="dashboard-badge" id="tokenBadge">0</span>
-    `;
-    
-    // Find the trace toggle button and insert after it
-    const traceToggle = document.getElementById('traceToggle');
-    if (traceToggle && traceToggle.parentNode) {
-      traceToggle.parentNode.insertBefore(button, traceToggle.nextSibling);
-    } else {
-      // Fallback: find the start button and insert after it
-      const startButton = document.getElementById('startButton');
-      if (startButton && startButton.parentNode) {
-        startButton.parentNode.insertBefore(button, startButton.nextSibling);
-      } else {
-        // Fallback: add to main container
-        const mainContainer = document.querySelector('.main-container');
-        if (mainContainer) {
-          mainContainer.appendChild(button);
-        }
-      }
-    }
-    
-    // Add event listeners with tracking for cleanup
-    const toggleHandler = () => this.toggleDashboard();
-    button.addEventListener('click', toggleHandler);
-    this.eventListeners.push({ element: button, event: 'click', handler: toggleHandler });
-    
-    const closeBtn = document.getElementById('closeDashboard');
-    if (closeBtn) {
-      const closeHandler = () => this.hideDashboard();
-      closeBtn.addEventListener('click', closeHandler);
-      this.eventListeners.push({ element: closeBtn, event: 'click', handler: closeHandler });
-    }
-  }
-  
   /**
    * Toggle dashboard visibility
    */
   toggleDashboard() {
     if (this.dashboardElement) {
-      this.dashboardElement.classList.toggle('hidden');
-      this.dashboardElement.classList.toggle('visible');
+      const isVisible = this.dashboardElement.classList.toggle('visible');
+      if (isVisible) {
+        this.updateDashboard();
+      }
     }
   }
   
@@ -355,8 +328,8 @@ export class ConsumptionTracker {
    */
   showDashboard() {
     if (this.dashboardElement) {
-      this.dashboardElement.classList.remove('hidden');
       this.dashboardElement.classList.add('visible');
+      this.updateDashboard();
     }
   }
   
@@ -365,7 +338,6 @@ export class ConsumptionTracker {
    */
   hideDashboard() {
     if (this.dashboardElement) {
-      this.dashboardElement.classList.add('hidden');
       this.dashboardElement.classList.remove('visible');
     }
   }

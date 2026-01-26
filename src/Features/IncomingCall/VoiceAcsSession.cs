@@ -20,11 +20,18 @@ public class VoiceAcsSession : IVoiceSession
     private VoiceLiveSession? _session;
     private bool _disposed;
     private Task? _eventProcessingTask;
+    private string? _sessionId;
+    private VoiceAgentCSharp.Features.Monitoring.CallMonitoringService? _monitoringService;
 
     /// <summary>
     /// Gets the session type identifier.
     /// </summary>
     public string SessionType => "ACS";
+
+    /// <summary>
+    /// Gets the unique session identifier.
+    /// </summary>
+    public string SessionId => _sessionId ?? _callConnection.CallConnectionId;
 
     /// <summary>
     /// Raised when audio delta data is received.
@@ -66,6 +73,15 @@ public class VoiceAcsSession : IVoiceSession
         _callConnection = callConnection ?? throw new ArgumentNullException(nameof(callConnection));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _toolHandler = new VoiceToolHandler(logger, httpClient);
+    }
+
+    /// <summary>
+    /// Sets the monitoring service and session ID for tracking metrics.
+    /// </summary>
+    public void SetMonitoring(VoiceAgentCSharp.Features.Monitoring.CallMonitoringService monitoringService, string sessionId)
+    {
+        _monitoringService = monitoringService;
+        _sessionId = sessionId;
     }
 
     /// <summary>
@@ -376,6 +392,10 @@ public class VoiceAcsSession : IVoiceSession
                     {
                         await OnUserTranscription(transcriptionCompleted.Transcript).ConfigureAwait(false);
                     }
+                    if (!string.IsNullOrEmpty(transcriptionCompleted.Transcript) && _monitoringService != null && _sessionId != null)
+                    {
+                        _monitoringService.AddTranscript(_sessionId, "user", transcriptionCompleted.Transcript);
+                    }
                     break;
 
                 case SessionUpdateResponseAudioTranscriptDone transcriptDone:
@@ -383,6 +403,10 @@ public class VoiceAcsSession : IVoiceSession
                     if (OnTranscription != null && !string.IsNullOrEmpty(transcriptDone.Transcript))
                     {
                         await OnTranscription(transcriptDone.Transcript).ConfigureAwait(false);
+                    }
+                    if (!string.IsNullOrEmpty(transcriptDone.Transcript) && _monitoringService != null && _sessionId != null)
+                    {
+                        _monitoringService.AddTranscript(_sessionId, "assistant", transcriptDone.Transcript);
                     }
                     break;
 

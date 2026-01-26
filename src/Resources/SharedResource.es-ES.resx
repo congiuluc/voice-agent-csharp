@@ -133,6 +133,15 @@
   <data name="IncomingCallSettings">
     <value>Ajustes de llamadas entrantes</value>
   </data>
+  <data name="AzureVoice">
+    <value>Azure Voice</value>
+  </data>
+  <data name="FoundryProjectName">
+    <value>Foundry Project Name</value>
+  </data>
+  <data name="FoundryAssistantId">
+    <value>Foundry Assistant ID</value>
+  </data>
   <data name="EnableIncomingCalls">
     <value>Habilitar llamadas entrantes</value>
   </data>

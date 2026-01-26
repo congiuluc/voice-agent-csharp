@@ -13,22 +13,13 @@
 
         <partial name="_VoiceVisualizer" />
 
-        <partial name="_MuteButton" />
+        <div class="bottom-controls-container">
+            <partial name="_MuteButton" />
+            <partial name="_StartButton" />
+        </div>
 
         <!-- Top Right Controls -->
         <partial name="_CommonControls" />
-
-        <partial name="_StartButton" />
-
-        <partial name="_ChatControls" />
-
-        @if (User.IsInRole("Admin"))
-        {
-            <!-- Admin Dashboard Button -->
-            <a href="/Admin/CallMonitoring" class="admin-btn" title="@Localizer["CallMonitoringDashboard"]" aria-label="@Localizer["CallMonitoringDashboard"]" target="_blank">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-            </a>
-        }
 
         <partial name="_StatusMonitor" />
 
